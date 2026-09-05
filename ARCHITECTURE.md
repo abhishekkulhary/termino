@@ -1,0 +1,179 @@
+# Termino — Architecture
+
+Termino is a terminal emulator and SSH client built as a single Flutter
+codebase targeting Android, iOS, macOS, Windows, Linux and the web.
+
+Three properties dominate every decision here, in order: **correctness of the
+terminal emulation**, **security of credential handling**, and **input
+ergonomics on touch devices**. Where a design choice trades one of those for
+convenience, the trade is written down in [DECISIONS.md](DECISIONS.md).
+
+---
+
+## 1. Layers
+
+```
+presentation  →  application  →  domain  ←  infrastructure
+   features/        features/      domain/     infrastructure/
+   shared/          core/
+```
+
+The dependency arrows point **inward**. `lib/domain/` describes what Termino
+is — hosts, identities, known hosts, shell profiles, and the `TerminalBackend`
+contract — in pure Dart with **zero Flutter imports**. That keeps the rules of
+the system testable without a Flutter binding and reusable from a CLI or the
+relay.
+
+This is the one architectural rule enforced mechanically, by
+[`tool/check_domain_purity.sh`](tool/check_domain_purity.sh) in CI.
+
+```
+lib/
+  app/                  bootstrap, router, theme, DI overrides
+  core/
+    capabilities/       PlatformCapabilities and the conditional PTY seam
+    logging/            redacting logger
+    result/             Result types and the failure taxonomy
+  domain/
+    entities/           Host, Identity, KnownHost, ShellProfile, PortForward, Snippet
+    backends/           TerminalBackend — the central abstraction
+    repositories/       abstract interfaces only
+  infrastructure/
+    backends/           local_pty_backend.dart, ssh_backend.dart, mock_backend.dart
+    ssh/                client factory, auth strategies, host key verifier, sockets
+    storage/            drift database, secure storage adapters
+  features/
+    terminal/ hosts/ identities/ sftp/ forwarding/ settings/
+  shared/               design system: tokens, widgets, icons
+tools/relay/            reference WebSocket→TCP relay for the web build
+```
+
+---
+
+## 2. The central abstraction
+
+Everything hangs off one interface. A local shell, a remote SSH session and a
+replayed fixture are all the same thing to the UI: a bidirectional byte stream
+with resize control and a lifecycle.
+
+```dart
+abstract class TerminalBackend {
+  Stream<Uint8List> get output;
+  Future<int?> get exitCode;
+  ConnectionState get state;
+  Stream<ConnectionState> get states;
+
+  Future<void> start();
+  void write(Uint8List data);
+  void resize(int columns, int rows, {int pixelWidth = 0, int pixelHeight = 0});
+  Future<void> close();
+}
+```
+
+| Implementation | Wraps | Available on |
+|---|---|---|
+| `LocalPtyBackend` | `flutter_pty` | Linux, macOS, Windows, Android |
+| `SshBackend` | `dartssh2` | everywhere, including the web |
+| `MockBackend` | fixtures | everywhere; used by tests and the widget catalogue |
+
+A `TerminalSession` is a `TerminalBackend` plus an `xterm` `Terminal` plus
+metadata. The wiring is deliberately small: backend output → `terminal.write`,
+`terminal.onOutput` → `backend.write`, `terminal.onResize` → `backend.resize`.
+`SessionManager` owns the list of sessions, tabs and splits, restores layout on
+relaunch, and disposes backends deterministically.
+
+### There is no separate web backend
+
+The obvious design — a `WebSocketRelayBackend` that pipes a byte stream to a
+relay which speaks SSH on the browser's behalf — is the wrong one, because it
+puts the user's plaintext session and their credentials inside the relay.
+
+`dartssh2` 4.x runs the SSH protocol **in the browser** over a caller-supplied
+`SSHSocket`. So the web is `SshBackend` with a different socket:
+
+```dart
+typedef SshSocketFactory = Future<SSHSocket> Function(String host, int port);
+```
+
+Native builds inject a `dart:io` socket; the web injects a WebSocket one. The
+relay in `tools/relay/` is therefore a **dumb TCP tunnel that never sees
+plaintext** — end-to-end encryption and host key verification survive it
+intact, and a compromised relay cannot read a session or steal a key.
+
+---
+
+## 3. Platform capabilities
+
+A local shell is not universally possible, and the architecture does not
+pretend otherwise.
+
+| Platform | Local PTY shell | SSH | Notes |
+|---|---|---|---|
+| Linux | yes (`forkpty`) | yes | shell from `$SHELL` |
+| macOS | yes (`forkpty`) | yes | App Sandbox must be relaxed for the local shell; the Mac App Store flavour keeps the sandbox and ships with local shell disabled |
+| Windows | yes (ConPTY) | yes | PowerShell by default; cmd, WSL and Git Bash as profiles |
+| Android | yes, sandboxed | yes | runs as the app UID inside the app sandbox; no root, limited binaries |
+| iOS / iPadOS | **no** | yes | spawning arbitrary binaries is not permitted. Not attempted. Feature-gated off with an in-app explanation |
+| Web | **no** | via relay | browsers cannot open raw TCP sockets |
+
+Two distinct questions are answered in two distinct places, and conflating them
+is a bug:
+
+- **Can this build even reference the PTY plugin?** A compile-time question.
+  `flutter_pty` depends on `dart:ffi`, which does not exist on the web, so a
+  plain import breaks the web compile outright. Every reference sits behind the
+  conditional export in
+  [`lib/core/capabilities/local_shell_support.dart`](lib/core/capabilities/local_shell_support.dart).
+- **May a local shell actually be spawned?** A runtime question. iOS compiles
+  `dart:ffi` perfectly well and still forbids spawning binaries. This belongs to
+  `PlatformCapabilities`.
+
+**Every feature-gated widget consults `PlatformCapabilities`.** There are no
+`Platform.isX` checks scattered through widgets.
+
+---
+
+## 4. Throughput
+
+The path from bytes to glyphs is the one place performance is a feature rather
+than a nicety. Between `backend.output` and `terminal.write` sits a coalescing
+sink: incoming bytes are buffered and flushed on a ~8 ms window or when a size
+threshold is hit, whichever comes first, and the subscription applies
+backpressure so that `cat`-ing a large file pauses the socket rather than
+growing an unbounded queue.
+
+This single component decides whether the targets in the brief are met, so it
+owns its own unit tests and its own harness in `benchmark/`.
+
+---
+
+## 5. Security posture
+
+The full threat model is in [SECURITY.md](SECURITY.md). In short:
+
+- Private keys, passphrases and passwords live **only** in
+  `flutter_secure_storage` — Keychain, Keystore, libsecret, DPAPI. Never in the
+  drift database, never in preferences, never in logs.
+- Host keys are verified against a persistent `known_hosts` store. A first
+  sighting prompts with the fingerprint; **a changed key is a hard stop**, never
+  auto-accepted.
+- The logger redacts passwords, passphrases, key material, auth banners and the
+  session byte stream, and a unit test asserts it.
+- No telemetry.
+
+---
+
+## 6. Testing
+
+| Layer | Approach |
+|---|---|
+| Escape sequences | fixture-driven unit tests |
+| Host key verification, `~/.ssh/config` parsing, key import, redaction, backend state machines | unit tests; 70% coverage gate on `domain/` and `infrastructure/` |
+| Terminal view, key accessory bar, host editor | widget tests |
+| Themes and key bar across breakpoints | golden tests |
+| A full SSH session | `integration_test/` against a pinned OpenSSH container (`test/fixtures/docker-compose.yml`), in CI |
+| A full local PTY session | `integration_test/` on desktop CI |
+
+The real acceptance test is behavioural, not a percentage: connect over SSH with
+a key, run **`vim` and `htop`** correctly, transfer a file over SFTP, establish a
+local port forward, and confirm that a changed host key blocks the connection.

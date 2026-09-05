@@ -1,0 +1,5 @@
+# Golden tests render pixels and are sensitive to the host's font rasterisation,
+# so they are tagged and can be excluded with `flutter test -x golden`.
+tags:
+  golden:
+    description: Tests that compare rendered output against a golden image.

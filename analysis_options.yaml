@@ -1,0 +1,22 @@
+# Termino uses very_good_analysis, a strict lint set. The tree must stay
+# warning-free: CI runs `flutter analyze --fatal-infos --fatal-warnings`.
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  plugins:
+    - riverpod_lint
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "build/**"
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  errors:
+    # Generated code and platform interop occasionally trip these; we want them
+    # visible but not build-breaking during development. CI still fails on
+    # anything left unresolved at commit time.
+    todo: ignore
