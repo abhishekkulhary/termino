@@ -7,10 +7,9 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 1 — terminal core.** The emulator renders, sessions are wired
-> end to end, and the app shell adapts across breakpoints — but sessions replay
-> a fixture. Real local shells arrive in Phase 2 and SSH in Phase 3. See
-> [Roadmap](#roadmap).
+> **Status: Phase 2 — local shell.** Real PTY-backed shells run on macOS,
+> Linux, Windows and Android, with shell profiles and honest feature gating
+> everywhere else. SSH arrives in Phase 3. See [Roadmap](#roadmap).
 
 ---
 
@@ -18,12 +17,17 @@ an interactive shell, SFTP file transfer and port forwarding.
 
 | Platform | Local shell | SSH | Status |
 |---|---|---|---|
-| macOS | yes | yes | building |
-| Android | yes, sandboxed | yes | building |
-| iOS / iPadOS | **no** — not permitted by the platform | yes | building |
-| Linux | yes | yes | CI only |
-| Windows | yes | yes | CI only |
-| Web | **no** | via a relay | building |
+| macOS | **working** | Phase 3 | sandbox off; see below |
+| Android | yes, sandboxed | Phase 3 | builds |
+| iOS / iPadOS | **no** — not permitted by the platform | Phase 3 | builds, gated off with an explanation |
+| Linux | yes | Phase 3 | CI only |
+| Windows | yes | Phase 3 | CI only |
+| Web | **no** | Phase 7, via a relay | builds, gated off with an explanation |
+
+On macOS the App Sandbox is disabled, because a sandboxed process cannot run the
+user's own programs or read their files — which is the whole point of a
+terminal. A sandboxed, SSH-only Mac App Store build is a separate configuration
+planned for Phase 8. See [DECISIONS.md](DECISIONS.md).
 
 iOS cannot spawn arbitrary binaries, and browsers cannot open raw TCP sockets.
 Termino does not pretend otherwise: those features are feature-gated off at
@@ -86,6 +90,17 @@ Golden tests render real fonts and are tagged, so they can be skipped:
 flutter test -x golden
 ```
 
+The local PTY cannot be exercised by `flutter test` — it needs the native plugin
+loaded into a real app — so it has its own suite that runs against a real shell:
+
+```bash
+for suite in integration_test/*_test.dart; do flutter test "$suite" -d macos; done
+```
+
+One file at a time is deliberate: on desktop, Flutter relaunches the app for
+each test file, and a second launch inside a single `flutter test` invocation
+fails with "Unable to start the app on the device".
+
 CI additionally runs the architecture and coverage gates:
 
 ```bash
@@ -118,8 +133,8 @@ Termino explicitly does *not* protect against — is in
 |---|---|---|
 | 0 | Plan, scaffold, CI, verified dependency stack | **done** |
 | 1 | Terminal core: design system, `TerminalBackend`, session model | **done** |
-| 2 | Local PTY, shell profiles, `PlatformCapabilities` | next |
-| 3 | SSH: auth, host key verification, profiles, jump hosts | |
+| 2 | Local PTY, shell profiles, `PlatformCapabilities` | **done** |
+| 3 | SSH: auth, host key verification, profiles, jump hosts | next |
 | 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | |
 | 5 | SFTP browser and port forwarding | |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |

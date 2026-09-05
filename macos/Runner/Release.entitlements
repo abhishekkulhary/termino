@@ -2,7 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!--
+	  Sandbox off for direct distribution — see DebugProfile.entitlements for
+	  the reasoning. The Mac App Store build is a separate configuration that
+	  turns the sandbox back on and disables the local shell.
+	-->
 	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!-- Outbound TCP, for SSH and SFTP. -->
+	<key>com.apple.security.network.client</key>
 	<true/>
 </dict>
 </plist>

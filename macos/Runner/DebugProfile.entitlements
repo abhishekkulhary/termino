@@ -2,10 +2,31 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!--
+	  The App Sandbox is OFF for the direct-distribution build.
+
+	  A terminal emulator's entire purpose is to run programs the user chooses,
+	  anywhere on their disk, with their own permissions. The sandbox forbids
+	  exactly that: it confines exec to the app bundle and blocks access to the
+	  user's files, so a sandboxed build can open a shell that can do almost
+	  nothing useful. Every macOS terminal emulator makes this same trade.
+
+	  A sandboxed Mac App Store flavour is a separate build configuration that
+	  keeps the sandbox and ships with the local shell feature-gated off, SSH
+	  only. See ARCHITECTURE.md and DECISIONS.md.
+	-->
 	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!-- Outbound TCP, for SSH and SFTP. -->
+	<key>com.apple.security.network.client</key>
 	<true/>
+
+	<!-- Required by the Dart VM in debug builds. -->
 	<key>com.apple.security.cs.allow-jit</key>
 	<true/>
+
+	<!-- Flutter's debug tooling (hot reload, DevTools) listens on a port. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
 </dict>

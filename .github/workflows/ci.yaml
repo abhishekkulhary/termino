@@ -51,6 +51,52 @@ jobs:
           name: coverage
           path: coverage/lcov.info
 
+  # The local PTY cannot be exercised by `flutter test`: it needs the native
+  # plugin loaded into a real app. These run against a real shell on a real
+  # desktop, and are what covers local_pty_backend_ffi.dart.
+  integration:
+    name: Integration (${{ matrix.device }})
+    needs: analyze
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, device: macos }
+          - { os: ubuntu-latest, device: linux }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux desktop dependencies
+        if: matrix.device == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev xvfb
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # One file at a time: on desktop, Flutter relaunches the app for each
+      # test file, and a second launch inside one `flutter test` invocation
+      # fails with "Unable to start the app on the device".
+      - name: Integration tests
+        run: |
+          for suite in integration_test/*_test.dart; do
+            echo "--- $suite"
+            if [ "${{ matrix.device }}" = "linux" ]; then
+              xvfb-run -a flutter test "$suite" -d linux
+            else
+              flutter test "$suite" -d macos
+            fi
+          done
+        shell: bash
+
   build:
     name: Build ${{ matrix.target }}
     needs: analyze

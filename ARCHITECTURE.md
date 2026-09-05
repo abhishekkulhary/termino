@@ -40,7 +40,9 @@ lib/
     entities/           Host, Identity, KnownHost, ShellProfile (planned, Phase 3)
     repositories/       abstract interfaces only (planned, Phase 3)
   infrastructure/
-    backends/           mock_backend.dart; local_pty and ssh follow in Phases 2-3
+    backends/
+      local_pty/        conditional seam: _ffi (real) or _stub (web)
+      mock_backend.dart
     terminal/           output_batcher.dart — the coalescing sink
     ssh/                client factory, auth, host key verifier (planned, Phase 3)
     storage/            drift database, secure storage (planned, Phase 3)
@@ -157,7 +159,22 @@ is a bug:
   `PlatformCapabilities`.
 
 **Every feature-gated widget consults `PlatformCapabilities`.** There are no
-`Platform.isX` checks scattered through widgets.
+`Platform.isX` checks scattered through widgets. It is a provider, so tests and
+the widget catalogue can render a platform they are not running on — which is
+how the iOS and web explanation screens are golden-tested from a Mac.
+
+A gated feature is never silently hidden. `LocalShellNotice` says which platform
+rule applies and what still works instead, because a missing button is
+indistinguishable from a broken app.
+
+### Backpressure reaches the child process
+
+The chain is complete from the terminal widget to the program at the far end:
+the terminal pauses its subscription, the coalescing sink pauses its source,
+`pipeOutput` pauses the PTY stream, the acknowledgement stops being sent, and
+the child blocks on its own `write`. `flutter_pty`'s `ackRead` option is the
+last link; without it the native read thread fills the isolate's port queue
+without bound.
 
 ---
 

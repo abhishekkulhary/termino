@@ -150,6 +150,16 @@ abstract class TerminalBackendBase implements TerminalBackend {
   /// Sends [data] to the peer. Only called while connected.
   void send(Uint8List data);
 
+  /// Called when the source passed to [pipeOutput] completes.
+  ///
+  /// The default is the obvious one: the stream ending *is* the session
+  /// ending. A local PTY overrides this, because its output and its exit
+  /// status arrive on separate channels and closing here would report a null
+  /// exit code a moment before the real one lands.
+  void handleOutputDone() {
+    if (!_state.isTerminal) setClosed();
+  }
+
   /// Whether output is currently paused by the downstream consumer. Subclasses
   /// that push manually should respect it.
   bool get isOutputPaused => _output.isPaused;
@@ -178,9 +188,7 @@ abstract class TerminalBackendBase implements TerminalBackend {
           ),
         );
       },
-      onDone: () {
-        if (!_state.isTerminal) setClosed();
-      },
+      onDone: handleOutputDone,
     );
     _output
       ..onPause = _pipe!.pause

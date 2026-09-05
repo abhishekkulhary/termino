@@ -5,6 +5,81 @@ why — so that a future reader can tell a deliberate choice from an accident.
 
 ---
 
+## 2026-09-05 — Staying on `flutter_pty`, on the evidence
+
+**Decision.** Keep `flutter_pty` 0.4.2. Do not move to the `flutter_pty2` fork
+yet. Revisit when Flutter actually makes Swift Package Manager mandatory.
+
+**Alternatives.** Switch to `flutter_pty2` 1.0.2, which is actively maintained,
+has adopted SPM, and carries a commit titled "drain output after child exit".
+
+**Why.** The case for the fork rested on two claims, and integration tests
+against a real shell on macOS settled both:
+
+* **"Output is lost when the child exits."** `flutter_pty` closes its output
+  port the instant the exit status arrives, and its own documentation warns
+  that buffered output may not have been delivered. A test that runs
+  `sh -c 'echo FINAL-LINE-MARKER'` and asserts the marker arrives passed five
+  times out of five. The failure the fork fixes does not reproduce through our
+  pipeline, so switching would trade a known-good dependency for an unknown one
+  to fix a problem we cannot observe.
+* **"SPM adoption is required."** Flutter warns on every iOS and macOS build
+  that `flutter_pty` does not support Swift Package Manager and that this "will
+  become an error in a future version". It is not an error today, and CocoaPods
+  still works.
+
+Against that, `flutter_pty2` has one GitHub star and roughly a hundred downloads
+a month. Adopting it means running someone's unreviewed native code in a process
+that holds the user's SSH keys. That is a real security trade, not just a
+maintenance one.
+
+The mitigation stands either way: `LocalPtyBackend` isolates the plugin, so the
+swap is one file whenever the evidence changes.
+
+**What the integration tests proved works**: spawning, output, input, exit
+codes, resize (`stty size` confirms 37 rows by 101 columns, which also catches
+the reversed argument order), missing-executable handling, and termination on
+close.
+
+---
+
+## 2026-09-05 — The macOS App Sandbox is off for direct distribution
+
+**Decision.** `com.apple.security.app-sandbox` is `false` in both macOS
+entitlement files, with `com.apple.security.network.client` enabled for SSH. A
+sandboxed Mac App Store flavour, with the local shell feature-gated off, is a
+separate build configuration for Phase 8.
+
+**Alternatives.** Keep the sandbox and ship a local shell that can only run
+programs inside the app bundle; ship SSH-only on macOS.
+
+**Why.** A terminal emulator exists to run programs the user chooses, anywhere
+on their disk, with their own permissions. The sandbox forbids exactly that. A
+sandboxed build would offer a shell that cannot see the user's files or run
+their tools, which is worse than offering none. Every macOS terminal emulator
+makes this same trade, and it is why they are distributed outside the App Store.
+
+The consequence is stated plainly rather than buried: the App Store build will
+be SSH-only, and `PlatformCapabilities` is already the mechanism that will turn
+the local shell off for it.
+
+---
+
+## 2026-09-05 — The PTY uses native flow control (`ackRead`)
+
+**Decision.** `LocalPtyBackend` starts the PTY with `ackRead: true` and
+acknowledges each chunk as it passes into the pipeline.
+
+**Why.** Without it, the native read thread pushes into the isolate's port queue
+as fast as the child can write, and nothing bounds that queue — a process
+running `yes` grows memory without limit. With it, the read thread waits for an
+acknowledgement, so a paused terminal stops acknowledging, the child blocks on
+its own write, and memory stays flat. This is the last link in the backpressure
+chain that starts at the terminal widget and now reaches the child process
+itself.
+
+---
+
 ## 2026-09-05 — Backend output is a single-subscription stream
 
 **Decision.** `TerminalBackend.output` is single-subscription, not broadcast.
