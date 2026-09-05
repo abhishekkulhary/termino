@@ -4,6 +4,19 @@ Termino handles SSH private keys, passphrases and passwords, and shows you the
 output of shells on machines you care about. This document states what it
 protects, what it does not, and how to report a problem.
 
+## What is verified, and where
+
+The claims below are not aspirations. Each is held in place by a test:
+
+| Claim | Test |
+|---|---|
+| A changed host key blocks the connection | `test/infrastructure/ssh/ssh_backend_test.dart` — against a real OpenSSH server that has genuinely swapped its key |
+| A changed key is never offered as a prompt | same file: the prompt callback is asserted never to run |
+| A log line containing a secret is redacted | `test/core/logging/redaction_test.dart` |
+| No secret reaches the database file | `test/security/secrets_never_persisted_test.dart` — the file is read back off disk and searched |
+| Deleting an identity or host removes its key material | same file |
+| A failure message never leaks an exception string | `test/infrastructure/ssh/ssh_backend_test.dart` |
+
 ## Reporting a vulnerability
 
 Please report privately rather than opening a public issue: open a
@@ -42,6 +55,10 @@ concept touches a real host, redact hostnames and keys.
   dismiss by accident, but a determined user can still override it.
 - **Shoulder surfing and screenshots.** Terminal contents are rendered on
   screen, and on desktop the OS may capture them.
+- **The local database.** `termino.sqlite` holds connection profiles, key
+  *metadata* and trusted host fingerprints. It is not encrypted, and it is not
+  meant to be: nothing secret is in it, which is a property under test rather
+  than a convention.
 - **Memory forensics.** Dart does not offer reliable zeroing of immutable
   strings. Decrypted key material is held for the duration of an authentication
   attempt and dropped afterwards, and we zero byte buffers where the language

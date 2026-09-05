@@ -72,9 +72,11 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Hosts'));
+    // Settings is still a placeholder, so this exercises navigation without
+    // pulling in the database that Hosts and Keys need.
+    await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Phase 3'), findsOneWidget);
+    expect(find.text('Phase 6'), findsOneWidget);
 
     await tester.tap(find.text('Terminal'));
     await tester.pumpAndSettle();

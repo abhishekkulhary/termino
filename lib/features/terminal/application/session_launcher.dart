@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/shell_profile.dart';
+import 'package:termino/domain/entities/ssh_host.dart';
+import 'package:termino/features/hosts/application/ssh_connector.dart';
 import 'package:termino/features/terminal/application/demo_backend.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
@@ -52,6 +54,23 @@ class SessionLauncher extends _$SessionLauncher {
           backend: createLocalPtyBackend(profile: chosen),
           title: chosen.name,
         );
+  }
+
+  /// Opens an SSH session to [host].
+  ///
+  /// A failure to connect still produces a session, so the reason appears in
+  /// the tab the user was expecting rather than as a toast over an empty
+  /// screen. A refused host key is reported the same way.
+  Future<TerminalSession> openSsh(SshHost host) async {
+    final capabilities = ref.read(platformCapabilitiesProvider);
+    if (!capabilities.canUseSsh) {
+      throw StateError('openSsh called where SSH is unavailable');
+    }
+
+    final backend = await ref.read(sshConnectorProvider).connect(host);
+    return await ref
+        .read(sessionManagerProvider.notifier)
+        .open(backend: backend, title: host.label);
   }
 
   /// Opens a session replaying the built-in demo transcript.

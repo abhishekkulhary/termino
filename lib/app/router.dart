@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
+import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
+import 'package:termino/features/hosts/presentation/hosts_screen.dart';
+import 'package:termino/features/identities/presentation/identities_screen.dart';
 import 'package:termino/features/placeholder/coming_soon_screen.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
@@ -12,6 +15,9 @@ import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 /// great deal when the terminal holds a live session.
 GoRouter buildRouter() {
   return GoRouter(
+    // Shared so that a connection, which has no BuildContext of its own, can
+    // still show a host key prompt.
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppDestinations.terminal.route,
     routes: [
       StatefulShellRoute.indexedStack(
@@ -29,14 +35,7 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppDestinations.hosts.route,
-                builder: (context, state) => const ComingSoonScreen(
-                  feature: 'Hosts',
-                  description:
-                      'Saved SSH connections, folders and tags, plus import '
-                      'from your ~/.ssh/config.',
-                  phase: 'Phase 3',
-                  icon: Icons.dns_rounded,
-                ),
+                builder: (context, state) => const HostsScreen(),
               ),
             ],
           ),
@@ -44,14 +43,7 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppDestinations.keys.route,
-                builder: (context, state) => const ComingSoonScreen(
-                  feature: 'Keys',
-                  description:
-                      'Import and generate SSH keys, held in the platform '
-                      'keystore behind an optional biometric gate.',
-                  phase: 'Phase 3',
-                  icon: Icons.vpn_key_rounded,
-                ),
+                builder: (context, state) => const IdentitiesScreen(),
               ),
             ],
           ),

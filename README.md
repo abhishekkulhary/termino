@@ -7,9 +7,11 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 2 — local shell.** Real PTY-backed shells run on macOS,
-> Linux, Windows and Android, with shell profiles and honest feature gating
-> everywhere else. SSH arrives in Phase 3. See [Roadmap](#roadmap).
+> **Status: Phase 3 — SSH.** Connect over SSH with a key or a password, with
+> host key verification that refuses a changed key, saved connections, jump
+> hosts, key generation and import, and `~/.ssh/config` import. Input
+> ergonomics — the key bar, gestures, search, splits — arrive in Phase 4. See
+> [Roadmap](#roadmap).
 
 ---
 
@@ -17,11 +19,11 @@ an interactive shell, SFTP file transfer and port forwarding.
 
 | Platform | Local shell | SSH | Status |
 |---|---|---|---|
-| macOS | **working** | Phase 3 | sandbox off; see below |
-| Android | yes, sandboxed | Phase 3 | builds |
-| iOS / iPadOS | **no** — not permitted by the platform | Phase 3 | builds, gated off with an explanation |
-| Linux | yes | Phase 3 | CI only |
-| Windows | yes | Phase 3 | CI only |
+| macOS | **working** | **working** | sandbox off; see below |
+| Android | yes, sandboxed | yes | builds |
+| iOS / iPadOS | **no** — not permitted by the platform | yes | builds, local shell gated off with an explanation |
+| Linux | yes | yes | CI only |
+| Windows | yes | yes | CI only |
 | Web | **no** | Phase 7, via a relay | builds, gated off with an explanation |
 
 On macOS the App Sandbox is disabled, because a sandboxed process cannot run the
@@ -90,8 +92,13 @@ Golden tests render real fonts and are tagged, so they can be skipped:
 flutter test -x golden
 ```
 
-The local PTY cannot be exercised by `flutter test` — it needs the native plugin
-loaded into a real app — so it has its own suite that runs against a real shell:
+SSH is covered by ordinary `flutter test` runs: they start a throwaway `sshd`
+unprivileged on a free port and connect to it for real, so no Docker or daemon
+is needed.
+
+The local PTY is the one thing `flutter test` cannot exercise — it needs the
+native plugin loaded into a real app — so it has its own suite that runs against
+a real shell:
 
 ```bash
 for suite in integration_test/*_test.dart; do flutter test "$suite" -d macos; done
@@ -134,8 +141,8 @@ Termino explicitly does *not* protect against — is in
 | 0 | Plan, scaffold, CI, verified dependency stack | **done** |
 | 1 | Terminal core: design system, `TerminalBackend`, session model | **done** |
 | 2 | Local PTY, shell profiles, `PlatformCapabilities` | **done** |
-| 3 | SSH: auth, host key verification, profiles, jump hosts | next |
-| 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | |
+| 3 | SSH: auth, host key verification, profiles, jump hosts | **done** |
+| 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | next |
 | 5 | SFTP browser and port forwarding | |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |
 | 7 | Web: reference relay and WebSocket transport | |

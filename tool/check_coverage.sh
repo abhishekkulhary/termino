@@ -36,6 +36,11 @@ for line in open(lcov):
     line = line.strip()
     if line.startswith("SF:"):
         path = line[3:].replace("\\", "/")
+        # Generated sources are the generator's output, not this project's
+        # code. They are excluded from linting for the same reason.
+        if path.endswith(".g.dart") or path.endswith(".freezed.dart"):
+            current = None
+            continue
         excluded = next((f for f in plugin_backed if path.endswith(f)), None)
         if excluded:
             current = None

@@ -37,21 +37,25 @@ lib/
     logging/            redacting logger (planned, Phase 3)
   domain/
     backends/           TerminalBackend, its state machine and failure taxonomy
-    entities/           Host, Identity, KnownHost, ShellProfile (planned, Phase 3)
-    repositories/       abstract interfaces only (planned, Phase 3)
+    entities/           SshHost, SshIdentity, KnownHost, ShellProfile
+    repositories/       abstract interfaces only
+    ssh/                host key verifier, known_hosts and ssh_config parsers
   infrastructure/
     backends/
       local_pty/        conditional seam: _ffi (real) or _stub (web)
       mock_backend.dart
     terminal/           output_batcher.dart — the coalescing sink
-    ssh/                client factory, auth, host key verifier (planned, Phase 3)
-    storage/            drift database, secure storage (planned, Phase 3)
+    ssh/                backend, socket seam, auth prompts, key generator
+      import/           conditional seam for reading ~/.ssh
+    storage/            drift database, keystore adapter, repositories
   features/
     terminal/
       application/      TerminalSession, SessionManager, demo fixture
       presentation/     TerminalPane (the only importer of xterm), TerminalScreen
     placeholder/        honest stand-ins for features not yet built
-    hosts/ identities/ sftp/ forwarding/ settings/   (planned)
+    hosts/            host list and editor, host key dialogs, connector
+    identities/       key list, generation and import
+    sftp/ forwarding/ settings/   (planned)
   shared/
     design/             tokens, breakpoints, app theme, terminal palettes
     widgets/            AdaptiveScaffold
@@ -199,9 +203,10 @@ The full threat model is in [SECURITY.md](SECURITY.md). In short:
 - Private keys, passphrases and passwords live **only** in
   `flutter_secure_storage` — Keychain, Keystore, libsecret, DPAPI. Never in the
   drift database, never in preferences, never in logs.
-- Host keys are verified against a persistent `known_hosts` store. A first
-  sighting prompts with the fingerprint; **a changed key is a hard stop**, never
-  auto-accepted.
+- Host keys are verified against a persistent store. A first sighting prompts
+  with the fingerprint; **a changed key is a hard stop** — refused in
+  `SshBackend`, never offered as a dialog with an accept button. Replacing a
+  stored key is a separate action that does not itself connect.
 - The logger redacts passwords, passphrases, key material, auth banners and the
   session byte stream, and a unit test asserts it.
 - No telemetry.

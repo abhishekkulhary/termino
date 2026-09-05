@@ -1,0 +1,37 @@
+# A realistic ~/.ssh/config
+
+Host build-01
+    HostName build-01.internal.example.com
+    User deploy
+    Port 2222
+    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/id_rsa
+
+Host bastion
+    HostName bastion.example.com
+    User jump
+
+Host db-*
+    User postgres
+    ProxyJump bastion
+    ForwardAgent yes
+
+Host quoted
+    IdentityFile "~/.ssh/key with spaces"
+
+Host equals=form
+Host equals
+    HostName=equals.example.com
+    Port=2022
+
+Match host anything
+    User should-not-leak
+
+Host after-match
+    HostName after.example.com
+
+# Host * belongs last: OpenSSH uses the first value it obtains for each
+# keyword, so a catch-all at the top would override every specific block.
+Host *
+    ServerAliveInterval 60
+    ForwardAgent no
