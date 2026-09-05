@@ -46,7 +46,9 @@ lib/
       local_pty/        conditional seam: _ffi (real) or _stub (web)
       mock_backend.dart
     terminal/           output_batcher.dart — the coalescing sink
-    ssh/                backend, socket seam, auth prompts, key generator
+    ssh/                connection factory (the one host key check), backend,
+                        socket seam, auth prompts, key generator
+    sftp/               file operations and the transfer runner
       import/           conditional seam for reading ~/.ssh
     storage/            drift database, keystore adapter, repositories
   features/
@@ -58,7 +60,9 @@ lib/
     placeholder/        honest stand-ins for features not yet built
     hosts/            host list and editor, host key dialogs, connector
     identities/       key list, generation and import
-    sftp/ forwarding/ settings/   (planned)
+    sftp/             remote browser, transfer queue
+    forwarding/       tunnel manager and list
+    settings/         (planned)
   shared/
     design/             tokens, breakpoints, app theme, terminal palettes
     widgets/            AdaptiveScaffold

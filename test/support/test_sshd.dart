@@ -32,6 +32,18 @@ class TestSshd {
   /// Where the fixture keys live, relative to the package root.
   static const fixtures = 'test/fixtures/keys';
 
+  /// Where OpenSSH keeps its SFTP server, which differs between systems.
+  static String get sftpServer {
+    for (final candidate in [
+      '/usr/libexec/sftp-server',
+      '/usr/lib/openssh/sftp-server',
+      '/usr/lib/ssh/sftp-server',
+    ]) {
+      if (File(candidate).existsSync()) return candidate;
+    }
+    return 'internal-sftp';
+  }
+
   /// Whether this platform can run the harness at all.
   static bool get isSupported =>
       !Platform.isWindows && File('/usr/sbin/sshd').existsSync();
@@ -75,6 +87,21 @@ class TestSshd {
     }
     await Process.run('chmod', ['600', authorizedKeys]);
 
+    final dispatcherPath = '${directory.path}/dispatch.sh';
+    // OpenSSH sets SSH_ORIGINAL_COMMAND to the subsystem's configured *path*,
+    // not the name "sftp", which is why matching on the name silently fell
+    // through to the shell and left every SFTP client waiting for a reply.
+    await File(dispatcherPath).writeAsString('''
+#!/bin/sh
+case "\$SSH_ORIGINAL_COMMAND" in
+  *sftp-server*|*internal-sftp*)
+    exec $sftpServer
+    ;;
+esac
+exec /bin/sh
+''');
+    await Process.run('chmod', ['755', dispatcherPath]);
+
     final configPath = '${directory.path}/sshd_config';
     await File(configPath).writeAsString('''
 Port $chosenPort
@@ -94,8 +121,14 @@ LogLevel ERROR
 # login shell brings real problems with it: several starting at once contend
 # on tool-manager lock files (pyenv's rehash lock, for one) and simply hang,
 # which looks exactly like a broken client.
-ForceCommand /bin/sh
-Subsystem sftp /usr/libexec/sftp-server
+#
+# ForceCommand applies to subsystem requests too, so it cannot simply be
+# /bin/sh: that would make every SFTP session open a shell instead of
+# sftp-server, and the client would wait forever for a protocol reply. The
+# dispatcher looks at SSH_ORIGINAL_COMMAND, which OpenSSH sets to the
+# subsystem name, and hands off accordingly.
+ForceCommand $dispatcherPath
+Subsystem sftp $sftpServer
 ''');
 
     final process = await Process.start('/usr/sbin/sshd', [

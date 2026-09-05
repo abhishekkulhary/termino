@@ -9,13 +9,8 @@ import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/ssh/host_key_verdict.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
+import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 import 'package:termino/infrastructure/ssh/ssh_socket_factory.dart';
-
-/// Asks the user whether to trust a host key they have not seen before.
-///
-/// Returning false refuses the connection. This is never called for a
-/// mismatch: that is refused outright, without offering the user a button.
-typedef HostKeyPrompt = Future<bool> Function(HostKeyCheck check);
 
 /// An interactive SSH shell.
 ///
@@ -70,7 +65,7 @@ class SshBackend extends TerminalBackendBase {
   /// How long to wait for the TCP connection.
   final Duration connectTimeout;
 
-  final List<SSHClient> _clients = [];
+  SshConnection? _connection;
   SSHSession? _session;
 
   /// Set when host key verification refuses a connection, so the failure can
@@ -94,10 +89,23 @@ class SshBackend extends TerminalBackendBase {
   @override
   Future<void> connect() async {
     try {
-      final client = await _connectThroughJumps();
-      _clients.add(client);
+      final factory = SshConnectionFactory(
+        verifier: verifier,
+        onHostKeyPrompt: onHostKeyPrompt,
+        socketFactory: socketFactory,
+        connectTimeout: connectTimeout,
+      );
 
-      final session = await client.shell(
+      final connection = await factory.connect(
+        host: host,
+        prompts: prompts,
+        jumpChain: jumpChain,
+        jumpPrompts: jumpPrompts,
+        refused: (check) => _refusedCheck = check,
+      );
+      _connection = connection;
+
+      final session = await connection.client.shell(
         pty: SSHPtyConfig(
           width: columns,
           height: rows,
@@ -129,101 +137,6 @@ class SshBackend extends TerminalBackendBase {
     } on Object catch (error, stackTrace) {
       Error.throwWithStackTrace(_mapError(error), stackTrace);
     }
-  }
-
-  /// Connects each hop in turn, dialling the next through the previous.
-  Future<SSHClient> _connectThroughJumps() async {
-    SSHClient? previous;
-
-    for (final hop in jumpChain) {
-      final socket = previous == null
-          ? await _openSocket(hop.hostname, hop.port)
-          : await previous.forwardLocal(hop.hostname, hop.port);
-      final client = await _authenticate(
-        socket: socket,
-        target: hop,
-        prompts: jumpPrompts[hop.id] ?? const SshAuthPrompts(),
-      );
-      _clients.add(client);
-      previous = client;
-    }
-
-    final socket = previous == null
-        ? await _openSocket(host.hostname, host.port)
-        : await previous.forwardLocal(host.hostname, host.port);
-
-    return await _authenticate(socket: socket, target: host, prompts: prompts);
-  }
-
-  Future<SSHSocket> _openSocket(String hostname, int port) async {
-    try {
-      return await socketFactory(hostname, port, timeout: connectTimeout);
-    } on Object catch (error) {
-      throw TerminalBackendFailure(
-        TerminalBackendFailureKind.network,
-        '$hostname:$port could not be reached.',
-        cause: error,
-      );
-    }
-  }
-
-  Future<SSHClient> _authenticate({
-    required SSHSocket socket,
-    required SshHost target,
-    required SshAuthPrompts prompts,
-  }) async {
-    final client = SSHClient(
-      socket,
-      username: target.username,
-      identities: prompts.identities,
-      onPasswordRequest: prompts.onPasswordRequest,
-      onUserInfoRequest: prompts.onUserInfoRequest,
-      onUserauthBanner: prompts.onBanner,
-      agentHandler: prompts.agent,
-      keepAliveInterval: target.keepAliveInterval,
-      onVerifyHostKey: (type, fingerprint) =>
-          _verifyHostKey(target, type, fingerprint),
-    );
-
-    await client.authenticated;
-    return client;
-  }
-
-  /// The gate every connection passes through.
-  Future<bool> _verifyHostKey(
-    SshHost target,
-    String keyType,
-    Uint8List fingerprintBytes,
-  ) async {
-    // dartssh2 hands us the OpenSSH-style `SHA256:...` text, UTF-8 encoded.
-    final fingerprint = utf8.decode(fingerprintBytes);
-
-    final check = await verifier.check(
-      host: target.hostname,
-      port: target.port,
-      keyType: keyType,
-      fingerprint: fingerprint,
-    );
-
-    if (check.verdict.isAutomaticallyTrusted) return true;
-
-    // A changed key is refused here and now. The user is never shown a
-    // "connect anyway" button in the connection path; replacing a known key is
-    // a separate, deliberate action taken from the mismatch dialog, and it
-    // requires starting a new connection afterwards.
-    if (check.verdict.blocksConnection) {
-      _refusedCheck = check;
-      return false;
-    }
-
-    final accepted = await onHostKeyPrompt(check);
-    if (!accepted) {
-      _refusedCheck = check;
-      return false;
-    }
-
-    await verifier.trust(check);
-    return true;
   }
 
   static Stream<Uint8List> _mergeStreams(
@@ -331,10 +244,7 @@ class SshBackend extends TerminalBackendBase {
   Future<void> disconnect() async {
     _session?.close();
     _session = null;
-    // Innermost first, so each hop is torn down before the tunnel carrying it.
-    for (final client in _clients.reversed) {
-      await client.close();
-    }
-    _clients.clear();
+    await _connection?.close();
+    _connection = null;
   }
 }

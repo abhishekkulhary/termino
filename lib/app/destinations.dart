@@ -39,6 +39,14 @@ abstract final class AppDestinations {
     route: '/files',
   );
 
+  /// Port forwarding.
+  static const tunnels = AppDestination(
+    label: 'Tunnels',
+    icon: Icons.swap_horiz_outlined,
+    selectedIcon: Icons.swap_horiz_rounded,
+    route: '/tunnels',
+  );
+
   /// Settings. Phase 6.
   static const settings = AppDestination(
     label: 'Settings',
@@ -48,5 +56,12 @@ abstract final class AppDestinations {
   );
 
   /// Every destination, in navigation order.
-  static const all = <AppDestination>[terminal, hosts, keys, files, settings];
+  static const all = <AppDestination>[
+    terminal,
+    hosts,
+    keys,
+    files,
+    tunnels,
+    settings,
+  ];
 }

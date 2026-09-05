@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
+import 'package:termino/features/forwarding/presentation/forwarding_screen.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/features/hosts/presentation/hosts_screen.dart';
 import 'package:termino/features/identities/presentation/identities_screen.dart';
 import 'package:termino/features/placeholder/coming_soon_screen.dart';
+import 'package:termino/features/sftp/presentation/sftp_screen.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 
@@ -51,14 +53,15 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppDestinations.files.route,
-                builder: (context, state) => const ComingSoonScreen(
-                  feature: 'Files',
-                  description:
-                      'A dual-pane SFTP browser with a transfer queue you can '
-                      'pause, cancel and retry.',
-                  phase: 'Phase 5',
-                  icon: Icons.folder_rounded,
-                ),
+                builder: (context, state) => const SftpScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppDestinations.tunnels.route,
+                builder: (context, state) => const ForwardingScreen(),
               ),
             ],
           ),

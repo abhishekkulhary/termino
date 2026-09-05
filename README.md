@@ -7,9 +7,9 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 4 — input and ergonomics.** Local shells, SSH, a mobile key
-> bar with sticky modifiers, regex search through scrollback, pinch-to-zoom,
-> copy and paste, split panes and clickable URLs. Themes and settings arrive in
+> **Status: Phase 5 — files and tunnels.** Everything above, plus an SFTP
+> browser with a transfer queue you can cancel and retry, and local, remote and
+> dynamic port forwarding with live status. Themes and settings arrive in
 > Phase 6. See [Roadmap](#roadmap).
 
 ---
@@ -142,7 +142,7 @@ Termino explicitly does *not* protect against — is in
 | 2 | Local PTY, shell profiles, `PlatformCapabilities` | **done** |
 | 3 | SSH: auth, host key verification, profiles, jump hosts | **done** |
 | 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | **done** |
-| 5 | SFTP browser and port forwarding | next |
+| 5 | SFTP browser and port forwarding | **done** |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |
 | 7 | Web: reference relay and WebSocket transport | |
 | 8 | Release: signing, icons, store pipelines | |

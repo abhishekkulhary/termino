@@ -12,6 +12,7 @@ import 'package:termino/domain/ssh/host_key_verifier.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
 import 'package:termino/infrastructure/ssh/ssh_backend.dart';
+import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 
 part 'ssh_connector.g.dart';
 
@@ -49,6 +50,25 @@ class SshConnector {
 
   /// Trusted keys, for forgetting one after a mismatch.
   final KnownHostsRepository knownHosts;
+
+  /// Opens an authenticated connection to [host], for SFTP or forwarding.
+  ///
+  /// Separate from the shell's connection on purpose: a transfer that fails,
+  /// or a file browser the user closes, must not disturb a terminal they have
+  /// work in progress in. The cost is a second authentication.
+  Future<SshConnection> open(SshHost host) async {
+    final chain = await _resolveJumpChain(host);
+
+    return await SshConnectionFactory(
+      verifier: verifier,
+      onHostKeyPrompt: prompts.confirmHostKey,
+    ).connect(
+      host: host,
+      prompts: await _promptsFor(host),
+      jumpChain: chain,
+      jumpPrompts: {for (final hop in chain) hop.id: await _promptsFor(hop)},
+    );
+  }
 
   /// Builds a backend ready to [TerminalBackend.start].
   Future<SshBackend> connect(
