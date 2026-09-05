@@ -212,6 +212,72 @@ void main() {
     });
   });
 
+  group('agent forwarding', () {
+    test('off by default, so no agent socket appears remotely', () async {
+      final backend = SshBackend(
+        host: hostProfile(),
+        verifier: verifier,
+        onHostKeyPrompt: acceptUnknown,
+        prompts: keyAuth(),
+      );
+      final transcript = StringBuffer();
+      backend.output.listen(
+        (chunk) => transcript.write(utf8.decode(chunk, allowMalformed: true)),
+      );
+      await backend.start();
+
+      await _runAndWait(
+        backend,
+        transcript,
+        r'echo "sock=[$SSH_AUTH_SOCK]" | tr -d "\n"; echo DO""NE',
+        'DONE',
+      );
+
+      expect(
+        transcript.toString(),
+        contains('sock=[]'),
+        reason: 'forwarding is opt-in; nothing should be forwarded',
+      );
+      await backend.close();
+    });
+
+    test('when enabled, the remote session gets an agent socket', () async {
+      final backend = SshBackend(
+        host: hostProfile(),
+        verifier: verifier,
+        onHostKeyPrompt: acceptUnknown,
+        prompts: SshAuthPrompts(
+          identities: SSHKeyPair.fromPem(TestSshd.clientPrivateKey),
+          agent: SSHKeyPairAgent(
+            SSHKeyPair.fromPem(TestSshd.clientPrivateKey),
+            comment: 'termino-test',
+          ),
+        ),
+      );
+      final transcript = StringBuffer();
+      backend.output.listen(
+        (chunk) => transcript.write(utf8.decode(chunk, allowMalformed: true)),
+      );
+      await backend.start();
+
+      await _runAndWait(
+        backend,
+        transcript,
+        r'echo "sock=[$SSH_AUTH_SOCK]" | tr -d "\n"; echo DO""NE',
+        'DONE',
+      );
+
+      final output = transcript.toString();
+      expect(
+        output,
+        isNot(contains('sock=[]')),
+        reason: 'sshd sets SSH_AUTH_SOCK when forwarding is requested',
+      );
+      expect(output, contains('sock=[/'), reason: 'it is a socket path');
+      await backend.close();
+    });
+  });
+
   group('host key verification', () {
     test('a changed host key blocks the connection', () async {
       // Connect once and trust the ed25519 key.

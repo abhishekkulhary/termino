@@ -26,6 +26,7 @@ _SshHost _$SshHostFromJson(Map<String, dynamic> json) => _SshHost(
   colorValue: (json['colorValue'] as num?)?.toInt(),
   folder: json['folder'] as String?,
   hasSavedPassword: json['hasSavedPassword'] as bool? ?? false,
+  forwardAgent: json['forwardAgent'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$SshHostToJson(_SshHost instance) => <String, dynamic>{
@@ -44,6 +45,7 @@ Map<String, dynamic> _$SshHostToJson(_SshHost instance) => <String, dynamic>{
   'colorValue': instance.colorValue,
   'folder': instance.folder,
   'hasSavedPassword': instance.hasSavedPassword,
+  'forwardAgent': instance.forwardAgent,
 };
 
 const _$SshAuthMethodEnumMap = {

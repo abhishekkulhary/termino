@@ -136,6 +136,78 @@ void main() {
       }
     });
 
+    test('splitting shows a second session beside the active one', () async {
+      final first = await manager().open(backend: MockBackend.text(''));
+      final second = await manager().open(backend: MockBackend.text(''));
+
+      manager().splitWith(first.id);
+
+      expect(read().isSplit, isTrue);
+      expect(read().secondary, same(first));
+      expect(
+        read().activeId,
+        second.id,
+        reason: 'the active pane is unchanged',
+      );
+    });
+
+    test('a session cannot be split against itself', () async {
+      final session = await manager().open(backend: MockBackend.text(''));
+
+      manager().splitWith(session.id);
+
+      expect(
+        read().isSplit,
+        isFalse,
+        reason: 'the same buffer twice is confusing, not useful',
+      );
+    });
+
+    test('splitting with an unknown id does nothing', () async {
+      await manager().open(backend: MockBackend.text(''));
+
+      manager().splitWith('nope');
+
+      expect(read().isSplit, isFalse);
+    });
+
+    test('unsplit returns to one pane without closing anything', () async {
+      final first = await manager().open(backend: MockBackend.text(''));
+      await manager().open(backend: MockBackend.text(''));
+      manager().splitWith(first.id);
+
+      manager().unsplit();
+
+      expect(read().isSplit, isFalse);
+      expect(read().sessions, hasLength(2), reason: 'nothing was closed');
+    });
+
+    test('activating the split session collapses the split', () async {
+      final first = await manager().open(backend: MockBackend.text(''));
+      await manager().open(backend: MockBackend.text(''));
+      manager().splitWith(first.id);
+
+      manager().activate(first.id);
+
+      expect(read().activeId, first.id);
+      expect(
+        read().isSplit,
+        isFalse,
+        reason: 'it would otherwise appear in both panes at once',
+      );
+    });
+
+    test('closing the split session clears the second pane', () async {
+      final first = await manager().open(backend: MockBackend.text(''));
+      await manager().open(backend: MockBackend.text(''));
+      manager().splitWith(first.id);
+
+      await manager().close(first.id);
+
+      expect(read().isSplit, isFalse);
+      expect(read().secondaryId, isNull);
+    });
+
     test('disposing the container disposes open sessions', () async {
       final backend = MockBackend.text('');
       await manager().open(backend: backend);

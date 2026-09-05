@@ -11,6 +11,7 @@ class SshAuthPrompts {
     this.onPasswordRequest,
     this.onUserInfoRequest,
     this.onBanner,
+    this.agent,
   });
 
   /// Private keys to offer, already decrypted. Empty or null skips public key
@@ -28,6 +29,12 @@ class SshAuthPrompts {
   /// one-time codes and PAM prompts. Returns one answer per prompt.
   final Future<List<String>?> Function(SSHUserInfoRequest request)?
   onUserInfoRequest;
+
+  /// An agent to forward to the remote host, when the user asked for it.
+  ///
+  /// Null means no forwarding, which is the default: forwarding lets anyone
+  /// with root on the far end use the key for the life of the session.
+  final SSHAgentHandler? agent;
 
   /// Shows the server's pre-authentication banner.
   ///

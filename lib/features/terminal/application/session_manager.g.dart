@@ -56,7 +56,7 @@ final class SessionManagerProvider
   }
 }
 
-String _$sessionManagerHash() => r'cea7b258aadf55b17f4853e02c7ce338cb168060';
+String _$sessionManagerHash() => r'2ab14a99d775c8443712381556956ddb03b17fde';
 
 /// Owns every open session: creation, activation, closing and disposal.
 ///

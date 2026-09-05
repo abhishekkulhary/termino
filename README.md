@@ -7,11 +7,10 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 3 — SSH.** Connect over SSH with a key or a password, with
-> host key verification that refuses a changed key, saved connections, jump
-> hosts, key generation and import, and `~/.ssh/config` import. Input
-> ergonomics — the key bar, gestures, search, splits — arrive in Phase 4. See
-> [Roadmap](#roadmap).
+> **Status: Phase 4 — input and ergonomics.** Local shells, SSH, a mobile key
+> bar with sticky modifiers, regex search through scrollback, pinch-to-zoom,
+> copy and paste, split panes and clickable URLs. Themes and settings arrive in
+> Phase 6. See [Roadmap](#roadmap).
 
 ---
 
@@ -142,8 +141,8 @@ Termino explicitly does *not* protect against — is in
 | 1 | Terminal core: design system, `TerminalBackend`, session model | **done** |
 | 2 | Local PTY, shell profiles, `PlatformCapabilities` | **done** |
 | 3 | SSH: auth, host key verification, profiles, jump hosts | **done** |
-| 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | next |
-| 5 | SFTP browser and port forwarding | |
+| 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | **done** |
+| 5 | SFTP browser and port forwarding | next |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |
 | 7 | Web: reference relay and WebSocket transport | |
 | 8 | Release: signing, icons, store pipelines | |

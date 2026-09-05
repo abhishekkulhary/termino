@@ -15,7 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SessionsState implements DiagnosticableTreeMixin {
 
- List<TerminalSession> get sessions; String? get activeId;
+ List<TerminalSession> get sessions; String? get activeId;/// The session shown beside the active one, when the window is split.
+///
+/// Null means a single pane. Only ever set on window sizes that can
+/// actually show two, which the UI enforces — a split on a phone would
+/// leave two terminals too narrow to use.
+ String? get secondaryId;
 /// Create a copy of SessionsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,26 +33,26 @@ void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   final _this = this as SessionsState;
   properties
     ..add(DiagnosticsProperty('type', 'SessionsState'))
-    ..add(DiagnosticsProperty('sessions', _this.sessions))..add(DiagnosticsProperty('activeId', _this.activeId));
+    ..add(DiagnosticsProperty('sessions', _this.sessions))..add(DiagnosticsProperty('activeId', _this.activeId))..add(DiagnosticsProperty('secondaryId', _this.secondaryId));
 }
 
 @override
 bool operator ==(Object other) {
   final _this = this as SessionsState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionsState&&const DeepCollectionEquality().equals(other.sessions, _this.sessions)&&(identical(other.activeId, _this.activeId) || other.activeId == _this.activeId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionsState&&const DeepCollectionEquality().equals(other.sessions, _this.sessions)&&(identical(other.activeId, _this.activeId) || other.activeId == _this.activeId)&&(identical(other.secondaryId, _this.secondaryId) || other.secondaryId == _this.secondaryId));
 }
 
 
 @override
 int get hashCode {
   final _this = this as SessionsState;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.sessions),_this.activeId);
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.sessions),_this.activeId,_this.secondaryId);
 }
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   final _this = this as SessionsState;
-  return 'SessionsState(sessions: ${_this.sessions}, activeId: ${_this.activeId})';
+  return 'SessionsState(sessions: ${_this.sessions}, activeId: ${_this.activeId}, secondaryId: ${_this.secondaryId})';
 }
 
 
@@ -58,7 +63,7 @@ abstract mixin class $SessionsStateCopyWith<$Res>  {
   factory $SessionsStateCopyWith(SessionsState value, $Res Function(SessionsState) _then) = _$SessionsStateCopyWithImpl;
 @useResult
 $Res call({
- List<TerminalSession> sessions, String? activeId
+ List<TerminalSession> sessions, String? activeId, String? secondaryId
 });
 
 
@@ -75,10 +80,11 @@ class _$SessionsStateCopyWithImpl<$Res>
 
 /// Create a copy of SessionsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessions = null,Object? activeId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessions = null,Object? activeId = freezed,Object? secondaryId = freezed,}) {
   return _then(SessionsState(
 sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<TerminalSession>,activeId: freezed == activeId ? _self.activeId : activeId // ignore: cast_nullable_to_non_nullable
+as String?,secondaryId: freezed == secondaryId ? _self.secondaryId : secondaryId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -164,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<TerminalSession> sessions,  String? activeId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<TerminalSession> sessions,  String? activeId,  String? secondaryId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionsState() when $default != null:
-return $default(_that.sessions,_that.activeId);case _:
+return $default(_that.sessions,_that.activeId,_that.secondaryId);case _:
   return orElse();
 
 }
@@ -185,10 +191,10 @@ return $default(_that.sessions,_that.activeId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<TerminalSession> sessions,  String? activeId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<TerminalSession> sessions,  String? activeId,  String? secondaryId)  $default,) {final _that = this;
 switch (_that) {
 case _SessionsState():
-return $default(_that.sessions,_that.activeId);case _:
+return $default(_that.sessions,_that.activeId,_that.secondaryId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +211,10 @@ return $default(_that.sessions,_that.activeId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<TerminalSession> sessions,  String? activeId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<TerminalSession> sessions,  String? activeId,  String? secondaryId)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionsState() when $default != null:
-return $default(_that.sessions,_that.activeId);case _:
+return $default(_that.sessions,_that.activeId,_that.secondaryId);case _:
   return null;
 
 }
@@ -220,7 +226,7 @@ return $default(_that.sessions,_that.activeId);case _:
 
 
 class _SessionsState extends SessionsState with DiagnosticableTreeMixin {
-  const _SessionsState({ List<TerminalSession> sessions = const <TerminalSession>[], this.activeId}): _sessions = sessions,super._();
+  const _SessionsState({ List<TerminalSession> sessions = const <TerminalSession>[], this.activeId, this.secondaryId}): _sessions = sessions,super._();
   
 
  final  List<TerminalSession> _sessions;
@@ -231,6 +237,12 @@ class _SessionsState extends SessionsState with DiagnosticableTreeMixin {
 }
 
 @override final  String? activeId;
+/// The session shown beside the active one, when the window is split.
+///
+/// Null means a single pane. Only ever set on window sizes that can
+/// actually show two, which the UI enforces — a split on a phone would
+/// leave two terminals too narrow to use.
+@override final  String? secondaryId;
 
 /// Create a copy of SessionsState
 /// with the given fields replaced by the non-null parameter values.
@@ -243,23 +255,23 @@ _$SessionsStateCopyWith<_SessionsState> get copyWith => __$SessionsStateCopyWith
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     properties
     ..add(DiagnosticsProperty('type', 'SessionsState'))
-    ..add(DiagnosticsProperty('sessions', sessions))..add(DiagnosticsProperty('activeId', activeId));
+    ..add(DiagnosticsProperty('sessions', sessions))..add(DiagnosticsProperty('activeId', activeId))..add(DiagnosticsProperty('secondaryId', secondaryId));
 }
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionsState&&const DeepCollectionEquality().equals(other.sessions, _sessions)&&(identical(other.activeId, activeId) || other.activeId == activeId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionsState&&const DeepCollectionEquality().equals(other.sessions, _sessions)&&(identical(other.activeId, activeId) || other.activeId == activeId)&&(identical(other.secondaryId, secondaryId) || other.secondaryId == secondaryId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_sessions),activeId);
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_sessions),activeId,secondaryId);
 }
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-    return 'SessionsState(sessions: $sessions, activeId: $activeId)';
+    return 'SessionsState(sessions: $sessions, activeId: $activeId, secondaryId: $secondaryId)';
 }
 
 
@@ -270,7 +282,7 @@ abstract mixin class _$SessionsStateCopyWith<$Res> implements $SessionsStateCopy
   factory _$SessionsStateCopyWith(_SessionsState value, $Res Function(_SessionsState) _then) = __$SessionsStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<TerminalSession> sessions, String? activeId
+ List<TerminalSession> sessions, String? activeId, String? secondaryId
 });
 
 
@@ -287,10 +299,11 @@ class __$SessionsStateCopyWithImpl<$Res>
 
 /// Create a copy of SessionsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessions = null,Object? activeId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessions = null,Object? activeId = freezed,Object? secondaryId = freezed,}) {
   return _then(_SessionsState(
 sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<TerminalSession>,activeId: freezed == activeId ? _self.activeId : activeId // ignore: cast_nullable_to_non_nullable
+as String?,secondaryId: freezed == secondaryId ? _self.secondaryId : secondaryId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

@@ -20,6 +20,13 @@ abstract class SessionsState with _$SessionsState {
   const factory({
     @Default(<TerminalSession>[]) List<TerminalSession> sessions,
     String? activeId,
+
+    /// The session shown beside the active one, when the window is split.
+    ///
+    /// Null means a single pane. Only ever set on window sizes that can
+    /// actually show two, which the UI enforces — a split on a phone would
+    /// leave two terminals too narrow to use.
+    String? secondaryId,
   }) = _SessionsState;
 
   const new _();
@@ -33,6 +40,19 @@ abstract class SessionsState with _$SessionsState {
     }
     return null;
   }
+
+  /// The session in the second pane, or null when not split.
+  TerminalSession? get secondary {
+    final id = secondaryId;
+    if (id == null) return null;
+    for (final session in sessions) {
+      if (session.id == id) return session;
+    }
+    return null;
+  }
+
+  /// Whether two panes are showing.
+  bool get isSplit => secondary != null;
 
   /// Whether any session is open.
   bool get isEmpty => sessions.isEmpty;
@@ -97,8 +117,26 @@ class SessionManager extends _$SessionManager {
   /// Brings the session with [id] to the front. Unknown ids are ignored.
   void activate(String id) {
     if (!state.sessions.any((session) => session.id == id)) return;
+    // Activating the session already in the second pane would show it twice.
+    if (state.secondaryId == id) {
+      state = state.copyWith(activeId: id, secondaryId: null);
+      return;
+    }
     state = state.copyWith(activeId: id);
   }
+
+  /// Shows the session with [id] in a second pane beside the active one.
+  ///
+  /// Ignored if it is already the active session: splitting a terminal against
+  /// itself shows the same buffer twice, which is confusing rather than useful.
+  void splitWith(String id) {
+    if (id == state.activeId) return;
+    if (!state.sessions.any((session) => session.id == id)) return;
+    state = state.copyWith(secondaryId: id);
+  }
+
+  /// Returns to a single pane.
+  void unsplit() => state = state.copyWith(secondaryId: null);
 
   /// Closes and disposes the session with [id].
   ///
@@ -119,7 +157,12 @@ class SessionManager extends _$SessionManager {
     }
 
     _owned.remove(session);
-    state = SessionsState(sessions: remaining, activeId: nextActive);
+    state = SessionsState(
+      sessions: remaining,
+      activeId: nextActive,
+      // A closed session must not stay in the second pane.
+      secondaryId: state.secondaryId == id ? null : state.secondaryId,
+    );
     await session.dispose();
   }
 

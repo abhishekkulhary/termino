@@ -151,6 +151,21 @@ class $SshHostRowsTable extends SshHostRows
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _forwardAgentMeta = const VerificationMeta(
+    'forwardAgent',
+  );
+  @override
+  late final GeneratedColumn<bool> forwardAgent = GeneratedColumn<bool>(
+    'forward_agent',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("forward_agent" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -166,6 +181,7 @@ class $SshHostRowsTable extends SshHostRows
     colorValue,
     folder,
     hasSavedPassword,
+    forwardAgent,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -277,6 +293,15 @@ class $SshHostRowsTable extends SshHostRows
         ),
       );
     }
+    if (data.containsKey('forward_agent')) {
+      context.handle(
+        _forwardAgentMeta,
+        forwardAgent.isAcceptableOrUnknown(
+          data['forward_agent']!,
+          _forwardAgentMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -338,6 +363,10 @@ class $SshHostRowsTable extends SshHostRows
         DriftSqlType.bool,
         data['${effectivePrefix}has_saved_password'],
       )!,
+      forwardAgent: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}forward_agent'],
+      )!,
     );
   }
 
@@ -386,6 +415,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
 
   /// Whether a password for this host exists in the keystore.
   final bool hasSavedPassword;
+
+  /// Whether to forward the key to the remote host.
+  final bool forwardAgent;
   const SshHostRow({
     required this.id,
     required this.label,
@@ -400,6 +432,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     this.colorValue,
     this.folder,
     required this.hasSavedPassword,
+    required this.forwardAgent,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -427,6 +460,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       map['folder'] = Variable<String>(folder);
     }
     map['has_saved_password'] = Variable<bool>(hasSavedPassword);
+    map['forward_agent'] = Variable<bool>(forwardAgent);
     return map;
   }
 
@@ -455,6 +489,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           ? const Value.absent()
           : Value(folder),
       hasSavedPassword: Value(hasSavedPassword),
+      forwardAgent: Value(forwardAgent),
     );
   }
 
@@ -477,6 +512,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       colorValue: serializer.fromJson<int?>(json['colorValue']),
       folder: serializer.fromJson<String?>(json['folder']),
       hasSavedPassword: serializer.fromJson<bool>(json['hasSavedPassword']),
+      forwardAgent: serializer.fromJson<bool>(json['forwardAgent']),
     );
   }
   @override
@@ -496,6 +532,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       'colorValue': serializer.toJson<int?>(colorValue),
       'folder': serializer.toJson<String?>(folder),
       'hasSavedPassword': serializer.toJson<bool>(hasSavedPassword),
+      'forwardAgent': serializer.toJson<bool>(forwardAgent),
     };
   }
 
@@ -513,6 +550,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     Value<int?> colorValue = const Value.absent(),
     Value<String?> folder = const Value.absent(),
     bool? hasSavedPassword,
+    bool? forwardAgent,
   }) => SshHostRow(
     id: id ?? this.id,
     label: label ?? this.label,
@@ -529,6 +567,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     colorValue: colorValue.present ? colorValue.value : this.colorValue,
     folder: folder.present ? folder.value : this.folder,
     hasSavedPassword: hasSavedPassword ?? this.hasSavedPassword,
+    forwardAgent: forwardAgent ?? this.forwardAgent,
   );
   SshHostRow copyWithCompanion(SshHostRowsCompanion data) {
     return SshHostRow(
@@ -559,6 +598,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       hasSavedPassword: data.hasSavedPassword.present
           ? data.hasSavedPassword.value
           : this.hasSavedPassword,
+      forwardAgent: data.forwardAgent.present
+          ? data.forwardAgent.value
+          : this.forwardAgent,
     );
   }
 
@@ -577,7 +619,8 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           ..write('startupCommand: $startupCommand, ')
           ..write('colorValue: $colorValue, ')
           ..write('folder: $folder, ')
-          ..write('hasSavedPassword: $hasSavedPassword')
+          ..write('hasSavedPassword: $hasSavedPassword, ')
+          ..write('forwardAgent: $forwardAgent')
           ..write(')'))
         .toString();
   }
@@ -597,6 +640,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     colorValue,
     folder,
     hasSavedPassword,
+    forwardAgent,
   );
   @override
   bool operator ==(Object other) =>
@@ -614,7 +658,8 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           other.startupCommand == this.startupCommand &&
           other.colorValue == this.colorValue &&
           other.folder == this.folder &&
-          other.hasSavedPassword == this.hasSavedPassword);
+          other.hasSavedPassword == this.hasSavedPassword &&
+          other.forwardAgent == this.forwardAgent);
 }
 
 class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
@@ -631,6 +676,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
   final Value<int?> colorValue;
   final Value<String?> folder;
   final Value<bool> hasSavedPassword;
+  final Value<bool> forwardAgent;
   final Value<int> rowid;
   const SshHostRowsCompanion({
     this.id = const Value.absent(),
@@ -646,6 +692,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     this.colorValue = const Value.absent(),
     this.folder = const Value.absent(),
     this.hasSavedPassword = const Value.absent(),
+    this.forwardAgent = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SshHostRowsCompanion.insert({
@@ -662,6 +709,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     this.colorValue = const Value.absent(),
     this.folder = const Value.absent(),
     this.hasSavedPassword = const Value.absent(),
+    this.forwardAgent = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        label = Value(label),
@@ -681,6 +729,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     Expression<int>? colorValue,
     Expression<String>? folder,
     Expression<bool>? hasSavedPassword,
+    Expression<bool>? forwardAgent,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -697,6 +746,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
       if (colorValue != null) 'color_value': colorValue,
       if (folder != null) 'folder': folder,
       if (hasSavedPassword != null) 'has_saved_password': hasSavedPassword,
+      if (forwardAgent != null) 'forward_agent': forwardAgent,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -715,6 +765,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     Value<int?>? colorValue,
     Value<String?>? folder,
     Value<bool>? hasSavedPassword,
+    Value<bool>? forwardAgent,
     Value<int>? rowid,
   }) {
     return SshHostRowsCompanion(
@@ -731,6 +782,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
       colorValue: colorValue ?? this.colorValue,
       folder: folder ?? this.folder,
       hasSavedPassword: hasSavedPassword ?? this.hasSavedPassword,
+      forwardAgent: forwardAgent ?? this.forwardAgent,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -777,6 +829,9 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     if (hasSavedPassword.present) {
       map['has_saved_password'] = Variable<bool>(hasSavedPassword.value);
     }
+    if (forwardAgent.present) {
+      map['forward_agent'] = Variable<bool>(forwardAgent.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -799,6 +854,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
           ..write('colorValue: $colorValue, ')
           ..write('folder: $folder, ')
           ..write('hasSavedPassword: $hasSavedPassword, ')
+          ..write('forwardAgent: $forwardAgent, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1951,6 +2007,7 @@ typedef $$SshHostRowsTableCreateCompanionBuilder =
       Value<int?> colorValue,
       Value<String?> folder,
       Value<bool> hasSavedPassword,
+      Value<bool> forwardAgent,
       Value<int> rowid,
     });
 typedef $$SshHostRowsTableUpdateCompanionBuilder =
@@ -1968,6 +2025,7 @@ typedef $$SshHostRowsTableUpdateCompanionBuilder =
       Value<int?> colorValue,
       Value<String?> folder,
       Value<bool> hasSavedPassword,
+      Value<bool> forwardAgent,
       Value<int> rowid,
     });
 
@@ -2042,6 +2100,11 @@ class $$SshHostRowsTableFilterComposer
 
   ColumnFilters<bool> get hasSavedPassword => $composableBuilder(
     column: $table.hasSavedPassword,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get forwardAgent => $composableBuilder(
+    column: $table.forwardAgent,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2119,6 +2182,11 @@ class $$SshHostRowsTableOrderingComposer
     column: $table.hasSavedPassword,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get forwardAgent => $composableBuilder(
+    column: $table.forwardAgent,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SshHostRowsTableAnnotationComposer
@@ -2182,6 +2250,11 @@ class $$SshHostRowsTableAnnotationComposer
     column: $table.hasSavedPassword,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get forwardAgent => $composableBuilder(
+    column: $table.forwardAgent,
+    builder: (column) => column,
+  );
 }
 
 class $$SshHostRowsTableTableManager
@@ -2228,6 +2301,7 @@ class $$SshHostRowsTableTableManager
                 Value<int?> colorValue = const Value.absent(),
                 Value<String?> folder = const Value.absent(),
                 Value<bool> hasSavedPassword = const Value.absent(),
+                Value<bool> forwardAgent = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SshHostRowsCompanion(
                 id: id,
@@ -2243,6 +2317,7 @@ class $$SshHostRowsTableTableManager
                 colorValue: colorValue,
                 folder: folder,
                 hasSavedPassword: hasSavedPassword,
+                forwardAgent: forwardAgent,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2260,6 +2335,7 @@ class $$SshHostRowsTableTableManager
                 Value<int?> colorValue = const Value.absent(),
                 Value<String?> folder = const Value.absent(),
                 Value<bool> hasSavedPassword = const Value.absent(),
+                Value<bool> forwardAgent = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SshHostRowsCompanion.insert(
                 id: id,
@@ -2275,6 +2351,7 @@ class $$SshHostRowsTableTableManager
                 colorValue: colorValue,
                 folder: folder,
                 hasSavedPassword: hasSavedPassword,
+                forwardAgent: forwardAgent,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

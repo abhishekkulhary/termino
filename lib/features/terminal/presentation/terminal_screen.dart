@@ -8,6 +8,7 @@ import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/local_shell_notice.dart';
 import 'package:termino/features/terminal/presentation/terminal_pane.dart';
+import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/tokens.dart';
 
 /// The terminal workspace: a tab strip and the active session's pane.
@@ -29,27 +30,14 @@ class TerminalScreen extends ConsumerWidget {
         _TabStrip(
           sessions: sessions.sessions,
           activeId: sessions.activeId,
+          secondaryId: sessions.secondaryId,
           onSelect: ref.read(sessionManagerProvider.notifier).activate,
           onClose: (id) =>
               unawaited(ref.read(sessionManagerProvider.notifier).close(id)),
+          onSplitWith: ref.read(sessionManagerProvider.notifier).splitWith,
+          onUnsplit: ref.read(sessionManagerProvider.notifier).unsplit,
         ),
-        Expanded(
-          child: IndexedStack(
-            // Every session stays mounted so that switching tabs never
-            // interrupts a running command or discards scrollback.
-            index: sessions.sessions.indexWhere(
-              (session) => session.id == sessions.activeId,
-            ),
-            children: [
-              for (final session in sessions.sessions)
-                TerminalPane(
-                  key: ValueKey(session.id),
-                  session: session,
-                  autofocus: session.id == sessions.activeId,
-                ),
-            ],
-          ),
-        ),
+        Expanded(child: _Panes(sessions: sessions)),
       ],
     );
   }
@@ -89,18 +77,74 @@ class _NewSessionButton extends ConsumerWidget {
   }
 }
 
+/// Shows the active session, or two side by side when the window is split.
+///
+/// Every session stays mounted whichever pane it is in, so switching tabs never
+/// interrupts a running command or discards scrollback.
+class _Panes extends ConsumerWidget {
+  const new({required this.sessions});
+
+  final SessionsState sessions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final size = Breakpoints.ofContext(context);
+    final secondary = size.supportsSplitPanes ? sessions.secondary : null;
+
+    final stack = IndexedStack(
+      index: sessions.sessions.indexWhere(
+        (session) => session.id == sessions.activeId,
+      ),
+      children: [
+        for (final session in sessions.sessions)
+          TerminalPane(
+            key: ValueKey(session.id),
+            session: session,
+            autofocus: session.id == sessions.activeId,
+          ),
+      ],
+    );
+
+    if (secondary == null) return stack;
+
+    return Row(
+      children: [
+        Expanded(child: stack),
+        VerticalDivider(
+          width: 1,
+          thickness: 1,
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+        Expanded(
+          child: TerminalPane(
+            key: ValueKey('split-${secondary.id}'),
+            session: secondary,
+            autofocus: false,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _TabStrip extends StatelessWidget {
   const new({
     required this.sessions,
     required this.activeId,
+    required this.secondaryId,
     required this.onSelect,
     required this.onClose,
+    required this.onSplitWith,
+    required this.onUnsplit,
   });
 
   final List<TerminalSession> sessions;
   final String? activeId;
+  final String? secondaryId;
   final ValueChanged<String> onSelect;
   final ValueChanged<String> onClose;
+  final ValueChanged<String> onSplitWith;
+  final VoidCallback onUnsplit;
 
   @override
   Widget build(BuildContext context) {
@@ -125,8 +169,14 @@ class _TabStrip extends StatelessWidget {
                 return _Tab(
                   session: session,
                   selected: session.id == activeId,
+                  inSplit: session.id == secondaryId,
+                  canSplit:
+                      Breakpoints.ofContext(context).supportsSplitPanes &&
+                      session.id != activeId,
                   onTap: () => onSelect(session.id),
                   onClose: () => onClose(session.id),
+                  onSplit: () => onSplitWith(session.id),
+                  onUnsplit: onUnsplit,
                 );
               },
             ),
@@ -143,14 +193,43 @@ class _Tab extends StatelessWidget {
   const new({
     required this.session,
     required this.selected,
+    required this.inSplit,
+    required this.canSplit,
     required this.onTap,
     required this.onClose,
+    required this.onSplit,
+    required this.onUnsplit,
   });
 
   final TerminalSession session;
   final bool selected;
+  final bool inSplit;
+  final bool canSplit;
   final VoidCallback onTap;
   final VoidCallback onClose;
+  final VoidCallback onSplit;
+  final VoidCallback onUnsplit;
+
+  VoidCallback _showMenu(BuildContext context) => () {
+    unawaited(
+      showMenu<void>(
+        context: context,
+        position: const RelativeRect.fromLTRB(0, 40, 0, 0),
+        items: [
+          if (canSplit)
+            PopupMenuItem<void>(
+              onTap: onSplit,
+              child: const Text('Open beside'),
+            ),
+          if (inSplit)
+            PopupMenuItem<void>(
+              onTap: onUnsplit,
+              child: const Text('Close second pane'),
+            ),
+        ],
+      ),
+    );
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -161,17 +240,20 @@ class _Tab extends StatelessWidget {
       builder: (context, title, _) {
         return InkWell(
           onTap: onTap,
+          onSecondaryTap: canSplit || inSplit ? _showMenu(context) : null,
           child: Container(
             constraints: const BoxConstraints(maxWidth: 220),
             padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
             decoration: BoxDecoration(
-              color: selected
+              color: selected || inSplit
                   ? theme.colorScheme.surfaceContainerHighest
                   : Colors.transparent,
               border: Border(
                 bottom: BorderSide(
                   color: selected
                       ? theme.colorScheme.primary
+                      : inSplit
+                      ? theme.colorScheme.secondary
                       : Colors.transparent,
                   width: 2,
                 ),
@@ -180,6 +262,17 @@ class _Tab extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (inSplit) ...[
+                  Tooltip(
+                    message: 'Shown in the second pane',
+                    child: Icon(
+                      Icons.vertical_split_rounded,
+                      size: 12,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: Spacing.xs),
+                ],
                 Flexible(
                   child: Text(
                     title,

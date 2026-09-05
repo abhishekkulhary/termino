@@ -60,6 +60,14 @@ abstract class SshHost with _$SshHost {
 
     /// Whether a remembered password exists in the keystore.
     @Default(false) bool hasSavedPassword,
+
+    /// Whether to forward this connection's key to the remote host, so that
+    /// it can authenticate onward without the key ever leaving this device.
+    ///
+    /// Off by default. Forwarding lets anyone with root on the remote host use
+    /// the key for as long as the session lasts, which is a real cost and one
+    /// worth opting into deliberately.
+    @Default(false) bool forwardAgent,
   }) = _SshHost;
 
   const new _();

@@ -65,6 +65,7 @@ class DriftSshHostRepository implements SshHostRepository {
     colorValue: row.colorValue,
     folder: row.folder,
     hasSavedPassword: row.hasSavedPassword,
+    forwardAgent: row.forwardAgent,
   );
 
   static SshHostRow _toRow(SshHost host) => SshHostRow(
@@ -81,6 +82,7 @@ class DriftSshHostRepository implements SshHostRepository {
     colorValue: host.colorValue,
     folder: host.folder,
     hasSavedPassword: host.hasSavedPassword,
+    forwardAgent: host.forwardAgent,
   );
 
   static List<SshAuthMethod> _decodeAuthMethods(String encoded) {

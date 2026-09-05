@@ -101,10 +101,18 @@ class SshConnector {
 
   Future<SshAuthPrompts> _promptsFor(SshHost host) async {
     final methods = host.effectiveAuthMethods;
+    final identities = methods.contains(SshAuthMethod.publicKey)
+        ? await _loadIdentity(host)
+        : null;
 
     return SshAuthPrompts(
-      identities: methods.contains(SshAuthMethod.publicKey)
-          ? await _loadIdentity(host)
+      identities: identities,
+      // Only this host's own identity is forwarded, not every key the user
+      // owns. OpenSSH forwards the whole agent; narrowing it means a
+      // compromised host can misuse one key rather than all of them, and the
+      // wider behaviour has no use case here that this does not cover.
+      agent: host.forwardAgent && identities != null && identities.isNotEmpty
+          ? SSHKeyPairAgent(identities, comment: 'termino')
           : null,
       onPasswordRequest: methods.contains(SshAuthMethod.password)
           ? () => _password(host)

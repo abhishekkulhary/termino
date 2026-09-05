@@ -179,6 +179,7 @@ class SshBackend extends TerminalBackendBase {
       onPasswordRequest: prompts.onPasswordRequest,
       onUserInfoRequest: prompts.onUserInfoRequest,
       onUserauthBanner: prompts.onBanner,
+      agentHandler: prompts.agent,
       keepAliveInterval: target.keepAliveInterval,
       onVerifyHostKey: (type, fingerprint) =>
           _verifyHostKey(target, type, fingerprint),

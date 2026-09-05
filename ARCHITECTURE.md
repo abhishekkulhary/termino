@@ -37,6 +37,7 @@ lib/
     logging/            redacting logger (planned, Phase 3)
   domain/
     backends/           TerminalBackend, its state machine and failure taxonomy
+    terminal/           scrollback search, URL detection
     entities/           SshHost, SshIdentity, KnownHost, ShellProfile
     repositories/       abstract interfaces only
     ssh/                host key verifier, known_hosts and ssh_config parsers
@@ -50,8 +51,10 @@ lib/
     storage/            drift database, keystore adapter, repositories
   features/
     terminal/
-      application/      TerminalSession, SessionManager, demo fixture
-      presentation/     TerminalPane (the only importer of xterm), TerminalScreen
+      application/      TerminalSession, SessionManager, search, sticky
+                        modifiers, key bar layout, reconnect policy
+      presentation/     TerminalPane (the only importer of xterm),
+                        TerminalScreen, KeyAccessoryBar, TerminalSearchBar
     placeholder/        honest stand-ins for features not yet built
     hosts/            host list and editor, host key dialogs, connector
     identities/       key list, generation and import
@@ -61,6 +64,23 @@ lib/
     widgets/            AdaptiveScaffold
 tools/relay/            reference WebSocket→TCP relay (planned, Phase 7)
 ```
+
+### Input, and the rule about gestures
+
+Two constraints shape everything in `features/terminal/presentation`:
+
+* **No gesture may accidentally send input.** Pinch-to-zoom is a separate
+  recogniser wrapped around the terminal that ignores anything with fewer than
+  two pointers, so a tap, a drag and a single-finger scroll all still belong to
+  `xterm`.
+* **A modifier whose state you cannot see is worse than no modifier.** The
+  accessory bar's sticky modifiers show armed and locked distinctly, in colour
+  *and* as a semantics value, so the state is not conveyed by colour alone.
+
+Search is ours — `xterm` has none. It flattens the buffer into one string with
+a map back to cells, which is what lets a match run across a wrapped line, and
+paints results through `xterm`'s own highlight anchors so they follow the text
+as it scrolls.
 
 ### Containment of `xterm`
 

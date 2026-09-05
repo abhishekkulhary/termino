@@ -39,6 +39,7 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
   late String? _identityId = widget.host?.identityId;
   late String? _jumpHostId = widget.host?.jumpHostId;
   late int _keepAliveSeconds = widget.host?.keepAliveInterval.inSeconds ?? 30;
+  late bool _forwardAgent = widget.host?.forwardAgent ?? false;
 
   @override
   void dispose() {
@@ -73,6 +74,7 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
       colorValue: widget.host?.colorValue,
       folder: widget.host?.folder,
       hasSavedPassword: widget.host?.hasSavedPassword ?? false,
+      forwardAgent: _forwardAgent,
     );
 
     await ref.read(sshHostRepositoryProvider).save(host);
@@ -172,6 +174,18 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
                   ),
               ],
               onChanged: (value) => setState(() => _identityId = value),
+            ),
+            const SizedBox(height: Spacing.lg),
+            SwitchListTile(
+              value: _forwardAgent,
+              onChanged: (value) => setState(() => _forwardAgent = value),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Forward this key'),
+              subtitle: const Text(
+                'Lets the remote host authenticate onward with this key. The '
+                'key never leaves this device, but anyone with root there can '
+                'use it while the session lasts.',
+              ),
             ),
             const SizedBox(height: Spacing.xl),
             const _SectionLabel('Connection'),

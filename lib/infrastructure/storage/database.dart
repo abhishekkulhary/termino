@@ -50,6 +50,9 @@ class SshHostRows extends Table {
   BoolColumn get hasSavedPassword =>
       boolean().withDefault(const Constant(false))();
 
+  /// Whether to forward the key to the remote host.
+  BoolColumn get forwardAgent => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -132,10 +135,15 @@ class TerminoDatabase extends _$TerminoDatabase {
   new withExecutor(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(sshHostRows, sshHostRows.forwardAgent);
+      }
+    },
     beforeOpen: (details) async {
       // Foreign keys are off by default in SQLite and must be enabled per
       // connection, not once per database.
