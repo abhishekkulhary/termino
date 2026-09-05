@@ -5,6 +5,55 @@ why — so that a future reader can tell a deliberate choice from an accident.
 
 ---
 
+## 2026-09-05 — Backend output is a single-subscription stream
+
+**Decision.** `TerminalBackend.output` is single-subscription, not broadcast.
+Anything else that wants to observe output — session recording in Phase 6 —
+taps the session downstream rather than the backend.
+
+**Why.** A broadcast stream cannot apply backpressure: pausing one listener does
+not pause the source. With a broadcast stream a process writing faster than the
+terminal can render grows an unbounded queue in memory, which is precisely the
+failure the performance targets exist to prevent. One subscriber means a paused
+terminal pauses the socket. This constraint propagates: the coalescing sink
+forwards pause and resume to its source, and `TerminalBackendBase.pipeOutput`
+wires the two together.
+
+---
+
+## 2026-09-05 — `ConnectionState` renamed to `BackendConnectionState`
+
+**Decision.** The backend lifecycle enum from the brief is called
+`BackendConnectionState`.
+
+**Why.** Flutter already exports a `ConnectionState`, from `AsyncSnapshot`, and
+presentation code uses it constantly. Two identically named enums, one of them
+imported implicitly through `package:flutter/material.dart`, is an import shadow
+waiting to confuse someone. The extra word costs nothing.
+
+---
+
+## 2026-09-05 — Fonts are bundled, not borrowed from the system
+
+**Decision.** Ship JetBrains Mono patched by Nerd Fonts — four faces, about
+10 MB — in `assets/fonts/`, and load them in golden tests too.
+
+**Alternatives.** Rely on the system monospace font; ship unpatched JetBrains
+Mono (roughly 800 KB for four faces).
+
+**Why.** Terminal output is full of box drawing, block elements and Powerline
+separators. A system monospace font that lacks them renders tofu in the middle
+of `htop`, and which glyphs are present varies by platform and by OS version —
+so the app would look broken on some machines and fine on others, unpredictably.
+10 MB is a real cost and worth it for a terminal.
+
+Loading the real fonts in golden tests matters for the same reason: `flutter
+test` substitutes a placeholder that draws every glyph as a box, and boxes are
+exactly what a *missing* glyph looks like. A golden rendered with the
+placeholder would prove nothing about the thing most worth proving.
+
+---
+
 ## 2026-09-05 — `custom_lint` dropped; `riverpod_lint` kept
 
 **Decision.** Use `riverpod_lint` 3.1.9 without `custom_lint`.

@@ -27,26 +27,42 @@ relay.
 This is the one architectural rule enforced mechanically, by
 [`tool/check_domain_purity.sh`](tool/check_domain_purity.sh) in CI.
 
+Directories marked *planned* arrive in the phase noted.
+
 ```
 lib/
-  app/                  bootstrap, router, theme, DI overrides
+  app/                  app root, router, navigation destinations
   core/
-    capabilities/       PlatformCapabilities and the conditional PTY seam
-    logging/            redacting logger
-    result/             Result types and the failure taxonomy
+    capabilities/       the conditional PTY seam; PlatformCapabilities (Phase 2)
+    logging/            redacting logger (planned, Phase 3)
   domain/
-    entities/           Host, Identity, KnownHost, ShellProfile, PortForward, Snippet
-    backends/           TerminalBackend — the central abstraction
-    repositories/       abstract interfaces only
+    backends/           TerminalBackend, its state machine and failure taxonomy
+    entities/           Host, Identity, KnownHost, ShellProfile (planned, Phase 3)
+    repositories/       abstract interfaces only (planned, Phase 3)
   infrastructure/
-    backends/           local_pty_backend.dart, ssh_backend.dart, mock_backend.dart
-    ssh/                client factory, auth strategies, host key verifier, sockets
-    storage/            drift database, secure storage adapters
+    backends/           mock_backend.dart; local_pty and ssh follow in Phases 2-3
+    terminal/           output_batcher.dart — the coalescing sink
+    ssh/                client factory, auth, host key verifier (planned, Phase 3)
+    storage/            drift database, secure storage (planned, Phase 3)
   features/
-    terminal/ hosts/ identities/ sftp/ forwarding/ settings/
-  shared/               design system: tokens, widgets, icons
-tools/relay/            reference WebSocket→TCP relay for the web build
+    terminal/
+      application/      TerminalSession, SessionManager, demo fixture
+      presentation/     TerminalPane (the only importer of xterm), TerminalScreen
+    placeholder/        honest stand-ins for features not yet built
+    hosts/ identities/ sftp/ forwarding/ settings/   (planned)
+  shared/
+    design/             tokens, breakpoints, app theme, terminal palettes
+    widgets/            AdaptiveScaffold
+tools/relay/            reference WebSocket→TCP relay (planned, Phase 7)
 ```
+
+### Containment of `xterm`
+
+`features/terminal/presentation/terminal_pane.dart` is the **only** file in the
+app that imports `xterm`. Everything else talks to `TerminalSession`. Given that
+xterm.dart has not had a release since February 2024, this is deliberate
+insurance: swapping or vendoring the emulator changes one file rather than the
+whole UI.
 
 ---
 
@@ -77,8 +93,20 @@ abstract class TerminalBackend {
 | `MockBackend` | fixtures | everywhere; used by tests and the widget catalogue |
 
 A `TerminalSession` is a `TerminalBackend` plus an `xterm` `Terminal` plus
-metadata. The wiring is deliberately small: backend output → `terminal.write`,
-`terminal.onOutput` → `backend.write`, `terminal.onResize` → `backend.resize`.
+metadata:
+
+```text
+backend.output ─▶ batcher ─▶ UTF-8 decoder ─▶ terminal.write
+terminal.onOutput ─▶ UTF-8 encoder ─▶ backend.write
+terminal.onResize ─▶ backend.resize
+terminal.onTitleChange ─▶ session title
+```
+
+Decoding sits **downstream of batching and is stateful**, because a UTF-8
+sequence is routinely split across two reads; decoding each chunk independently
+would render replacement characters in place of ordinary letters. There is a
+test for exactly that.
+
 `SessionManager` owns the list of sessions, tabs and splits, restores layout on
 relaunch, and disposes backends deterministically.
 

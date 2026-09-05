@@ -7,8 +7,9 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 0 — scaffold.** The project builds on all targets and the
-> dependency stack is verified, but there is no usable functionality yet. See
+> **Status: Phase 1 — terminal core.** The emulator renders, sessions are wired
+> end to end, and the app shell adapts across breakpoints — but sessions replay
+> a fixture. Real local shells arrive in Phase 2 and SSH in Phase 3. See
 > [Roadmap](#roadmap).
 
 ---
@@ -71,6 +72,20 @@ The tree is kept warning-free. Before committing:
 dart format . && flutter analyze && flutter test
 ```
 
+Generated sources (`*.g.dart`, `*.freezed.dart`) are committed so a fresh clone
+analyses without a build step. After changing a `@freezed` or `@riverpod`
+declaration, regenerate them:
+
+```bash
+dart run build_runner build
+```
+
+Golden tests render real fonts and are tagged, so they can be skipped:
+
+```bash
+flutter test -x golden
+```
+
 CI additionally runs the architecture and coverage gates:
 
 ```bash
@@ -102,8 +117,8 @@ Termino explicitly does *not* protect against — is in
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Plan, scaffold, CI, verified dependency stack | **done** |
-| 1 | Terminal core: design system, `TerminalBackend`, session model | next |
-| 2 | Local PTY, shell profiles, `PlatformCapabilities` | |
+| 1 | Terminal core: design system, `TerminalBackend`, session model | **done** |
+| 2 | Local PTY, shell profiles, `PlatformCapabilities` | next |
 | 3 | SSH: auth, host key verification, profiles, jump hosts | |
 | 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | |
 | 5 | SFTP browser and port forwarding | |

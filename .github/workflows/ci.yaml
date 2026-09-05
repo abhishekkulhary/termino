@@ -22,6 +22,14 @@ jobs:
 
       - run: flutter pub get
 
+      # Generated sources are committed so that a fresh clone analyses and
+      # builds without running a generator first. That only stays true if they
+      # are kept current, which this checks.
+      - name: Generated code is up to date
+        run: |
+          dart run build_runner build
+          git diff --exit-code -- '*.g.dart' '*.freezed.dart'
+
       - name: Format
         run: dart format --set-exit-if-changed .
 
