@@ -121,12 +121,96 @@ class SshIdentityRows extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Application settings, as a key-value store.
+///
+/// A table rather than typed columns because settings are added constantly and
+/// each new one would otherwise be a schema migration. The typed view over it
+/// lives in `TerminoSettings`.
+@DataClassName('SettingRow')
+class SettingRows extends Table {
+  /// The setting's name.
+  TextColumn get key => text()();
+
+  /// Its value, encoded as text.
+  TextColumn get value => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// A saved port forward.
+@DataClassName('PortForwardRow')
+class PortForwardRows extends Table {
+  /// Stable identifier.
+  TextColumn get id => text()();
+
+  /// The host this tunnel runs through.
+  TextColumn get hostId => text()();
+
+  /// `local`, `remote` or `dynamic`.
+  TextColumn get kind => text()();
+
+  /// The port listened on.
+  IntColumn get listenPort => integer()();
+
+  /// Where traffic goes, for local and remote tunnels.
+  TextColumn get destinationHost => text().nullable()();
+
+  /// The port traffic goes to.
+  IntColumn get destinationPort => integer().nullable()();
+
+  /// The address bound locally.
+  TextColumn get bindAddress =>
+      text().withDefault(const Constant('127.0.0.1'))();
+
+  /// What the user calls it.
+  TextColumn get label => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// A saved command the user can send with one tap.
+@DataClassName('SnippetRow')
+class SnippetRows extends Table {
+  /// Stable identifier.
+  TextColumn get id => text()();
+
+  /// What the user calls it.
+  TextColumn get name => text()();
+
+  /// The text sent to the terminal.
+  TextColumn get body => text()();
+
+  /// When set, the snippet only appears for that host.
+  TextColumn get hostId => text().nullable()();
+
+  /// Whether a newline is appended, running the command immediately.
+  BoolColumn get runImmediately =>
+      boolean().withDefault(const Constant(false))();
+
+  /// When it was created, for ordering.
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// Termino's local database.
 ///
 /// Connection profiles, trusted host keys and key *metadata*. Nothing in here
 /// is secret, by design: the file is not encrypted, and treating it as though
 /// it were would be a mistake waiting to happen.
-@DriftDatabase(tables: [SshHostRows, KnownHostRows, SshIdentityRows])
+@DriftDatabase(
+  tables: [
+    SshHostRows,
+    KnownHostRows,
+    SshIdentityRows,
+    SettingRows,
+    PortForwardRows,
+    SnippetRows,
+  ],
+)
 class TerminoDatabase extends _$TerminoDatabase {
   /// Opens the database in the app's documents directory.
   new() : super(driftDatabase(name: 'termino'));
@@ -135,13 +219,18 @@ class TerminoDatabase extends _$TerminoDatabase {
   new withExecutor(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(sshHostRows, sshHostRows.forwardAgent);
+      }
+      if (from < 3) {
+        await m.createTable(settingRows);
+        await m.createTable(portForwardRows);
+        await m.createTable(snippetRows);
       }
     },
     beforeOpen: (details) async {

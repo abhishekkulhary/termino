@@ -5,7 +5,7 @@ import 'package:termino/features/forwarding/presentation/forwarding_screen.dart'
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/features/hosts/presentation/hosts_screen.dart';
 import 'package:termino/features/identities/presentation/identities_screen.dart';
-import 'package:termino/features/placeholder/coming_soon_screen.dart';
+import 'package:termino/features/settings/presentation/settings_screen.dart';
 import 'package:termino/features/sftp/presentation/sftp_screen.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
@@ -69,14 +69,7 @@ GoRouter buildRouter() {
             routes: [
               GoRoute(
                 path: AppDestinations.settings.route,
-                builder: (context, state) => const ComingSoonScreen(
-                  feature: 'Settings',
-                  description:
-                      'Themes, fonts, keybindings and behaviour — including '
-                      'the terminal palettes and scrollback size.',
-                  phase: 'Phase 6',
-                  icon: Icons.settings_rounded,
-                ),
+                builder: (context, state) => const SettingsScreen(),
               ),
             ],
           ),

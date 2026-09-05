@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/shared/design/app_theme.dart';
 
+import 'test_database.dart';
+
 /// A phone-sized window.
 const compactSize = Size(390, 780);
 
@@ -30,7 +32,11 @@ Future<void> pumpApp(
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final scope = container ?? ProviderContainer.test();
+  // Defaults to an in-memory database and secret store. Anything that reads
+  // settings — which now includes the terminal itself — would otherwise reach
+  // for path_provider and fail with a MissingPluginException.
+  final scope = container ?? testContainer();
+  addTearDown(scope.dispose);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(

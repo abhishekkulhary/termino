@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/domain/repositories/known_hosts_repository.dart';
+import 'package:termino/domain/repositories/port_forward_repository.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
 import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
@@ -10,6 +11,7 @@ import 'package:termino/infrastructure/ssh/key_generator.dart';
 import 'package:termino/infrastructure/storage/database.dart';
 import 'package:termino/infrastructure/storage/drift_repositories.dart';
 import 'package:termino/infrastructure/storage/keychain_secret_store.dart';
+import 'package:termino/infrastructure/storage/settings_store.dart';
 
 part 'providers.g.dart';
 
@@ -52,6 +54,16 @@ SshIdentityRepository sshIdentityRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 HostKeyVerifier hostKeyVerifier(Ref ref) =>
     HostKeyVerifier(ref.watch(knownHostsRepositoryProvider));
+
+/// Configured tunnels.
+@Riverpod(keepAlive: true)
+PortForwardRepository portForwardRepository(Ref ref) =>
+    DriftPortForwardRepository(ref.watch(databaseProvider));
+
+/// Reads and writes the user's settings.
+@Riverpod(keepAlive: true)
+SettingsStore settingsStore(Ref ref) =>
+    SettingsStore(ref.watch(databaseProvider));
 
 /// Generates new SSH keys.
 @Riverpod(keepAlive: true)

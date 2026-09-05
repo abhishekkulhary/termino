@@ -8,27 +8,15 @@ part of 'forwarding_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The configured tunnels.
-///
-/// Held in memory for now. Persisting them alongside their host is a small
-/// change to the drift schema and belongs with the rest of the settings work
-/// in Phase 6.
+/// The configured tunnels, persisted so they survive a restart.
 
 @ProviderFor(PortForwards)
 final portForwardsProvider = PortForwardsProvider._();
 
-/// The configured tunnels.
-///
-/// Held in memory for now. Persisting them alongside their host is a small
-/// change to the drift schema and belongs with the rest of the settings work
-/// in Phase 6.
+/// The configured tunnels, persisted so they survive a restart.
 final class PortForwardsProvider
     extends $NotifierProvider<PortForwards, List<PortForward>> {
-  /// The configured tunnels.
-  ///
-  /// Held in memory for now. Persisting them alongside their host is a small
-  /// change to the drift schema and belongs with the rest of the settings work
-  /// in Phase 6.
+  /// The configured tunnels, persisted so they survive a restart.
   PortForwardsProvider._()
     : super(
         from: null,
@@ -56,13 +44,9 @@ final class PortForwardsProvider
   }
 }
 
-String _$portForwardsHash() => r'42a41c27a49304347860a0e8cfecaf5b90f20835';
+String _$portForwardsHash() => r'c26fdc88a2c29e2fa576823ca7a97a7d95040dfe';
 
-/// The configured tunnels.
-///
-/// Held in memory for now. Persisting them alongside their host is a small
-/// change to the drift schema and belongs with the rest of the settings work
-/// in Phase 6.
+/// The configured tunnels, persisted so they survive a restart.
 
 abstract class _$PortForwards extends $Notifier<List<PortForward>> {
   List<PortForward> build();
@@ -204,7 +188,7 @@ final class ForwardRunnerProvider
   }
 }
 
-String _$forwardRunnerHash() => r'310a1f58b14370fb4dab9ea0a186ec7631a267f7';
+String _$forwardRunnerHash() => r'ef8629a035d6a0d62f6d715da2c8d8cab38d9145';
 
 /// Runs tunnels, opening one connection per host as needed.
 

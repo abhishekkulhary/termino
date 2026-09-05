@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/features/terminal/application/reconnect_policy.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/infrastructure/backends/mock_backend.dart';
 
@@ -206,6 +207,138 @@ void main() {
 
       expect(read().isSplit, isFalse);
       expect(read().secondaryId, isNull);
+    });
+
+    test('a dropped session reconnects and keeps its tab', () async {
+      var built = 0;
+      final failing = MockBackend.failing(
+        const TerminalBackendFailure(
+          TerminalBackendFailureKind.network,
+          'Connection lost.',
+        ),
+      );
+
+      final session = await manager().open(
+        backend: failing,
+        title: 'Server',
+        reconnect: () async {
+          built++;
+          return MockBackend.text('reconnected');
+        },
+        policy: const ReconnectPolicy(
+          initialDelay: Duration(milliseconds: 10),
+          jitter: 0,
+        ),
+      );
+
+      expect(session.connectionState.value, BackendConnectionState.error);
+
+      for (var i = 0; i < 60 && built == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      await pumpEventQueue();
+
+      expect(built, greaterThan(0), reason: 'a dropped session must retry');
+      expect(read().sessions, hasLength(1), reason: 'the tab is reused');
+      expect(
+        read().sessions.single.id,
+        session.id,
+        reason: 'the session keeps its identity, so the tab does not move',
+      );
+    });
+
+    test('a session that ended cleanly is not reconnected', () async {
+      var built = 0;
+      // MockBackend.text closes once drained, which is a clean end.
+      await manager().open(
+        backend: MockBackend(frames: [MockOutputFrame.text('bye')]),
+        reconnect: () async {
+          built++;
+          return MockBackend.text('');
+        },
+        policy: const ReconnectPolicy(
+          initialDelay: Duration(milliseconds: 10),
+          jitter: 0,
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(built, 0, reason: 'the user typing exit must not be argued with');
+    });
+
+    test('a session with no reconnector is left alone', () async {
+      final session = await manager().open(
+        backend: MockBackend.failing(
+          const TerminalBackendFailure(
+            TerminalBackendFailureKind.network,
+            'Connection lost.',
+          ),
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(read().sessions.single.id, session.id);
+      expect(session.connectionState.value, BackendConnectionState.error);
+    });
+
+    test('closing a session cancels a pending reconnection', () async {
+      var built = 0;
+      final session = await manager().open(
+        backend: MockBackend.failing(
+          const TerminalBackendFailure(
+            TerminalBackendFailureKind.network,
+            'Connection lost.',
+          ),
+        ),
+        reconnect: () async {
+          built++;
+          return MockBackend.text('');
+        },
+        policy: const ReconnectPolicy(
+          initialDelay: Duration(milliseconds: 300),
+          jitter: 0,
+        ),
+      );
+
+      await manager().close(session.id);
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      expect(built, 0, reason: 'a closed session must not come back');
+      expect(read().isEmpty, isTrue);
+    });
+
+    test('retries stop at the attempt limit', () async {
+      var built = 0;
+      await manager().open(
+        backend: MockBackend.failing(
+          const TerminalBackendFailure(
+            TerminalBackendFailureKind.network,
+            'Connection lost.',
+          ),
+        ),
+        reconnect: () async {
+          built++;
+          throw const TerminalBackendFailure(
+            TerminalBackendFailureKind.network,
+            'Still down.',
+          );
+        },
+        policy: const ReconnectPolicy(
+          initialDelay: Duration(milliseconds: 5),
+          maxAttempts: 2,
+          jitter: 0,
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+
+      expect(
+        built,
+        2,
+        reason: 'giving up is part of the policy, not an accident',
+      );
     });
 
     test('disposing the container disposes open sessions', () async {

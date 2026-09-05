@@ -1973,6 +1973,1182 @@ class SshIdentityRowsCompanion extends UpdateCompanion<SshIdentityRow> {
   }
 }
 
+class $SettingRowsTable extends SettingRows
+    with TableInfo<$SettingRowsTable, SettingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'setting_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SettingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  SettingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettingRow(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingRowsTable createAlias(String alias) {
+    return $SettingRowsTable(attachedDatabase, alias);
+  }
+}
+
+class SettingRow extends DataClass implements Insertable<SettingRow> {
+  /// The setting's name.
+  final String key;
+
+  /// Its value, encoded as text.
+  final String value;
+  const SettingRow({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  SettingRowsCompanion toCompanion(bool nullToAbsent) {
+    return SettingRowsCompanion(key: Value(key), value: Value(value));
+  }
+
+  factory SettingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettingRow(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  SettingRow copyWith({String? key, String? value}) =>
+      SettingRow(key: key ?? this.key, value: value ?? this.value);
+  SettingRow copyWithCompanion(SettingRowsCompanion data) {
+    return SettingRow(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingRow(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettingRow &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class SettingRowsCompanion extends UpdateCompanion<SettingRow> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const SettingRowsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingRowsCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       value = Value(value);
+  static Insertable<SettingRow> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingRowsCompanion copyWith({
+    Value<String>? key,
+    Value<String>? value,
+    Value<int>? rowid,
+  }) {
+    return SettingRowsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingRowsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PortForwardRowsTable extends PortForwardRows
+    with TableInfo<$PortForwardRowsTable, PortForwardRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PortForwardRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hostIdMeta = const VerificationMeta('hostId');
+  @override
+  late final GeneratedColumn<String> hostId = GeneratedColumn<String>(
+    'host_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _listenPortMeta = const VerificationMeta(
+    'listenPort',
+  );
+  @override
+  late final GeneratedColumn<int> listenPort = GeneratedColumn<int>(
+    'listen_port',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _destinationHostMeta = const VerificationMeta(
+    'destinationHost',
+  );
+  @override
+  late final GeneratedColumn<String> destinationHost = GeneratedColumn<String>(
+    'destination_host',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _destinationPortMeta = const VerificationMeta(
+    'destinationPort',
+  );
+  @override
+  late final GeneratedColumn<int> destinationPort = GeneratedColumn<int>(
+    'destination_port',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bindAddressMeta = const VerificationMeta(
+    'bindAddress',
+  );
+  @override
+  late final GeneratedColumn<String> bindAddress = GeneratedColumn<String>(
+    'bind_address',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('127.0.0.1'),
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hostId,
+    kind,
+    listenPort,
+    destinationHost,
+    destinationPort,
+    bindAddress,
+    label,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'port_forward_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PortForwardRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('host_id')) {
+      context.handle(
+        _hostIdMeta,
+        hostId.isAcceptableOrUnknown(data['host_id']!, _hostIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hostIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('listen_port')) {
+      context.handle(
+        _listenPortMeta,
+        listenPort.isAcceptableOrUnknown(data['listen_port']!, _listenPortMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listenPortMeta);
+    }
+    if (data.containsKey('destination_host')) {
+      context.handle(
+        _destinationHostMeta,
+        destinationHost.isAcceptableOrUnknown(
+          data['destination_host']!,
+          _destinationHostMeta,
+        ),
+      );
+    }
+    if (data.containsKey('destination_port')) {
+      context.handle(
+        _destinationPortMeta,
+        destinationPort.isAcceptableOrUnknown(
+          data['destination_port']!,
+          _destinationPortMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bind_address')) {
+      context.handle(
+        _bindAddressMeta,
+        bindAddress.isAcceptableOrUnknown(
+          data['bind_address']!,
+          _bindAddressMeta,
+        ),
+      );
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PortForwardRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PortForwardRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hostId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}host_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      listenPort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}listen_port'],
+      )!,
+      destinationHost: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}destination_host'],
+      ),
+      destinationPort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}destination_port'],
+      ),
+      bindAddress: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bind_address'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+    );
+  }
+
+  @override
+  $PortForwardRowsTable createAlias(String alias) {
+    return $PortForwardRowsTable(attachedDatabase, alias);
+  }
+}
+
+class PortForwardRow extends DataClass implements Insertable<PortForwardRow> {
+  /// Stable identifier.
+  final String id;
+
+  /// The host this tunnel runs through.
+  final String hostId;
+
+  /// `local`, `remote` or `dynamic`.
+  final String kind;
+
+  /// The port listened on.
+  final int listenPort;
+
+  /// Where traffic goes, for local and remote tunnels.
+  final String? destinationHost;
+
+  /// The port traffic goes to.
+  final int? destinationPort;
+
+  /// The address bound locally.
+  final String bindAddress;
+
+  /// What the user calls it.
+  final String? label;
+  const PortForwardRow({
+    required this.id,
+    required this.hostId,
+    required this.kind,
+    required this.listenPort,
+    this.destinationHost,
+    this.destinationPort,
+    required this.bindAddress,
+    this.label,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['host_id'] = Variable<String>(hostId);
+    map['kind'] = Variable<String>(kind);
+    map['listen_port'] = Variable<int>(listenPort);
+    if (!nullToAbsent || destinationHost != null) {
+      map['destination_host'] = Variable<String>(destinationHost);
+    }
+    if (!nullToAbsent || destinationPort != null) {
+      map['destination_port'] = Variable<int>(destinationPort);
+    }
+    map['bind_address'] = Variable<String>(bindAddress);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    return map;
+  }
+
+  PortForwardRowsCompanion toCompanion(bool nullToAbsent) {
+    return PortForwardRowsCompanion(
+      id: Value(id),
+      hostId: Value(hostId),
+      kind: Value(kind),
+      listenPort: Value(listenPort),
+      destinationHost: destinationHost == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationHost),
+      destinationPort: destinationPort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationPort),
+      bindAddress: Value(bindAddress),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+    );
+  }
+
+  factory PortForwardRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PortForwardRow(
+      id: serializer.fromJson<String>(json['id']),
+      hostId: serializer.fromJson<String>(json['hostId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      listenPort: serializer.fromJson<int>(json['listenPort']),
+      destinationHost: serializer.fromJson<String?>(json['destinationHost']),
+      destinationPort: serializer.fromJson<int?>(json['destinationPort']),
+      bindAddress: serializer.fromJson<String>(json['bindAddress']),
+      label: serializer.fromJson<String?>(json['label']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hostId': serializer.toJson<String>(hostId),
+      'kind': serializer.toJson<String>(kind),
+      'listenPort': serializer.toJson<int>(listenPort),
+      'destinationHost': serializer.toJson<String?>(destinationHost),
+      'destinationPort': serializer.toJson<int?>(destinationPort),
+      'bindAddress': serializer.toJson<String>(bindAddress),
+      'label': serializer.toJson<String?>(label),
+    };
+  }
+
+  PortForwardRow copyWith({
+    String? id,
+    String? hostId,
+    String? kind,
+    int? listenPort,
+    Value<String?> destinationHost = const Value.absent(),
+    Value<int?> destinationPort = const Value.absent(),
+    String? bindAddress,
+    Value<String?> label = const Value.absent(),
+  }) => PortForwardRow(
+    id: id ?? this.id,
+    hostId: hostId ?? this.hostId,
+    kind: kind ?? this.kind,
+    listenPort: listenPort ?? this.listenPort,
+    destinationHost: destinationHost.present
+        ? destinationHost.value
+        : this.destinationHost,
+    destinationPort: destinationPort.present
+        ? destinationPort.value
+        : this.destinationPort,
+    bindAddress: bindAddress ?? this.bindAddress,
+    label: label.present ? label.value : this.label,
+  );
+  PortForwardRow copyWithCompanion(PortForwardRowsCompanion data) {
+    return PortForwardRow(
+      id: data.id.present ? data.id.value : this.id,
+      hostId: data.hostId.present ? data.hostId.value : this.hostId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      listenPort: data.listenPort.present
+          ? data.listenPort.value
+          : this.listenPort,
+      destinationHost: data.destinationHost.present
+          ? data.destinationHost.value
+          : this.destinationHost,
+      destinationPort: data.destinationPort.present
+          ? data.destinationPort.value
+          : this.destinationPort,
+      bindAddress: data.bindAddress.present
+          ? data.bindAddress.value
+          : this.bindAddress,
+      label: data.label.present ? data.label.value : this.label,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortForwardRow(')
+          ..write('id: $id, ')
+          ..write('hostId: $hostId, ')
+          ..write('kind: $kind, ')
+          ..write('listenPort: $listenPort, ')
+          ..write('destinationHost: $destinationHost, ')
+          ..write('destinationPort: $destinationPort, ')
+          ..write('bindAddress: $bindAddress, ')
+          ..write('label: $label')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hostId,
+    kind,
+    listenPort,
+    destinationHost,
+    destinationPort,
+    bindAddress,
+    label,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PortForwardRow &&
+          other.id == this.id &&
+          other.hostId == this.hostId &&
+          other.kind == this.kind &&
+          other.listenPort == this.listenPort &&
+          other.destinationHost == this.destinationHost &&
+          other.destinationPort == this.destinationPort &&
+          other.bindAddress == this.bindAddress &&
+          other.label == this.label);
+}
+
+class PortForwardRowsCompanion extends UpdateCompanion<PortForwardRow> {
+  final Value<String> id;
+  final Value<String> hostId;
+  final Value<String> kind;
+  final Value<int> listenPort;
+  final Value<String?> destinationHost;
+  final Value<int?> destinationPort;
+  final Value<String> bindAddress;
+  final Value<String?> label;
+  final Value<int> rowid;
+  const PortForwardRowsCompanion({
+    this.id = const Value.absent(),
+    this.hostId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.listenPort = const Value.absent(),
+    this.destinationHost = const Value.absent(),
+    this.destinationPort = const Value.absent(),
+    this.bindAddress = const Value.absent(),
+    this.label = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PortForwardRowsCompanion.insert({
+    required String id,
+    required String hostId,
+    required String kind,
+    required int listenPort,
+    this.destinationHost = const Value.absent(),
+    this.destinationPort = const Value.absent(),
+    this.bindAddress = const Value.absent(),
+    this.label = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       hostId = Value(hostId),
+       kind = Value(kind),
+       listenPort = Value(listenPort);
+  static Insertable<PortForwardRow> custom({
+    Expression<String>? id,
+    Expression<String>? hostId,
+    Expression<String>? kind,
+    Expression<int>? listenPort,
+    Expression<String>? destinationHost,
+    Expression<int>? destinationPort,
+    Expression<String>? bindAddress,
+    Expression<String>? label,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hostId != null) 'host_id': hostId,
+      if (kind != null) 'kind': kind,
+      if (listenPort != null) 'listen_port': listenPort,
+      if (destinationHost != null) 'destination_host': destinationHost,
+      if (destinationPort != null) 'destination_port': destinationPort,
+      if (bindAddress != null) 'bind_address': bindAddress,
+      if (label != null) 'label': label,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PortForwardRowsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hostId,
+    Value<String>? kind,
+    Value<int>? listenPort,
+    Value<String?>? destinationHost,
+    Value<int?>? destinationPort,
+    Value<String>? bindAddress,
+    Value<String?>? label,
+    Value<int>? rowid,
+  }) {
+    return PortForwardRowsCompanion(
+      id: id ?? this.id,
+      hostId: hostId ?? this.hostId,
+      kind: kind ?? this.kind,
+      listenPort: listenPort ?? this.listenPort,
+      destinationHost: destinationHost ?? this.destinationHost,
+      destinationPort: destinationPort ?? this.destinationPort,
+      bindAddress: bindAddress ?? this.bindAddress,
+      label: label ?? this.label,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hostId.present) {
+      map['host_id'] = Variable<String>(hostId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (listenPort.present) {
+      map['listen_port'] = Variable<int>(listenPort.value);
+    }
+    if (destinationHost.present) {
+      map['destination_host'] = Variable<String>(destinationHost.value);
+    }
+    if (destinationPort.present) {
+      map['destination_port'] = Variable<int>(destinationPort.value);
+    }
+    if (bindAddress.present) {
+      map['bind_address'] = Variable<String>(bindAddress.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortForwardRowsCompanion(')
+          ..write('id: $id, ')
+          ..write('hostId: $hostId, ')
+          ..write('kind: $kind, ')
+          ..write('listenPort: $listenPort, ')
+          ..write('destinationHost: $destinationHost, ')
+          ..write('destinationPort: $destinationPort, ')
+          ..write('bindAddress: $bindAddress, ')
+          ..write('label: $label, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SnippetRowsTable extends SnippetRows
+    with TableInfo<$SnippetRowsTable, SnippetRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SnippetRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hostIdMeta = const VerificationMeta('hostId');
+  @override
+  late final GeneratedColumn<String> hostId = GeneratedColumn<String>(
+    'host_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _runImmediatelyMeta = const VerificationMeta(
+    'runImmediately',
+  );
+  @override
+  late final GeneratedColumn<bool> runImmediately = GeneratedColumn<bool>(
+    'run_immediately',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("run_immediately" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    body,
+    hostId,
+    runImmediately,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'snippet_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SnippetRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('host_id')) {
+      context.handle(
+        _hostIdMeta,
+        hostId.isAcceptableOrUnknown(data['host_id']!, _hostIdMeta),
+      );
+    }
+    if (data.containsKey('run_immediately')) {
+      context.handle(
+        _runImmediatelyMeta,
+        runImmediately.isAcceptableOrUnknown(
+          data['run_immediately']!,
+          _runImmediatelyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SnippetRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SnippetRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      hostId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}host_id'],
+      ),
+      runImmediately: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}run_immediately'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SnippetRowsTable createAlias(String alias) {
+    return $SnippetRowsTable(attachedDatabase, alias);
+  }
+}
+
+class SnippetRow extends DataClass implements Insertable<SnippetRow> {
+  /// Stable identifier.
+  final String id;
+
+  /// What the user calls it.
+  final String name;
+
+  /// The text sent to the terminal.
+  final String body;
+
+  /// When set, the snippet only appears for that host.
+  final String? hostId;
+
+  /// Whether a newline is appended, running the command immediately.
+  final bool runImmediately;
+
+  /// When it was created, for ordering.
+  final DateTime createdAt;
+  const SnippetRow({
+    required this.id,
+    required this.name,
+    required this.body,
+    this.hostId,
+    required this.runImmediately,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || hostId != null) {
+      map['host_id'] = Variable<String>(hostId);
+    }
+    map['run_immediately'] = Variable<bool>(runImmediately);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SnippetRowsCompanion toCompanion(bool nullToAbsent) {
+    return SnippetRowsCompanion(
+      id: Value(id),
+      name: Value(name),
+      body: Value(body),
+      hostId: hostId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hostId),
+      runImmediately: Value(runImmediately),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SnippetRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SnippetRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      body: serializer.fromJson<String>(json['body']),
+      hostId: serializer.fromJson<String?>(json['hostId']),
+      runImmediately: serializer.fromJson<bool>(json['runImmediately']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'body': serializer.toJson<String>(body),
+      'hostId': serializer.toJson<String?>(hostId),
+      'runImmediately': serializer.toJson<bool>(runImmediately),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SnippetRow copyWith({
+    String? id,
+    String? name,
+    String? body,
+    Value<String?> hostId = const Value.absent(),
+    bool? runImmediately,
+    DateTime? createdAt,
+  }) => SnippetRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    body: body ?? this.body,
+    hostId: hostId.present ? hostId.value : this.hostId,
+    runImmediately: runImmediately ?? this.runImmediately,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SnippetRow copyWithCompanion(SnippetRowsCompanion data) {
+    return SnippetRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      body: data.body.present ? data.body.value : this.body,
+      hostId: data.hostId.present ? data.hostId.value : this.hostId,
+      runImmediately: data.runImmediately.present
+          ? data.runImmediately.value
+          : this.runImmediately,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SnippetRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('body: $body, ')
+          ..write('hostId: $hostId, ')
+          ..write('runImmediately: $runImmediately, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, body, hostId, runImmediately, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SnippetRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.body == this.body &&
+          other.hostId == this.hostId &&
+          other.runImmediately == this.runImmediately &&
+          other.createdAt == this.createdAt);
+}
+
+class SnippetRowsCompanion extends UpdateCompanion<SnippetRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> body;
+  final Value<String?> hostId;
+  final Value<bool> runImmediately;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const SnippetRowsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.body = const Value.absent(),
+    this.hostId = const Value.absent(),
+    this.runImmediately = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SnippetRowsCompanion.insert({
+    required String id,
+    required String name,
+    required String body,
+    this.hostId = const Value.absent(),
+    this.runImmediately = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       body = Value(body),
+       createdAt = Value(createdAt);
+  static Insertable<SnippetRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? body,
+    Expression<String>? hostId,
+    Expression<bool>? runImmediately,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (body != null) 'body': body,
+      if (hostId != null) 'host_id': hostId,
+      if (runImmediately != null) 'run_immediately': runImmediately,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SnippetRowsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? body,
+    Value<String?>? hostId,
+    Value<bool>? runImmediately,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return SnippetRowsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      body: body ?? this.body,
+      hostId: hostId ?? this.hostId,
+      runImmediately: runImmediately ?? this.runImmediately,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (hostId.present) {
+      map['host_id'] = Variable<String>(hostId.value);
+    }
+    if (runImmediately.present) {
+      map['run_immediately'] = Variable<bool>(runImmediately.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SnippetRowsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('body: $body, ')
+          ..write('hostId: $hostId, ')
+          ..write('runImmediately: $runImmediately, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$TerminoDatabase extends GeneratedDatabase {
   _$TerminoDatabase(QueryExecutor e) : super(e);
   $TerminoDatabaseManager get managers => $TerminoDatabaseManager(this);
@@ -1981,6 +3157,11 @@ abstract class _$TerminoDatabase extends GeneratedDatabase {
   late final $SshIdentityRowsTable sshIdentityRows = $SshIdentityRowsTable(
     this,
   );
+  late final $SettingRowsTable settingRows = $SettingRowsTable(this);
+  late final $PortForwardRowsTable portForwardRows = $PortForwardRowsTable(
+    this,
+  );
+  late final $SnippetRowsTable snippetRows = $SnippetRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1989,6 +3170,9 @@ abstract class _$TerminoDatabase extends GeneratedDatabase {
     sshHostRows,
     knownHostRows,
     sshIdentityRows,
+    settingRows,
+    portForwardRows,
+    snippetRows,
   ];
 }
 
@@ -2957,6 +4141,667 @@ typedef $$SshIdentityRowsTableProcessedTableManager =
       SshIdentityRow,
       PrefetchHooks Function()
     >;
+typedef $$SettingRowsTableCreateCompanionBuilder =
+    SettingRowsCompanion Function({
+      required String key,
+      required String value,
+      Value<int> rowid,
+    });
+typedef $$SettingRowsTableUpdateCompanionBuilder =
+    SettingRowsCompanion Function({
+      Value<String> key,
+      Value<String> value,
+      Value<int> rowid,
+    });
+
+class $$SettingRowsTableFilterComposer
+    extends Composer<_$TerminoDatabase, $SettingRowsTable> {
+  $$SettingRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SettingRowsTableOrderingComposer
+    extends Composer<_$TerminoDatabase, $SettingRowsTable> {
+  $$SettingRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SettingRowsTableAnnotationComposer
+    extends Composer<_$TerminoDatabase, $SettingRowsTable> {
+  $$SettingRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$SettingRowsTableTableManager
+    extends
+        RootTableManager<
+          _$TerminoDatabase,
+          $SettingRowsTable,
+          SettingRow,
+          $$SettingRowsTableFilterComposer,
+          $$SettingRowsTableOrderingComposer,
+          $$SettingRowsTableAnnotationComposer,
+          $$SettingRowsTableCreateCompanionBuilder,
+          $$SettingRowsTableUpdateCompanionBuilder,
+          (
+            SettingRow,
+            BaseReferences<_$TerminoDatabase, $SettingRowsTable, SettingRow>,
+          ),
+          SettingRow,
+          PrefetchHooks Function()
+        > {
+  $$SettingRowsTableTableManager(_$TerminoDatabase db, $SettingRowsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => SettingRowsCompanion(key: key, value: value, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String key,
+                required String value,
+                Value<int> rowid = const Value.absent(),
+              }) => SettingRowsCompanion.insert(
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SettingRowsTable, SettingRow>(table),
+                  BaseReferences<
+                    _$TerminoDatabase,
+                    $SettingRowsTable,
+                    SettingRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SettingRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$TerminoDatabase,
+      $SettingRowsTable,
+      SettingRow,
+      $$SettingRowsTableFilterComposer,
+      $$SettingRowsTableOrderingComposer,
+      $$SettingRowsTableAnnotationComposer,
+      $$SettingRowsTableCreateCompanionBuilder,
+      $$SettingRowsTableUpdateCompanionBuilder,
+      (
+        SettingRow,
+        BaseReferences<_$TerminoDatabase, $SettingRowsTable, SettingRow>,
+      ),
+      SettingRow,
+      PrefetchHooks Function()
+    >;
+typedef $$PortForwardRowsTableCreateCompanionBuilder =
+    PortForwardRowsCompanion Function({
+      required String id,
+      required String hostId,
+      required String kind,
+      required int listenPort,
+      Value<String?> destinationHost,
+      Value<int?> destinationPort,
+      Value<String> bindAddress,
+      Value<String?> label,
+      Value<int> rowid,
+    });
+typedef $$PortForwardRowsTableUpdateCompanionBuilder =
+    PortForwardRowsCompanion Function({
+      Value<String> id,
+      Value<String> hostId,
+      Value<String> kind,
+      Value<int> listenPort,
+      Value<String?> destinationHost,
+      Value<int?> destinationPort,
+      Value<String> bindAddress,
+      Value<String?> label,
+      Value<int> rowid,
+    });
+
+class $$PortForwardRowsTableFilterComposer
+    extends Composer<_$TerminoDatabase, $PortForwardRowsTable> {
+  $$PortForwardRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hostId => $composableBuilder(
+    column: $table.hostId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get listenPort => $composableBuilder(
+    column: $table.listenPort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get destinationHost => $composableBuilder(
+    column: $table.destinationHost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get destinationPort => $composableBuilder(
+    column: $table.destinationPort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bindAddress => $composableBuilder(
+    column: $table.bindAddress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PortForwardRowsTableOrderingComposer
+    extends Composer<_$TerminoDatabase, $PortForwardRowsTable> {
+  $$PortForwardRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hostId => $composableBuilder(
+    column: $table.hostId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get listenPort => $composableBuilder(
+    column: $table.listenPort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get destinationHost => $composableBuilder(
+    column: $table.destinationHost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get destinationPort => $composableBuilder(
+    column: $table.destinationPort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bindAddress => $composableBuilder(
+    column: $table.bindAddress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PortForwardRowsTableAnnotationComposer
+    extends Composer<_$TerminoDatabase, $PortForwardRowsTable> {
+  $$PortForwardRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hostId =>
+      $composableBuilder(column: $table.hostId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get listenPort => $composableBuilder(
+    column: $table.listenPort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get destinationHost => $composableBuilder(
+    column: $table.destinationHost,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get destinationPort => $composableBuilder(
+    column: $table.destinationPort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bindAddress => $composableBuilder(
+    column: $table.bindAddress,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+}
+
+class $$PortForwardRowsTableTableManager
+    extends
+        RootTableManager<
+          _$TerminoDatabase,
+          $PortForwardRowsTable,
+          PortForwardRow,
+          $$PortForwardRowsTableFilterComposer,
+          $$PortForwardRowsTableOrderingComposer,
+          $$PortForwardRowsTableAnnotationComposer,
+          $$PortForwardRowsTableCreateCompanionBuilder,
+          $$PortForwardRowsTableUpdateCompanionBuilder,
+          (
+            PortForwardRow,
+            BaseReferences<
+              _$TerminoDatabase,
+              $PortForwardRowsTable,
+              PortForwardRow
+            >,
+          ),
+          PortForwardRow,
+          PrefetchHooks Function()
+        > {
+  $$PortForwardRowsTableTableManager(
+    _$TerminoDatabase db,
+    $PortForwardRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PortForwardRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PortForwardRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PortForwardRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hostId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> listenPort = const Value.absent(),
+                Value<String?> destinationHost = const Value.absent(),
+                Value<int?> destinationPort = const Value.absent(),
+                Value<String> bindAddress = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PortForwardRowsCompanion(
+                id: id,
+                hostId: hostId,
+                kind: kind,
+                listenPort: listenPort,
+                destinationHost: destinationHost,
+                destinationPort: destinationPort,
+                bindAddress: bindAddress,
+                label: label,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String hostId,
+                required String kind,
+                required int listenPort,
+                Value<String?> destinationHost = const Value.absent(),
+                Value<int?> destinationPort = const Value.absent(),
+                Value<String> bindAddress = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PortForwardRowsCompanion.insert(
+                id: id,
+                hostId: hostId,
+                kind: kind,
+                listenPort: listenPort,
+                destinationHost: destinationHost,
+                destinationPort: destinationPort,
+                bindAddress: bindAddress,
+                label: label,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PortForwardRowsTable, PortForwardRow>(table),
+                  BaseReferences<
+                    _$TerminoDatabase,
+                    $PortForwardRowsTable,
+                    PortForwardRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PortForwardRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$TerminoDatabase,
+      $PortForwardRowsTable,
+      PortForwardRow,
+      $$PortForwardRowsTableFilterComposer,
+      $$PortForwardRowsTableOrderingComposer,
+      $$PortForwardRowsTableAnnotationComposer,
+      $$PortForwardRowsTableCreateCompanionBuilder,
+      $$PortForwardRowsTableUpdateCompanionBuilder,
+      (
+        PortForwardRow,
+        BaseReferences<
+          _$TerminoDatabase,
+          $PortForwardRowsTable,
+          PortForwardRow
+        >,
+      ),
+      PortForwardRow,
+      PrefetchHooks Function()
+    >;
+typedef $$SnippetRowsTableCreateCompanionBuilder =
+    SnippetRowsCompanion Function({
+      required String id,
+      required String name,
+      required String body,
+      Value<String?> hostId,
+      Value<bool> runImmediately,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$SnippetRowsTableUpdateCompanionBuilder =
+    SnippetRowsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> body,
+      Value<String?> hostId,
+      Value<bool> runImmediately,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$SnippetRowsTableFilterComposer
+    extends Composer<_$TerminoDatabase, $SnippetRowsTable> {
+  $$SnippetRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hostId => $composableBuilder(
+    column: $table.hostId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get runImmediately => $composableBuilder(
+    column: $table.runImmediately,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SnippetRowsTableOrderingComposer
+    extends Composer<_$TerminoDatabase, $SnippetRowsTable> {
+  $$SnippetRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hostId => $composableBuilder(
+    column: $table.hostId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get runImmediately => $composableBuilder(
+    column: $table.runImmediately,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SnippetRowsTableAnnotationComposer
+    extends Composer<_$TerminoDatabase, $SnippetRowsTable> {
+  $$SnippetRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get hostId =>
+      $composableBuilder(column: $table.hostId, builder: (column) => column);
+
+  GeneratedColumn<bool> get runImmediately => $composableBuilder(
+    column: $table.runImmediately,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SnippetRowsTableTableManager
+    extends
+        RootTableManager<
+          _$TerminoDatabase,
+          $SnippetRowsTable,
+          SnippetRow,
+          $$SnippetRowsTableFilterComposer,
+          $$SnippetRowsTableOrderingComposer,
+          $$SnippetRowsTableAnnotationComposer,
+          $$SnippetRowsTableCreateCompanionBuilder,
+          $$SnippetRowsTableUpdateCompanionBuilder,
+          (
+            SnippetRow,
+            BaseReferences<_$TerminoDatabase, $SnippetRowsTable, SnippetRow>,
+          ),
+          SnippetRow,
+          PrefetchHooks Function()
+        > {
+  $$SnippetRowsTableTableManager(_$TerminoDatabase db, $SnippetRowsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SnippetRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SnippetRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SnippetRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<String?> hostId = const Value.absent(),
+                Value<bool> runImmediately = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SnippetRowsCompanion(
+                id: id,
+                name: name,
+                body: body,
+                hostId: hostId,
+                runImmediately: runImmediately,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String body,
+                Value<String?> hostId = const Value.absent(),
+                Value<bool> runImmediately = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SnippetRowsCompanion.insert(
+                id: id,
+                name: name,
+                body: body,
+                hostId: hostId,
+                runImmediately: runImmediately,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SnippetRowsTable, SnippetRow>(table),
+                  BaseReferences<
+                    _$TerminoDatabase,
+                    $SnippetRowsTable,
+                    SnippetRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SnippetRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$TerminoDatabase,
+      $SnippetRowsTable,
+      SnippetRow,
+      $$SnippetRowsTableFilterComposer,
+      $$SnippetRowsTableOrderingComposer,
+      $$SnippetRowsTableAnnotationComposer,
+      $$SnippetRowsTableCreateCompanionBuilder,
+      $$SnippetRowsTableUpdateCompanionBuilder,
+      (
+        SnippetRow,
+        BaseReferences<_$TerminoDatabase, $SnippetRowsTable, SnippetRow>,
+      ),
+      SnippetRow,
+      PrefetchHooks Function()
+    >;
 
 class $TerminoDatabaseManager {
   final _$TerminoDatabase _db;
@@ -2967,4 +4812,10 @@ class $TerminoDatabaseManager {
       $$KnownHostRowsTableTableManager(_db, _db.knownHostRows);
   $$SshIdentityRowsTableTableManager get sshIdentityRows =>
       $$SshIdentityRowsTableTableManager(_db, _db.sshIdentityRows);
+  $$SettingRowsTableTableManager get settingRows =>
+      $$SettingRowsTableTableManager(_db, _db.settingRows);
+  $$PortForwardRowsTableTableManager get portForwardRows =>
+      $$PortForwardRowsTableTableManager(_db, _db.portForwardRows);
+  $$SnippetRowsTableTableManager get snippetRows =>
+      $$SnippetRowsTableTableManager(_db, _db.snippetRows);
 }

@@ -76,7 +76,7 @@ class ForwardingScreen extends ConsumerWidget {
       builder: (context) => _ForwardEditor(hosts: hosts, existing: existing),
     );
     if (result == null) return;
-    ref.read(portForwardsProvider.notifier).save(result);
+    unawaited(ref.read(portForwardsProvider.notifier).save(result));
   }
 }
 
@@ -194,8 +194,9 @@ class _ForwardTile extends ConsumerWidget {
               ),
               MenuItemButton(
                 leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-                onPressed: () =>
-                    ref.read(portForwardsProvider.notifier).remove(forward.id),
+                onPressed: () => unawaited(
+                  ref.read(portForwardsProvider.notifier).remove(forward.id),
+                ),
                 child: const Text('Delete'),
               ),
             ],

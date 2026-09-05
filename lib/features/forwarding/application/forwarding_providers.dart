@@ -10,27 +10,30 @@ import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 
 part 'forwarding_providers.g.dart';
 
-/// The configured tunnels.
-///
-/// Held in memory for now. Persisting them alongside their host is a small
-/// change to the drift schema and belongs with the rest of the settings work
-/// in Phase 6.
+/// The configured tunnels, persisted so they survive a restart.
 @Riverpod(keepAlive: true)
 class PortForwards extends _$PortForwards {
   @override
-  List<PortForward> build() => const [];
+  List<PortForward> build() {
+    unawaited(_load());
+    return const [];
+  }
+
+  Future<void> _load() async {
+    state = await ref.read(portForwardRepositoryProvider).all();
+  }
 
   /// Adds or updates a tunnel.
-  void save(PortForward forward) {
-    final existing = state.indexWhere((f) => f.id == forward.id);
-    state = existing < 0 ? [...state, forward] : [...state]
-      ..[existing < 0 ? state.length - 1 : existing] = forward;
+  Future<void> save(PortForward forward) async {
+    await ref.read(portForwardRepositoryProvider).save(forward);
+    await _load();
   }
 
   /// Removes a tunnel, stopping it first.
-  void remove(String id) {
-    unawaited(ref.read(forwardRunnerProvider.notifier).stop(id));
-    state = state.where((forward) => forward.id != id).toList();
+  Future<void> remove(String id) async {
+    await ref.read(forwardRunnerProvider.notifier).stop(id);
+    await ref.read(portForwardRepositoryProvider).delete(id);
+    await _load();
   }
 
   /// Starts a tunnel.

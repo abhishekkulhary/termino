@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/domain/terminal/session_recorder.dart';
 import 'package:termino/infrastructure/terminal/output_batcher.dart';
 import 'package:xterm/xterm.dart';
 
@@ -61,6 +62,39 @@ class TerminalSession {
   /// How backend output is coalesced before reaching the emulator.
   final TerminalOutputBatcher batcher;
 
+  /// Records output when the user asks for it. Null until then.
+  ///
+  /// The tap sits on the session rather than the backend because the backend's
+  /// output stream is single-subscription — that is what preserves
+  /// backpressure — so a second listener is not possible there.
+  SessionRecorder? get recorder => _recorder;
+  SessionRecorder? _recorder;
+  Stopwatch? _recordingClock;
+
+  /// Starts recording, replacing any recording in progress.
+  SessionRecorder startRecording() {
+    final recorder = SessionRecorder(
+      columns: terminal.viewWidth,
+      rows: terminal.viewHeight,
+    );
+    _recorder = recorder;
+    _recordingClock = Stopwatch()..start();
+    return recorder;
+  }
+
+  /// Stops recording and returns what was captured, or null if none was in
+  /// progress.
+  SessionRecorder? stopRecording() {
+    final recorder = _recorder;
+    _recordingClock?.stop();
+    _recordingClock = null;
+    _recorder = null;
+    return recorder;
+  }
+
+  /// Whether output is currently being recorded.
+  bool get isRecording => _recorder != null;
+
   /// Malformed input is replaced rather than thrown on: a terminal is a byte
   /// pipe and will occasionally carry binary that is not valid UTF-8. Killing
   /// the session over it would be absurd.
@@ -108,9 +142,10 @@ class TerminalSession {
     // Batch first, then decode: coalescing before decoding means far fewer
     // decoder invocations, and the decoder carries any partial UTF-8 sequence
     // across chunk boundaries so a split multi-byte character still renders.
-    _output = _decoder
-        .bind(batcher.bind(backend.output))
-        .listen(terminal.write);
+    _output = _decoder.bind(batcher.bind(backend.output)).listen((data) {
+      _recorder?.record(data, _recordingClock?.elapsed ?? Duration.zero);
+      terminal.write(data);
+    });
 
     try {
       await backend.start();

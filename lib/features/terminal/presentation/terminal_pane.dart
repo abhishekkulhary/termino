@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/domain/terminal/link_detector.dart';
+import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/terminal/application/sticky_modifiers.dart';
 import 'package:termino/features/terminal/application/terminal_search_controller.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
-import 'package:termino/features/terminal/application/terminal_settings.dart';
 import 'package:termino/features/terminal/presentation/key_accessory_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_search_bar.dart';
 import 'package:termino/shared/design/breakpoints.dart';
-import 'package:termino/shared/design/terminal_palette.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xterm/xterm.dart';
@@ -56,8 +56,8 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
   /// Opens the find bar.
   void openSearch() {
     if (_search != null) return;
-    final palette = TerminalPalettes.forBrightness(
-      Theme.of(context).brightness,
+    final palette = ref.read(
+      activePaletteProvider(Theme.of(context).brightness),
     );
     setState(() {
       _search = TerminalSearchController(
@@ -107,6 +107,10 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
     widget.session.terminal.paste(text);
   }
 
+  Future<void> _changeFontSize(double delta) => ref
+      .read(settingsProvider.notifier)
+      .setFontSize(ref.read(currentSettingsProvider).fontSize + delta);
+
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
@@ -127,13 +131,13 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
         return KeyEventResult.handled;
       case LogicalKeyboardKey.equal:
       case LogicalKeyboardKey.add:
-        ref.read(terminalFontSizeProvider.notifier).increase();
+        unawaited(_changeFontSize(1));
         return KeyEventResult.handled;
       case LogicalKeyboardKey.minus:
-        ref.read(terminalFontSizeProvider.notifier).decrease();
+        unawaited(_changeFontSize(-1));
         return KeyEventResult.handled;
       case LogicalKeyboardKey.digit0:
-        ref.read(terminalFontSizeProvider.notifier).reset();
+        unawaited(ref.read(settingsProvider.notifier).setFontSize(14));
         return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -141,10 +145,9 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = TerminalPalettes.forBrightness(
-      Theme.of(context).brightness,
-    );
-    final fontSize = ref.watch(terminalFontSizeProvider);
+    final brightness = Theme.of(context).brightness;
+    final settings = ref.watch(currentSettingsProvider);
+    final palette = ref.watch(activePaletteProvider(brightness));
     final size = Breakpoints.ofContext(context);
     final isTouch = size == WindowSize.compact;
 
@@ -153,12 +156,21 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
       controller: _controller,
       focusNode: _focus,
       theme: palette.theme,
-      textStyle: palette.styleWith(fontSize: fontSize),
+      textStyle: palette.styleWith(
+        fontSize: settings.fontSize,
+        lineHeight: settings.lineHeight,
+      ),
       // The terminal grid has its own font-size setting; scaling it with the
       // platform text-scale factor would reflow the grid underneath the user
       // and break alignment of box drawing. UI chrome still honours it.
       textScaler: TextScaler.noScaling,
       autofocus: widget.autofocus,
+      cursorType: switch (settings.cursorShape) {
+        TerminalCursorShape.block => TerminalCursorType.block,
+        TerminalCursorShape.bar => TerminalCursorType.verticalBar,
+        TerminalCursorShape.underline => TerminalCursorType.underline,
+      },
+      alwaysShowCursor: !settings.cursorBlinks,
       onKeyEvent: _handleKeyEvent,
       onTapUp: (details, offset) => unawaited(_openLinkAt(offset)),
       onSecondaryTapDown: (details, offset) =>
@@ -178,11 +190,13 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
             TerminalSearchBar(controller: search, onClose: closeSearch),
           Expanded(
             child: _PinchToZoom(
-              onScaleStart: () => _fontSizeAtGestureStart = fontSize,
+              onScaleStart: () => _fontSizeAtGestureStart = settings.fontSize,
               onScaleUpdate: (scale) {
                 final base = _fontSizeAtGestureStart;
                 if (base == null) return;
-                ref.read(terminalFontSizeProvider.notifier).set(base * scale);
+                unawaited(
+                  ref.read(settingsProvider.notifier).setFontSize(base * scale),
+                );
               },
               onScaleEnd: () => _fontSizeAtGestureStart = null,
               child: terminalView,

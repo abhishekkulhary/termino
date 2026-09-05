@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
 import 'package:termino/infrastructure/storage/database.dart';
 
@@ -27,18 +28,22 @@ class InMemorySecretStore implements SecretStore {
 /// Nothing here touches the user's real database or keystore, which matters
 /// beyond hygiene: a test that wrote to the platform keychain would leave
 /// credentials behind on the developer's machine.
+/// Riverpod 3 does not export its `Override` type, so a helper cannot take a
+/// list of them. The overrides that tests actually need are named instead.
 ProviderContainer testContainer({
   TerminoDatabase? database,
   SecretStore? secrets,
+  PlatformCapabilities? capabilities,
 }) {
   final db = database ?? TerminoDatabase.withExecutor(NativeDatabase.memory());
   final store = secrets ?? InMemorySecretStore();
 
-  final container = ProviderContainer.test(
+  return ProviderContainer.test(
     overrides: [
       databaseProvider.overrideWithValue(db),
       secretStoreProvider.overrideWithValue(store),
+      if (capabilities != null)
+        platformCapabilitiesProvider.overrideWithValue(capabilities),
     ],
   );
-  return container;
 }

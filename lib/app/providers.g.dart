@@ -315,6 +315,105 @@ final class HostKeyVerifierProvider
 
 String _$hostKeyVerifierHash() => r'5d75b1d77369f17a1751fd33ddb095ce95013008';
 
+/// Configured tunnels.
+
+@ProviderFor(portForwardRepository)
+final portForwardRepositoryProvider = PortForwardRepositoryProvider._();
+
+/// Configured tunnels.
+
+final class PortForwardRepositoryProvider
+    extends
+        $FunctionalProvider<
+          PortForwardRepository,
+          PortForwardRepository,
+          PortForwardRepository
+        >
+    with $Provider<PortForwardRepository> {
+  /// Configured tunnels.
+  PortForwardRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'portForwardRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$portForwardRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<PortForwardRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PortForwardRepository create(Ref ref) {
+    return portForwardRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PortForwardRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PortForwardRepository>(value),
+    );
+  }
+}
+
+String _$portForwardRepositoryHash() =>
+    r'1d08be0aa5289d2118430ae0ab00cde905174611';
+
+/// Reads and writes the user's settings.
+
+@ProviderFor(settingsStore)
+final settingsStoreProvider = SettingsStoreProvider._();
+
+/// Reads and writes the user's settings.
+
+final class SettingsStoreProvider
+    extends $FunctionalProvider<SettingsStore, SettingsStore, SettingsStore>
+    with $Provider<SettingsStore> {
+  /// Reads and writes the user's settings.
+  SettingsStoreProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'settingsStoreProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$settingsStoreHash();
+
+  @$internal
+  @override
+  $ProviderElement<SettingsStore> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SettingsStore create(Ref ref) {
+    return settingsStore(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SettingsStore value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SettingsStore>(value),
+    );
+  }
+}
+
+String _$settingsStoreHash() => r'ee80fccec388d27db5af5bacfcd65714a940b79b';
+
 /// Generates new SSH keys.
 
 @ProviderFor(sshKeyGenerator)

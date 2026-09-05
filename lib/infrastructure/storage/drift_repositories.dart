@@ -1,8 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:termino/domain/entities/known_host.dart';
+import 'package:termino/domain/entities/port_forward.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/domain/repositories/known_hosts_repository.dart';
+import 'package:termino/domain/repositories/port_forward_repository.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
 import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
@@ -188,6 +190,57 @@ class DriftKnownHostsRepository implements KnownHostsRepository {
         addedAt: entry.addedAt,
         source: entry.source.name,
       );
+}
+
+/// Configured tunnels, stored in drift.
+class DriftPortForwardRepository implements PortForwardRepository {
+  /// Creates a repository over the database.
+  const new(this._db);
+
+  final TerminoDatabase _db;
+
+  @override
+  Future<List<PortForward>> all() async =>
+      (await _db.select(_db.portForwardRows).get()).map(_toDomain).toList();
+
+  @override
+  Stream<List<PortForward>> watch() => _db
+      .select(_db.portForwardRows)
+      .watch()
+      .map((rows) => rows.map(_toDomain).toList());
+
+  @override
+  Future<void> save(PortForward forward) =>
+      _db.into(_db.portForwardRows).insertOnConflictUpdate(_toRow(forward));
+
+  @override
+  Future<void> delete(String id) =>
+      (_db.delete(_db.portForwardRows)..where((row) => row.id.equals(id))).go();
+
+  static PortForward _toDomain(PortForwardRow row) => PortForward(
+    id: row.id,
+    hostId: row.hostId,
+    kind: PortForwardKind.values.firstWhere(
+      (kind) => kind.name == row.kind,
+      orElse: () => PortForwardKind.local,
+    ),
+    listenPort: row.listenPort,
+    destinationHost: row.destinationHost,
+    destinationPort: row.destinationPort,
+    bindAddress: row.bindAddress,
+    label: row.label,
+  );
+
+  static PortForwardRow _toRow(PortForward forward) => PortForwardRow(
+    id: forward.id,
+    hostId: forward.hostId,
+    kind: forward.kind.name,
+    listenPort: forward.listenPort,
+    destinationHost: forward.destinationHost,
+    destinationPort: forward.destinationPort,
+    bindAddress: forward.bindAddress,
+    label: forward.label,
+  );
 }
 
 /// Key metadata, stored in drift. Private keys never come near this class.

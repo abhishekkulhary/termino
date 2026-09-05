@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/features/terminal/application/reconnect_policy.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 
 part 'session_manager.freezed.dart';
@@ -72,10 +73,26 @@ class SessionManager extends _$SessionManager {
   /// `onDispose` callback, so the list has to be captured outside it.
   final _owned = <TerminalSession>[];
 
+  /// How to rebuild a backend for a session that dropped, by session id.
+  ///
+  /// Backends are single-use, so reconnecting means making a new one. The
+  /// session keeps its id and its place in the tab strip, which is what makes
+  /// it feel like the same session coming back rather than a new one.
+  final _reconnectors = <String, Future<TerminalBackend> Function()>{};
+  final _policies = <String, ReconnectPolicy>{};
+  final _attempts = <String, int>{};
+  final _timers = <String, Timer>{};
+  final _watchers = <String, VoidCallback>{};
+
   @override
   SessionsState build() {
     ref.onDispose(() {
+      for (final timer in _timers.values) {
+        timer.cancel();
+      }
+      _timers.clear();
       for (final session in _owned) {
+        _detach(session);
         // Fire and forget: the container is going away regardless, and
         // onDispose cannot await.
         unawaited(session.dispose());
@@ -93,9 +110,17 @@ class SessionManager extends _$SessionManager {
   Future<TerminalSession> open({
     required TerminalBackend backend,
     String title = 'Terminal',
+    Future<TerminalBackend> Function()? reconnect,
+    ReconnectPolicy policy = const ReconnectPolicy(),
   }) async {
+    final id = 'session-${_nextId++}';
+    if (reconnect != null) {
+      _reconnectors[id] = reconnect;
+      _policies[id] = policy;
+    }
+
     final session = TerminalSession(
-      id: 'session-${_nextId++}',
+      id: id,
       backend: backend,
       initialTitle: title,
     );
@@ -108,10 +133,94 @@ class SessionManager extends _$SessionManager {
 
     try {
       await session.start();
+      _attempts.remove(id);
     } on TerminalBackendFailure {
       // Already reflected in session.connectionState.
     }
+    _watchForDrop(session);
     return session;
+  }
+
+  /// Watches a session and schedules a reconnection if it drops.
+  ///
+  /// Only [BackendConnectionState.error] triggers a retry. A session that
+  /// closed cleanly — the user typed `exit` — must stay closed; reconnecting
+  /// it would be the app arguing with them.
+  void _watchForDrop(TerminalSession session) {
+    if (!_reconnectors.containsKey(session.id)) return;
+
+    void listener() {
+      if (session.connectionState.value != BackendConnectionState.error) return;
+      _scheduleReconnect(session.id);
+    }
+
+    session.connectionState.addListener(listener);
+    _watchers[session.id] = listener;
+    listener();
+  }
+
+  void _scheduleReconnect(String id) {
+    if (_timers.containsKey(id)) return;
+
+    final policy = _policies[id] ?? const ReconnectPolicy();
+    final attempt = (_attempts[id] ?? 0) + 1;
+    if (!policy.shouldRetry(attempt)) return;
+
+    _attempts[id] = attempt;
+    _timers[id] = Timer(policy.delayFor(attempt), () async {
+      _timers.remove(id);
+      await _reconnect(id);
+    });
+  }
+
+  Future<void> _reconnect(String id) async {
+    final make = _reconnectors[id];
+    final index = state.sessions.indexWhere((session) => session.id == id);
+    if (make == null || index < 0) return;
+
+    final old = state.sessions[index];
+    final TerminalBackend backend;
+    try {
+      backend = await make();
+    } on Object {
+      _scheduleReconnect(id);
+      return;
+    }
+
+    final replacement = TerminalSession(
+      id: id,
+      backend: backend,
+      initialTitle: old.title.value,
+    );
+
+    _detach(old);
+    _owned
+      ..remove(old)
+      ..add(replacement);
+
+    final sessions = [...state.sessions]..[index] = replacement;
+    state = state.copyWith(sessions: sessions);
+    await old.dispose();
+
+    try {
+      await replacement.start();
+      _attempts.remove(id);
+    } on TerminalBackendFailure {
+      // Reflected in the new session's state; the watcher retries.
+    }
+    _watchForDrop(replacement);
+  }
+
+  void _detach(TerminalSession session) {
+    final listener = _watchers.remove(session.id);
+    if (listener != null) session.connectionState.removeListener(listener);
+  }
+
+  void _forget(String id) {
+    _timers.remove(id)?.cancel();
+    _reconnectors.remove(id);
+    _policies.remove(id);
+    _attempts.remove(id);
   }
 
   /// Brings the session with [id] to the front. Unknown ids are ignored.
@@ -156,6 +265,8 @@ class SessionManager extends _$SessionManager {
           : remaining[(index - 1).clamp(0, remaining.length - 1)].id;
     }
 
+    _detach(session);
+    _forget(id);
     _owned.remove(session);
     state = SessionsState(
       sessions: remaining,
@@ -169,6 +280,10 @@ class SessionManager extends _$SessionManager {
   /// Closes every open session.
   Future<void> closeAll() async {
     final sessions = state.sessions;
+    for (final session in sessions) {
+      _detach(session);
+      _forget(session.id);
+    }
     _owned.clear();
     state = const SessionsState();
     for (final session in sessions) {

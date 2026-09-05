@@ -6,6 +6,8 @@ import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 
+import 'support/test_database.dart';
+
 /// A platform with no local shell, so widget tests never spawn a real process.
 /// The PTY itself is covered by `integration_test/local_pty_test.dart`, which
 /// runs against a real shell.
@@ -24,13 +26,11 @@ Future<void> _pumpApp(WidgetTester tester) async {
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
+  final container = testContainer(capabilities: _noLocalShell);
+  addTearDown(container.dispose);
+
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        platformCapabilitiesProvider.overrideWithValue(_noLocalShell),
-      ],
-      child: const TerminoApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const TerminoApp()),
   );
   await tester.pumpAndSettle();
 }
@@ -72,11 +72,9 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    // Settings is still a placeholder, so this exercises navigation without
-    // pulling in the database that Hosts and Keys need.
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Phase 6'), findsOneWidget);
+    expect(find.text('APPEARANCE'), findsOneWidget);
 
     await tester.tap(find.text('Terminal'));
     await tester.pumpAndSettle();

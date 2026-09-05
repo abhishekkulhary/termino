@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/router.dart';
+import 'package:termino/domain/entities/terminal_settings.dart';
+import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/app_theme.dart';
 
 /// The root widget.
-class TerminoApp extends StatefulWidget {
+class TerminoApp extends ConsumerStatefulWidget {
   /// Creates the app.
   ///
   /// A [router] may be supplied by tests that need to start at a specific
@@ -15,11 +20,19 @@ class TerminoApp extends StatefulWidget {
   final GoRouter? router;
 
   @override
-  State<TerminoApp> createState() => _TerminoAppState();
+  ConsumerState<TerminoApp> createState() => _TerminoAppState();
 }
 
-class _TerminoAppState extends State<TerminoApp> {
+class _TerminoAppState extends ConsumerState<TerminoApp> {
   late final GoRouter _router = widget.router ?? buildRouter();
+
+  @override
+  void initState() {
+    super.initState();
+    // Settings start at their defaults and load into them, so the first frame
+    // never waits on storage.
+    unawaited(ref.read(settingsProvider.notifier).load());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +41,11 @@ class _TerminoAppState extends State<TerminoApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      // themeMode is left at its default of ThemeMode.system: Termino follows
-      // the platform. An explicit in-app override arrives with the rest of the
-      // settings in Phase 6.
+      themeMode: switch (ref.watch(currentSettingsProvider).themeMode) {
+        AppThemeMode.system => ThemeMode.system,
+        AppThemeMode.light => ThemeMode.light,
+        AppThemeMode.dark => ThemeMode.dark,
+      },
       routerConfig: _router,
     );
   }

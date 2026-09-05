@@ -67,10 +67,19 @@ class SessionLauncher extends _$SessionLauncher {
       throw StateError('openSsh called where SSH is unavailable');
     }
 
-    final backend = await ref.read(sshConnectorProvider).connect(host);
+    final connector = ref.read(sshConnectorProvider);
+    final backend = await connector.connect(host);
+
     return await ref
         .read(sessionManagerProvider.notifier)
-        .open(backend: backend, title: host.label);
+        .open(
+          backend: backend,
+          title: host.label,
+          // Only SSH reconnects. A local shell that exits has nothing to
+          // reconnect to, and re-spawning it would discard the exit status the
+          // user was probably looking at.
+          reconnect: () => connector.connect(host),
+        );
   }
 
   /// Opens a session replaying the built-in demo transcript.

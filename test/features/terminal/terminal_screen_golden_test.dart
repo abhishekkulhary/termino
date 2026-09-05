@@ -2,12 +2,12 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 
 import '../../support/pump.dart';
+import '../../support/test_database.dart';
 import '../../support/test_fonts.dart';
 
 const _withLocalShell = PlatformCapabilities(
@@ -45,9 +45,7 @@ Future<void> _pump(
     tester,
     const Scaffold(body: TerminalScreen()),
     size: size,
-    container: ProviderContainer.test(
-      overrides: [platformCapabilitiesProvider.overrideWithValue(capabilities)],
-    ),
+    container: testContainer(capabilities: capabilities),
   );
 }
 
