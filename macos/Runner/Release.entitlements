@@ -13,5 +13,16 @@
 	<!-- Outbound TCP, for SSH and SFTP. -->
 	<key>com.apple.security.network.client</key>
 	<true/>
+
+	<!--
+	  Required by `file_picker` to open the "choose a file" panel, which is how
+	  a user picks something to upload. The plugin checks for this entitlement
+	  itself and refuses without it, whether or not the sandbox is on — with no
+	  entitlement the upload button did nothing at all. Outside the sandbox it
+	  grants nothing extra; inside one it is the standard, narrowest form of
+	  file access: only what the user explicitly chooses in the panel.
+	-->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
 </dict>
 </plist>

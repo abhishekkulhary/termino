@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:termino/app/destinations.dart';
 import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
@@ -135,7 +137,13 @@ class HostsScreen extends ConsumerWidget {
 
     final backend = session.backend;
     final failure = backend.failure;
-    if (failure == null) return;
+    if (failure == null) {
+      // Go to the terminal the session was just opened in. Without this the
+      // user stays on the host list with nothing to show that anything
+      // happened — the session exists, in a tab they were never taken to.
+      if (context.mounted) context.go(AppDestinations.terminal.route);
+      return;
+    }
 
     // A refused host key is the one failure that deserves more than a banner
     // in the tab: the user needs to see both fingerprints to act on it.

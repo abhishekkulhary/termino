@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/core/logging/app_logger.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
@@ -200,11 +201,38 @@ class _Browser extends ConsumerWidget {
   }
 
   Future<void> _upload(BuildContext context) async {
-    // file_picker 12 returns the files directly rather than a result object.
-    final picked = await FilePicker.pickFiles();
-    final path = picked.singleOrNull?.path;
-    if (path == null) return;
-    await session.upload(path);
+    // Captured before the first await: the widget may be gone by the time the
+    // user has finished choosing a file.
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      // file_picker 12 returns the files directly rather than a result object,
+      // and it returns every file the user selected — all of them are queued,
+      // rather than a multiple selection quietly uploading nothing.
+      final picked = await FilePicker.pickFiles();
+      final paths = picked
+          .map((file) => file.path)
+          .whereType<String>()
+          .toList();
+      if (paths.isEmpty) return;
+
+      for (final path in paths) {
+        await session.upload(path);
+      }
+    } on Object catch (error, stackTrace) {
+      // This ran unguarded until a macOS entitlement made the picker throw:
+      // the button did nothing, reported nothing, and the exception went to a
+      // console the user was never going to read. The detail belongs in the
+      // log; the user gets a sentence.
+      Loggers.session.warning(
+        'Choosing a file to upload failed.',
+        error,
+        stackTrace,
+      );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('That file could not be opened.')),
+      );
+    }
   }
 }
 

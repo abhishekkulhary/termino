@@ -9,6 +9,14 @@ order releases.
 
 ### Fixed
 
+- macOS: the upload button in the file browser did nothing. `file_picker`
+  requires a file-access entitlement even with the App Sandbox off, and the
+  exception it threw was never caught, so nothing was shown either. The
+  entitlement is declared, the failure is now reported, and selecting several
+  files queues all of them instead of silently none.
+- Connecting from the host list stayed on the host list. The session was opened
+  in a tab the user was never taken to, which made a successful connection and
+  a silent failure look the same.
 - Android: the local shell reported "permission denied" for almost everything.
   An app process starts with its working directory at `/`, which its own UID
   may not read, and with no `HOME`. The shell now starts in the app's private
