@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
 import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
@@ -30,6 +31,7 @@ class TerminalScreen extends ConsumerWidget {
         _TabStrip(
           sessions: sessions.sessions,
           activeId: sessions.activeId,
+          activeSession: sessions.active,
           secondaryId: sessions.secondaryId,
           onSelect: ref.read(sessionManagerProvider.notifier).activate,
           onClose: (id) =>
@@ -131,6 +133,7 @@ class _TabStrip extends StatelessWidget {
   const new({
     required this.sessions,
     required this.activeId,
+    required this.activeSession,
     required this.secondaryId,
     required this.onSelect,
     required this.onClose,
@@ -140,6 +143,7 @@ class _TabStrip extends StatelessWidget {
 
   final List<TerminalSession> sessions;
   final String? activeId;
+  final TerminalSession? activeSession;
   final String? secondaryId;
   final ValueChanged<String> onSelect;
   final ValueChanged<String> onClose;
@@ -181,10 +185,40 @@ class _TabStrip extends StatelessWidget {
               },
             ),
           ),
+          _SnippetsButton(session: activeSession),
           const _NewSessionButton(),
           const SizedBox(width: Spacing.xs),
         ],
       ),
+    );
+  }
+}
+
+/// Opens the snippet sheet for whichever session is in front.
+///
+/// In the tab strip rather than only in the terminal's context menu, because a
+/// touch device has no right-click and snippets are most useful there.
+class _SnippetsButton extends StatelessWidget {
+  const new({required this.session});
+
+  final TerminalSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = session;
+
+    return IconButton(
+      icon: const Icon(Icons.bolt_outlined, size: 18),
+      tooltip: 'Snippets',
+      onPressed: current == null
+          ? null
+          : () => unawaited(
+              showSnippetSheet(
+                context,
+                hostId: current.hostId,
+                onSend: current.sendText,
+              ),
+            ),
     );
   }
 }

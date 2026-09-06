@@ -110,6 +110,7 @@ class SessionManager extends _$SessionManager {
   Future<TerminalSession> open({
     required TerminalBackend backend,
     String title = 'Terminal',
+    String? hostId,
     Future<TerminalBackend> Function()? reconnect,
     ReconnectPolicy policy = const ReconnectPolicy(),
   }) async {
@@ -122,6 +123,7 @@ class SessionManager extends _$SessionManager {
     final session = TerminalSession(
       id: id,
       backend: backend,
+      hostId: hostId,
       initialTitle: title,
     );
 
@@ -190,6 +192,7 @@ class SessionManager extends _$SessionManager {
     final replacement = TerminalSession(
       id: id,
       backend: backend,
+      hostId: old.hostId,
       initialTitle: old.title.value,
     );
 

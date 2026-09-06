@@ -1,9 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:termino/domain/entities/snippet.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/domain/repositories/known_hosts_repository.dart';
 import 'package:termino/domain/repositories/port_forward_repository.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
+import 'package:termino/domain/repositories/snippet_repository.dart';
 import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
@@ -59,6 +61,16 @@ HostKeyVerifier hostKeyVerifier(Ref ref) =>
 @Riverpod(keepAlive: true)
 PortForwardRepository portForwardRepository(Ref ref) =>
     DriftPortForwardRepository(ref.watch(databaseProvider));
+
+/// Saved commands.
+@Riverpod(keepAlive: true)
+SnippetRepository snippetRepository(Ref ref) =>
+    DriftSnippetRepository(ref.watch(databaseProvider));
+
+/// The saved commands, as a live list.
+@riverpod
+Stream<List<Snippet>> snippets(Ref ref) =>
+    ref.watch(snippetRepositoryProvider).watch();
 
 /// Reads and writes the user's settings.
 @Riverpod(keepAlive: true)

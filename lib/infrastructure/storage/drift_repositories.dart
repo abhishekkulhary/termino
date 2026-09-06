@@ -1,11 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:termino/domain/entities/known_host.dart';
 import 'package:termino/domain/entities/port_forward.dart';
+import 'package:termino/domain/entities/snippet.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/domain/repositories/known_hosts_repository.dart';
 import 'package:termino/domain/repositories/port_forward_repository.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
+import 'package:termino/domain/repositories/snippet_repository.dart';
 import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
 import 'package:termino/infrastructure/storage/database.dart';
@@ -240,6 +242,54 @@ class DriftPortForwardRepository implements PortForwardRepository {
     destinationPort: forward.destinationPort,
     bindAddress: forward.bindAddress,
     label: forward.label,
+  );
+}
+
+/// Saved commands, stored in drift.
+class DriftSnippetRepository implements SnippetRepository {
+  /// Creates a repository over the database.
+  const new(this._db);
+
+  final TerminoDatabase _db;
+
+  @override
+  Future<List<Snippet>> all() async =>
+      (await _ordered().get()).map(_toDomain).toList();
+
+  @override
+  Stream<List<Snippet>> watch() =>
+      _ordered().watch().map((rows) => rows.map(_toDomain).toList());
+
+  @override
+  Future<void> save(Snippet snippet) =>
+      _db.into(_db.snippetRows).insertOnConflictUpdate(_toRow(snippet));
+
+  @override
+  Future<void> delete(String id) =>
+      (_db.delete(_db.snippetRows)..where((row) => row.id.equals(id))).go();
+
+  SimpleSelectStatement<SnippetRows, SnippetRow> _ordered() =>
+      _db.select(_db.snippetRows)..orderBy([
+        (row) =>
+            OrderingTerm(expression: row.createdAt, mode: OrderingMode.desc),
+      ]);
+
+  static Snippet _toDomain(SnippetRow row) => Snippet(
+    id: row.id,
+    name: row.name,
+    body: row.body,
+    hostId: row.hostId,
+    runImmediately: row.runImmediately,
+    createdAt: row.createdAt,
+  );
+
+  static SnippetRow _toRow(Snippet snippet) => SnippetRow(
+    id: snippet.id,
+    name: snippet.name,
+    body: snippet.body,
+    hostId: snippet.hostId,
+    runImmediately: snippet.runImmediately,
+    createdAt: snippet.createdAt,
   );
 }
 

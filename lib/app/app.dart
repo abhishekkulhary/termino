@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/router.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
+import 'package:termino/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/app_theme.dart';
 
@@ -34,18 +35,36 @@ class _TerminoAppState extends ConsumerState<TerminoApp> {
     unawaited(ref.read(settingsProvider.notifier).load());
   }
 
+  static ThemeMode _themeMode(AppThemeMode mode) => switch (mode) {
+    AppThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+  };
+
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(currentSettingsProvider);
+
+    // Shown in place of the router rather than as a route, so a first-run user
+    // cannot navigate past it and the rest of the app never has to wonder
+    // whether onboarding has happened.
+    if (!settings.onboardingComplete) {
+      return MaterialApp(
+        title: 'Termino',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: _themeMode(settings.themeMode),
+        home: const OnboardingScreen(),
+      );
+    }
+
     return MaterialApp.router(
       title: 'Termino',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: switch (ref.watch(currentSettingsProvider).themeMode) {
-        AppThemeMode.system => ThemeMode.system,
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-      },
+      themeMode: _themeMode(settings.themeMode),
       routerConfig: _router,
     );
   }

@@ -78,6 +78,10 @@ class Settings extends _$Settings {
     (s) => s.copyWith(relayUrl: (url?.trim().isEmpty ?? true) ? null : url),
   );
 
+  /// Records that the first-run introduction has been seen.
+  Future<void> completeOnboarding() =>
+      _update((s) => s.copyWith(onboardingComplete: true));
+
   /// Returns everything to its default.
   Future<void> reset() => _update((_) => const TerminalSettings());
 }

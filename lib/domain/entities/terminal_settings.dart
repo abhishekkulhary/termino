@@ -80,6 +80,9 @@ abstract class TerminalSettings with _$TerminalSettings {
     /// Only meaningful on the web, where a browser cannot open a raw TCP
     /// socket. Everywhere else SSH connects directly and this is ignored.
     String? relayUrl,
+
+    /// Whether the user has been through the first-run introduction.
+    @Default(false) bool onboardingComplete,
   }) = _TerminalSettings;
 
   const new _();

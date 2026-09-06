@@ -75,6 +75,7 @@ class SessionLauncher extends _$SessionLauncher {
         .open(
           backend: backend,
           title: host.label,
+          hostId: host.id,
           // Only SSH reconnects. A local shell that exits has nothing to
           // reconnect to, and re-spawning it would discard the exit status the
           // user was probably looking at.

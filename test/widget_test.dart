@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/app/app.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 
@@ -28,6 +29,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
 
   final container = testContainer(capabilities: _noLocalShell);
   addTearDown(container.dispose);
+  // These exercise the app proper; the first-run introduction has its own
+  // tests and would otherwise stand in front of everything.
+  await container.read(settingsProvider.notifier).completeOnboarding();
 
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const TerminoApp()),

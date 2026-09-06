@@ -29,6 +29,7 @@ class TerminalSession {
   new({
     required this.id,
     required this.backend,
+    this.hostId,
     String initialTitle = 'Terminal',
     int maxLines = 10000,
     this.batcher = const TerminalOutputBatcher(),
@@ -45,6 +46,12 @@ class TerminalSession {
 
   /// The byte stream this terminal is attached to.
   final TerminalBackend backend;
+
+  /// The saved host this session connects to, when it is an SSH session.
+  ///
+  /// Null for a local shell or the demo. Snippets use it to decide which of
+  /// them apply here.
+  final String? hostId;
 
   /// The emulator holding the screen and scrollback.
   final Terminal terminal;

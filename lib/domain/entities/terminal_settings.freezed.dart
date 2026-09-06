@@ -21,7 +21,8 @@ mixin _$TerminalSettings {
 ///
 /// Only meaningful on the web, where a browser cannot open a raw TCP
 /// socket. Everywhere else SSH connects directly and this is ignored.
- String? get relayUrl;
+ String? get relayUrl;/// Whether the user has been through the first-run introduction.
+ bool get onboardingComplete;
 /// Create a copy of TerminalSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,20 +36,20 @@ $TerminalSettingsCopyWith<TerminalSettings> get copyWith => _$TerminalSettingsCo
 @override
 bool operator ==(Object other) {
   final _this = this as TerminalSettings;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalSettings&&(identical(other.paletteId, _this.paletteId) || other.paletteId == _this.paletteId)&&(identical(other.themeMode, _this.themeMode) || other.themeMode == _this.themeMode)&&(identical(other.fontSize, _this.fontSize) || other.fontSize == _this.fontSize)&&(identical(other.lineHeight, _this.lineHeight) || other.lineHeight == _this.lineHeight)&&(identical(other.cursorShape, _this.cursorShape) || other.cursorShape == _this.cursorShape)&&(identical(other.cursorBlinks, _this.cursorBlinks) || other.cursorBlinks == _this.cursorBlinks)&&(identical(other.bell, _this.bell) || other.bell == _this.bell)&&(identical(other.scrollbackLines, _this.scrollbackLines) || other.scrollbackLines == _this.scrollbackLines)&&(identical(other.relayUrl, _this.relayUrl) || other.relayUrl == _this.relayUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalSettings&&(identical(other.paletteId, _this.paletteId) || other.paletteId == _this.paletteId)&&(identical(other.themeMode, _this.themeMode) || other.themeMode == _this.themeMode)&&(identical(other.fontSize, _this.fontSize) || other.fontSize == _this.fontSize)&&(identical(other.lineHeight, _this.lineHeight) || other.lineHeight == _this.lineHeight)&&(identical(other.cursorShape, _this.cursorShape) || other.cursorShape == _this.cursorShape)&&(identical(other.cursorBlinks, _this.cursorBlinks) || other.cursorBlinks == _this.cursorBlinks)&&(identical(other.bell, _this.bell) || other.bell == _this.bell)&&(identical(other.scrollbackLines, _this.scrollbackLines) || other.scrollbackLines == _this.scrollbackLines)&&(identical(other.relayUrl, _this.relayUrl) || other.relayUrl == _this.relayUrl)&&(identical(other.onboardingComplete, _this.onboardingComplete) || other.onboardingComplete == _this.onboardingComplete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TerminalSettings;
-  return Object.hash(runtimeType,_this.paletteId,_this.themeMode,_this.fontSize,_this.lineHeight,_this.cursorShape,_this.cursorBlinks,_this.bell,_this.scrollbackLines,_this.relayUrl);
+  return Object.hash(runtimeType,_this.paletteId,_this.themeMode,_this.fontSize,_this.lineHeight,_this.cursorShape,_this.cursorBlinks,_this.bell,_this.scrollbackLines,_this.relayUrl,_this.onboardingComplete);
 }
 
 @override
 String toString() {
   final _this = this as TerminalSettings;
-  return 'TerminalSettings(paletteId: ${_this.paletteId}, themeMode: ${_this.themeMode}, fontSize: ${_this.fontSize}, lineHeight: ${_this.lineHeight}, cursorShape: ${_this.cursorShape}, cursorBlinks: ${_this.cursorBlinks}, bell: ${_this.bell}, scrollbackLines: ${_this.scrollbackLines}, relayUrl: ${_this.relayUrl})';
+  return 'TerminalSettings(paletteId: ${_this.paletteId}, themeMode: ${_this.themeMode}, fontSize: ${_this.fontSize}, lineHeight: ${_this.lineHeight}, cursorShape: ${_this.cursorShape}, cursorBlinks: ${_this.cursorBlinks}, bell: ${_this.bell}, scrollbackLines: ${_this.scrollbackLines}, relayUrl: ${_this.relayUrl}, onboardingComplete: ${_this.onboardingComplete})';
 }
 
 
@@ -59,7 +60,7 @@ abstract mixin class $TerminalSettingsCopyWith<$Res>  {
   factory $TerminalSettingsCopyWith(TerminalSettings value, $Res Function(TerminalSettings) _then) = _$TerminalSettingsCopyWithImpl;
 @useResult
 $Res call({
- String? paletteId, AppThemeMode themeMode, double fontSize, double lineHeight, TerminalCursorShape cursorShape, bool cursorBlinks, BellBehaviour bell, int scrollbackLines, String? relayUrl
+ String? paletteId, AppThemeMode themeMode, double fontSize, double lineHeight, TerminalCursorShape cursorShape, bool cursorBlinks, BellBehaviour bell, int scrollbackLines, String? relayUrl, bool onboardingComplete
 });
 
 
@@ -76,7 +77,7 @@ class _$TerminalSettingsCopyWithImpl<$Res>
 
 /// Create a copy of TerminalSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? paletteId = freezed,Object? themeMode = null,Object? fontSize = null,Object? lineHeight = null,Object? cursorShape = null,Object? cursorBlinks = null,Object? bell = null,Object? scrollbackLines = null,Object? relayUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? paletteId = freezed,Object? themeMode = null,Object? fontSize = null,Object? lineHeight = null,Object? cursorShape = null,Object? cursorBlinks = null,Object? bell = null,Object? scrollbackLines = null,Object? relayUrl = freezed,Object? onboardingComplete = null,}) {
   return _then(TerminalSettings(
 paletteId: freezed == paletteId ? _self.paletteId : paletteId // ignore: cast_nullable_to_non_nullable
 as String?,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
@@ -87,7 +88,8 @@ as TerminalCursorShape,cursorBlinks: null == cursorBlinks ? _self.cursorBlinks :
 as bool,bell: null == bell ? _self.bell : bell // ignore: cast_nullable_to_non_nullable
 as BellBehaviour,scrollbackLines: null == scrollbackLines ? _self.scrollbackLines : scrollbackLines // ignore: cast_nullable_to_non_nullable
 as int,relayUrl: freezed == relayUrl ? _self.relayUrl : relayUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,onboardingComplete: null == onboardingComplete ? _self.onboardingComplete : onboardingComplete // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -172,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl,  bool onboardingComplete)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TerminalSettings() when $default != null:
-return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl);case _:
+return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl,_that.onboardingComplete);case _:
   return orElse();
 
 }
@@ -193,10 +195,10 @@ return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl,  bool onboardingComplete)  $default,) {final _that = this;
 switch (_that) {
 case _TerminalSettings():
-return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl);case _:
+return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl,_that.onboardingComplete);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +215,10 @@ return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? paletteId,  AppThemeMode themeMode,  double fontSize,  double lineHeight,  TerminalCursorShape cursorShape,  bool cursorBlinks,  BellBehaviour bell,  int scrollbackLines,  String? relayUrl,  bool onboardingComplete)?  $default,) {final _that = this;
 switch (_that) {
 case _TerminalSettings() when $default != null:
-return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl);case _:
+return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,_that.cursorShape,_that.cursorBlinks,_that.bell,_that.scrollbackLines,_that.relayUrl,_that.onboardingComplete);case _:
   return null;
 
 }
@@ -228,7 +230,7 @@ return $default(_that.paletteId,_that.themeMode,_that.fontSize,_that.lineHeight,
 @JsonSerializable()
 
 class _TerminalSettings extends TerminalSettings {
-  const _TerminalSettings({this.paletteId, this.themeMode = AppThemeMode.system, this.fontSize = 14, this.lineHeight = 1.2, this.cursorShape = TerminalCursorShape.block, this.cursorBlinks = true, this.bell = BellBehaviour.visual, this.scrollbackLines = 10000, this.relayUrl}): super._();
+  const _TerminalSettings({this.paletteId, this.themeMode = AppThemeMode.system, this.fontSize = 14, this.lineHeight = 1.2, this.cursorShape = TerminalCursorShape.block, this.cursorBlinks = true, this.bell = BellBehaviour.visual, this.scrollbackLines = 10000, this.relayUrl, this.onboardingComplete = false}): super._();
   factory _TerminalSettings.fromJson(Map<String, dynamic> json) => _$TerminalSettingsFromJson(json);
 
 /// The palette id, or null to follow the app theme.
@@ -245,6 +247,8 @@ class _TerminalSettings extends TerminalSettings {
 /// Only meaningful on the web, where a browser cannot open a raw TCP
 /// socket. Everywhere else SSH connects directly and this is ignored.
 @override final  String? relayUrl;
+/// Whether the user has been through the first-run introduction.
+@override@JsonKey() final  bool onboardingComplete;
 
 /// Create a copy of TerminalSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -259,18 +263,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalSettings&&(identical(other.paletteId, paletteId) || other.paletteId == paletteId)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.fontSize, fontSize) || other.fontSize == fontSize)&&(identical(other.lineHeight, lineHeight) || other.lineHeight == lineHeight)&&(identical(other.cursorShape, cursorShape) || other.cursorShape == cursorShape)&&(identical(other.cursorBlinks, cursorBlinks) || other.cursorBlinks == cursorBlinks)&&(identical(other.bell, bell) || other.bell == bell)&&(identical(other.scrollbackLines, scrollbackLines) || other.scrollbackLines == scrollbackLines)&&(identical(other.relayUrl, relayUrl) || other.relayUrl == relayUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalSettings&&(identical(other.paletteId, paletteId) || other.paletteId == paletteId)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.fontSize, fontSize) || other.fontSize == fontSize)&&(identical(other.lineHeight, lineHeight) || other.lineHeight == lineHeight)&&(identical(other.cursorShape, cursorShape) || other.cursorShape == cursorShape)&&(identical(other.cursorBlinks, cursorBlinks) || other.cursorBlinks == cursorBlinks)&&(identical(other.bell, bell) || other.bell == bell)&&(identical(other.scrollbackLines, scrollbackLines) || other.scrollbackLines == scrollbackLines)&&(identical(other.relayUrl, relayUrl) || other.relayUrl == relayUrl)&&(identical(other.onboardingComplete, onboardingComplete) || other.onboardingComplete == onboardingComplete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,paletteId,themeMode,fontSize,lineHeight,cursorShape,cursorBlinks,bell,scrollbackLines,relayUrl);
+    return Object.hash(runtimeType,paletteId,themeMode,fontSize,lineHeight,cursorShape,cursorBlinks,bell,scrollbackLines,relayUrl,onboardingComplete);
 }
 
 @override
 String toString() {
-    return 'TerminalSettings(paletteId: $paletteId, themeMode: $themeMode, fontSize: $fontSize, lineHeight: $lineHeight, cursorShape: $cursorShape, cursorBlinks: $cursorBlinks, bell: $bell, scrollbackLines: $scrollbackLines, relayUrl: $relayUrl)';
+    return 'TerminalSettings(paletteId: $paletteId, themeMode: $themeMode, fontSize: $fontSize, lineHeight: $lineHeight, cursorShape: $cursorShape, cursorBlinks: $cursorBlinks, bell: $bell, scrollbackLines: $scrollbackLines, relayUrl: $relayUrl, onboardingComplete: $onboardingComplete)';
 }
 
 
@@ -281,7 +285,7 @@ abstract mixin class _$TerminalSettingsCopyWith<$Res> implements $TerminalSettin
   factory _$TerminalSettingsCopyWith(_TerminalSettings value, $Res Function(_TerminalSettings) _then) = __$TerminalSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- String? paletteId, AppThemeMode themeMode, double fontSize, double lineHeight, TerminalCursorShape cursorShape, bool cursorBlinks, BellBehaviour bell, int scrollbackLines, String? relayUrl
+ String? paletteId, AppThemeMode themeMode, double fontSize, double lineHeight, TerminalCursorShape cursorShape, bool cursorBlinks, BellBehaviour bell, int scrollbackLines, String? relayUrl, bool onboardingComplete
 });
 
 
@@ -298,7 +302,7 @@ class __$TerminalSettingsCopyWithImpl<$Res>
 
 /// Create a copy of TerminalSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? paletteId = freezed,Object? themeMode = null,Object? fontSize = null,Object? lineHeight = null,Object? cursorShape = null,Object? cursorBlinks = null,Object? bell = null,Object? scrollbackLines = null,Object? relayUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? paletteId = freezed,Object? themeMode = null,Object? fontSize = null,Object? lineHeight = null,Object? cursorShape = null,Object? cursorBlinks = null,Object? bell = null,Object? scrollbackLines = null,Object? relayUrl = freezed,Object? onboardingComplete = null,}) {
   return _then(_TerminalSettings(
 paletteId: freezed == paletteId ? _self.paletteId : paletteId // ignore: cast_nullable_to_non_nullable
 as String?,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
@@ -309,7 +313,8 @@ as TerminalCursorShape,cursorBlinks: null == cursorBlinks ? _self.cursorBlinks :
 as bool,bell: null == bell ? _self.bell : bell // ignore: cast_nullable_to_non_nullable
 as BellBehaviour,scrollbackLines: null == scrollbackLines ? _self.scrollbackLines : scrollbackLines // ignore: cast_nullable_to_non_nullable
 as int,relayUrl: freezed == relayUrl ? _self.relayUrl : relayUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,onboardingComplete: null == onboardingComplete ? _self.onboardingComplete : onboardingComplete // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

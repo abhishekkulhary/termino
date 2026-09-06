@@ -368,6 +368,102 @@ final class PortForwardRepositoryProvider
 String _$portForwardRepositoryHash() =>
     r'1d08be0aa5289d2118430ae0ab00cde905174611';
 
+/// Saved commands.
+
+@ProviderFor(snippetRepository)
+final snippetRepositoryProvider = SnippetRepositoryProvider._();
+
+/// Saved commands.
+
+final class SnippetRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SnippetRepository,
+          SnippetRepository,
+          SnippetRepository
+        >
+    with $Provider<SnippetRepository> {
+  /// Saved commands.
+  SnippetRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'snippetRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$snippetRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SnippetRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SnippetRepository create(Ref ref) {
+    return snippetRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SnippetRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SnippetRepository>(value),
+    );
+  }
+}
+
+String _$snippetRepositoryHash() => r'c9c2d4c3322ee18631c9e4c61f01cbf79ec665c9';
+
+/// The saved commands, as a live list.
+
+@ProviderFor(snippets)
+final snippetsProvider = SnippetsProvider._();
+
+/// The saved commands, as a live list.
+
+final class SnippetsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Snippet>>,
+          List<Snippet>,
+          Stream<List<Snippet>>
+        >
+    with $FutureModifier<List<Snippet>>, $StreamProvider<List<Snippet>> {
+  /// The saved commands, as a live list.
+  SnippetsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'snippetsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$snippetsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<Snippet>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Snippet>> create(Ref ref) {
+    return snippets(ref);
+  }
+}
+
+String _$snippetsHash() => r'a94405b264fc710e56eac075f5f5e2bdefa94ed7';
+
 /// Reads and writes the user's settings.
 
 @ProviderFor(settingsStore)

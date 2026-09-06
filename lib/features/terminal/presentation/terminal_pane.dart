@@ -8,6 +8,7 @@ import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/domain/terminal/link_detector.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
+import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
 import 'package:termino/features/terminal/application/sticky_modifiers.dart';
 import 'package:termino/features/terminal/application/terminal_search_controller.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
@@ -68,6 +69,13 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
       );
     });
   }
+
+  /// Offers the saved commands that apply to this session.
+  Future<void> openSnippets() => showSnippetSheet(
+    context,
+    hostId: widget.session.hostId,
+    onSend: widget.session.sendText,
+  );
 
   /// Closes the find bar and clears its highlights.
   void closeSearch() {
@@ -262,6 +270,10 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
           child: Text('Select all'),
         ),
         const PopupMenuItem(value: _ContextAction.find, child: Text('Find…')),
+        const PopupMenuItem(
+          value: _ContextAction.snippets,
+          child: Text('Snippets…'),
+        ),
       ],
     );
 
@@ -278,13 +290,15 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
         );
       case _ContextAction.find:
         openSearch();
+      case _ContextAction.snippets:
+        await openSnippets();
       case null:
         break;
     }
   }
 }
 
-enum _ContextAction { copy, paste, selectAll, find }
+enum _ContextAction { copy, paste, selectAll, find, snippets }
 
 /// Two-finger pinch to change the terminal font size.
 ///
