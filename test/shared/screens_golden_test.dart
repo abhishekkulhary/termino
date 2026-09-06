@@ -5,7 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/app/app.dart';
+import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/domain/entities/port_forward.dart';
+import 'package:termino/domain/entities/ssh_host.dart';
+import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 
 import '../support/pump.dart';
@@ -39,6 +43,58 @@ void main() {
     );
     addTearDown(container.dispose);
     await container.read(settingsProvider.notifier).completeOnboarding();
+
+    // Keys and Tunnels need something in them to be worth a picture.
+    await container
+        .read(sshIdentityRepositoryProvider)
+        .save(
+          SshIdentity(
+            id: 'k1',
+            name: 'Laptop key',
+            keyType: SshKeyType.ed25519,
+            publicKey: 'ssh-ed25519 AAAA',
+            fingerprint: 'SHA256:9pTx0hLKq1n7bWvR3sZmCd8yQeUj4aXfP2kNvB6tGwo',
+            createdAt: DateTime.utc(2026, 3, 2),
+            comment: 'abhishek@laptop',
+          ),
+        );
+    await container
+        .read(sshIdentityRepositoryProvider)
+        .save(
+          SshIdentity(
+            id: 'k2',
+            name: 'Deploy key',
+            keyType: SshKeyType.rsa,
+            publicKey: 'ssh-rsa AAAA',
+            fingerprint: 'SHA256:Lm4Qs8zXv1oPd7cRt5uYbN0hKeJf3aWgD6iBxT2nCqE',
+            createdAt: DateTime.utc(2026, 1, 9),
+            hasPassphrase: true,
+          ),
+        );
+
+    await container
+        .read(sshHostRepositoryProvider)
+        .save(
+          const SshHost(
+            id: 'h1',
+            label: 'Build server',
+            hostname: 'build-01.example.com',
+            username: 'deploy',
+          ),
+        );
+    await container
+        .read(portForwardRepositoryProvider)
+        .save(
+          const PortForward(
+            id: 'f1',
+            hostId: 'h1',
+            kind: PortForwardKind.local,
+            listenPort: 8080,
+            destinationHost: 'localhost',
+            destinationPort: 80,
+            label: 'Staging web',
+          ),
+        );
 
     await tester.pumpWidget(
       UncontrolledProviderScope(

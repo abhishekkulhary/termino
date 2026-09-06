@@ -8,6 +8,8 @@ import 'package:termino/domain/entities/ssh_identity.dart';
 import 'package:termino/features/identities/application/identity_service.dart';
 import 'package:termino/features/identities/presentation/key_dialogs.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/neon.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// The user's SSH keys.
 class IdentitiesScreen extends ConsumerWidget {
@@ -26,12 +28,13 @@ class IdentitiesScreen extends ConsumerWidget {
         error: (error, _) => const Center(child: Text('Could not load keys')),
         data: (list) => list.isEmpty
             ? const _EmptyKeys()
-            : ListView.separated(
-                padding: const EdgeInsets.only(bottom: 88),
+            : ListView.builder(
+                padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
                 itemCount: list.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) =>
-                    _IdentityTile(identity: list[index]),
+                itemBuilder: (context, index) => Reveal.staggered(
+                  index: index,
+                  child: _IdentityCard(identity: list[index]),
+                ),
               ),
       ),
     );
@@ -66,71 +69,55 @@ class _AddKeyButton extends ConsumerWidget {
   }
 }
 
-class _IdentityTile extends ConsumerWidget {
+class _IdentityCard extends ConsumerWidget {
   const new({required this.identity});
 
   final SshIdentity identity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.vpn_key_rounded, size: 18)),
-      title: Row(
-        children: [
-          Flexible(child: Text(identity.name)),
-          const SizedBox(width: Spacing.sm),
-          Chip(
-            label: Text(identity.keyType.label),
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            labelStyle: theme.textTheme.labelSmall,
-          ),
-          if (identity.hasPassphrase) ...[
-            const SizedBox(width: Spacing.xs),
-            Tooltip(
-              message: 'Encrypted with a passphrase',
-              child: Icon(
-                Icons.lock_rounded,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    return NeonListCard(
+      icon: Icons.vpn_key_rounded,
+      title: identity.name,
+      subtitle: identity.fingerprint,
+      meta: identity.comment,
+      tags: [
+        identity.keyType.label,
+        if (identity.hasPassphrase) 'passphrase',
+        if (identity.requiresBiometrics) 'biometric',
+      ],
+      actions: [
+        NeonAction(
+          icon: Icons.copy_rounded,
+          tooltip: 'Copy public key',
+          onPressed: () => unawaited(_copyPublicKey(context)),
+        ),
+        MenuAnchor(
+          menuChildren: [
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
+              onPressed: () => unawaited(_confirmDelete(context, ref)),
+              child: const Text('Delete'),
             ),
           ],
-        ],
-      ),
-      subtitle: Text(
-        identity.fingerprint,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontFamily: Fonts.mono,
-          fontFamilyFallback: Fonts.monoFallback,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: MenuAnchor(
-        menuChildren: [
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.copy_rounded, size: 18),
-            onPressed: () => unawaited(
-              Clipboard.setData(ClipboardData(text: identity.publicKey)),
-            ),
-            child: const Text('Copy public key'),
+          builder: (context, controller, _) => IconButton(
+            icon: const Icon(Icons.more_vert_rounded, size: 18),
+            tooltip: 'More',
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
           ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-            onPressed: () => unawaited(_confirmDelete(context, ref)),
-            child: const Text('Delete'),
-          ),
-        ],
-        builder: (context, controller, _) => IconButton(
-          icon: const Icon(Icons.more_vert_rounded),
-          onPressed: () =>
-              controller.isOpen ? controller.close() : controller.open(),
         ),
-      ),
+      ],
     );
+  }
+
+  /// Copies the *public* key, and says so. The private half never leaves the
+  /// keystore, and a control this close to one that could is worth being
+  /// explicit about.
+  Future<void> _copyPublicKey(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: identity.publicKey));
+    messenger.showSnackBar(const SnackBar(content: Text('Public key copied.')));
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

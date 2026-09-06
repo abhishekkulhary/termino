@@ -9,6 +9,9 @@ order releases.
 
 ### Fixed
 
+- The bar and underline cursors, which `xterm` drew on the first line of the
+  terminal whatever line the cursor was on, and cursor blinking, which the
+  package cannot do at all. Both are drawn by the app now.
 - The light theme, which had drifted into a flat and partly illegible version
   of the dark one. Host colours are adapted for contrast against the surface
   they are drawn on, panels cast a real shadow where they cannot glow, and
@@ -39,6 +42,8 @@ order releases.
 
 ### Added
 
+- Keys, Files and Tunnels use the same list card as Hosts, so a row means
+  the same thing wherever it appears. File listings use a tighter density.
 - A live readout under every terminal: connection state, throughput while
   output is arriving, SSH round-trip latency, bytes received and the grid size.
 - Status lights on session tabs, and counts on the navigation for open sessions

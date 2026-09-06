@@ -13,6 +13,7 @@ import 'package:termino/features/sftp/application/sftp_session.dart';
 import 'package:termino/features/sftp/presentation/transfer_queue_sheet.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
 
 /// The remote file browser.
@@ -322,61 +323,63 @@ class _EntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
+    return NeonListCard(
+      // Dense: a directory can be hundreds of rows, and a comfortable card
+      // would mean scrolling past four files a screen. Same shapes, same
+      // marks, tighter.
       dense: true,
-      leading: Icon(
-        entry.isDirectory
-            ? Icons.folder_rounded
-            : entry.isLink
-            ? Icons.link_rounded
-            : Icons.insert_drive_file_outlined,
-        color: entry.isDirectory ? theme.colorScheme.primary : null,
-      ),
-      title: Text(entry.name),
-      subtitle: Text(
-        [
-          if (!entry.isDirectory) _formatSize(entry.size),
-          if (entry.modeString != null) entry.modeString!,
-        ].join('  ·  '),
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontFamily: Fonts.mono,
-          fontFamilyFallback: Fonts.monoFallback,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      icon: entry.isDirectory
+          ? Icons.folder_rounded
+          : entry.isLink
+          ? Icons.link_rounded
+          : Icons.insert_drive_file_outlined,
+      accent: entry.isDirectory
+          ? theme.colorScheme.primary
+          : theme.colorScheme.onSurfaceVariant,
+      title: entry.name,
+      subtitle: [
+        if (!entry.isDirectory) _formatSize(entry.size),
+        ?entry.modeString,
+      ].join('  ·  '),
       onTap: entry.isDirectory
           ? () => unawaited(session.open(entry.path))
           : null,
-      trailing: MenuAnchor(
-        menuChildren: [
-          if (!entry.isDirectory)
+      actions: [
+        if (!entry.isDirectory)
+          NeonAction(
+            icon: Icons.download_rounded,
+            tooltip: 'Download',
+            onPressed: () => unawaited(_download(context)),
+          ),
+        MenuAnchor(
+          menuChildren: [
             MenuItemButton(
-              leadingIcon: const Icon(Icons.download_rounded, size: 18),
-              onPressed: () => unawaited(_download(context)),
-              child: const Text('Download'),
+              leadingIcon: const Icon(
+                Icons.drive_file_rename_outline,
+                size: 18,
+              ),
+              onPressed: () => unawaited(_rename(context)),
+              child: const Text('Rename'),
             ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.drive_file_rename_outline, size: 18),
-            onPressed: () => unawaited(_rename(context)),
-            child: const Text('Rename'),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.lock_outline_rounded, size: 18),
+              onPressed: () => unawaited(_chmod(context)),
+              child: const Text('Permissions'),
+            ),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
+              onPressed: () => unawaited(_delete(context)),
+              child: const Text('Delete'),
+            ),
+          ],
+          builder: (context, controller, _) => IconButton(
+            icon: const Icon(Icons.more_vert_rounded, size: 18),
+            tooltip: 'More',
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
           ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.lock_outline_rounded, size: 18),
-            onPressed: () => unawaited(_chmod(context)),
-            child: const Text('Permissions'),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-            onPressed: () => unawaited(_delete(context)),
-            child: const Text('Delete'),
-          ),
-        ],
-        builder: (context, controller, _) => IconButton(
-          icon: const Icon(Icons.more_vert_rounded, size: 18),
-          onPressed: () =>
-              controller.isOpen ? controller.close() : controller.open(),
         ),
-      ),
+      ],
     );
   }
 

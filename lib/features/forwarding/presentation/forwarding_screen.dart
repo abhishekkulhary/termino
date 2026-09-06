@@ -9,6 +9,8 @@ import 'package:termino/domain/entities/port_forward.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/forwarding/application/forwarding_providers.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/neon.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// The port forwarding manager.
 class ForwardingScreen extends ConsumerWidget {
@@ -42,14 +44,16 @@ class ForwardingScreen extends ConsumerWidget {
           Expanded(
             child: forwards.isEmpty
                 ? const _Empty()
-                : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 88),
+                : ListView.builder(
+                    padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
                     itemCount: forwards.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) => _ForwardTile(
-                      forward: forwards[index],
-                      onEdit: () =>
-                          unawaited(_edit(context, ref, forwards[index])),
+                    itemBuilder: (context, index) => Reveal.staggered(
+                      index: index,
+                      child: _ForwardCard(
+                        forward: forwards[index],
+                        onEdit: () =>
+                            unawaited(_edit(context, ref, forwards[index])),
+                      ),
                     ),
                   ),
           ),
@@ -119,121 +123,83 @@ class _Empty extends StatelessWidget {
   }
 }
 
-class _ForwardTile extends ConsumerWidget {
+class _ForwardCard extends ConsumerWidget {
   const new({required this.forward, required this.onEdit});
 
   final PortForward forward;
   final VoidCallback onEdit;
 
+  /// A tunnel's own states mapped onto the light every row uses.
+  ConnectionHealth _health(PortForwardStatus status) => switch (status) {
+    PortForwardStatus.active => ConnectionHealth.online,
+    PortForwardStatus.starting => ConnectionHealth.busy,
+    PortForwardStatus.failed => ConnectionHealth.offline,
+    PortForwardStatus.stopped => ConnectionHealth.idle,
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final state = ref.watch(forwardStatusProvider(forward.id));
     final status = state?.status ?? PortForwardStatus.stopped;
+    final running = status.isRunning;
 
-    return ListTile(
-      leading: _StatusDot(status: status),
-      title: Text(forward.label ?? forward.summary),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            forward.argument,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: Fonts.mono,
-              fontFamilyFallback: Fonts.monoFallback,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    final connections = state?.connectionCount ?? 0;
+    final meta =
+        state?.error ??
+        (status == PortForwardStatus.active
+            ? '$connections connection${connections == 1 ? '' : 's'}'
+            : status.name);
+
+    return NeonListCard(
+      icon: Icons.swap_horiz_rounded,
+      status: _health(status),
+      selected: status == PortForwardStatus.active,
+      title: forward.label ?? forward.summary,
+      subtitle: forward.argument,
+      meta: meta,
+      tags: [forward.kind.label],
+      actions: [
+        NeonAction(
+          icon: running
+              ? Icons.stop_circle_outlined
+              : Icons.play_circle_outline_rounded,
+          tooltip: running ? 'Stop' : 'Start',
+          onPressed: () => unawaited(
+            running
+                ? ref.read(portForwardsProvider.notifier).stop(forward)
+                : ref.read(portForwardsProvider.notifier).start(forward),
           ),
-          if (state?.error case final message?)
-            Text(
-              message,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
+        ),
+        MenuAnchor(
+          menuChildren: [
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.edit_rounded, size: 18),
+              onPressed: onEdit,
+              child: const Text('Edit'),
+            ),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.copy_rounded, size: 18),
+              onPressed: () => unawaited(
+                Clipboard.setData(ClipboardData(text: forward.argument)),
               ),
-            )
-          else if (status == PortForwardStatus.active)
-            Text(
-              '${state?.connectionCount ?? 0} connection'
-              '${state?.connectionCount == 1 ? '' : 's'}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              child: const Text('Copy argument'),
+            ),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
+              onPressed: () => unawaited(
+                ref.read(portForwardsProvider.notifier).remove(forward.id),
               ),
+              child: const Text('Delete'),
             ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(
-              status.isRunning
-                  ? Icons.stop_circle_outlined
-                  : Icons.play_circle_outline_rounded,
-            ),
-            tooltip: status.isRunning ? 'Stop' : 'Start',
-            onPressed: () => unawaited(
-              status.isRunning
-                  ? ref.read(portForwardsProvider.notifier).stop(forward)
-                  : ref.read(portForwardsProvider.notifier).start(forward),
-            ),
+          ],
+          builder: (context, controller, _) => IconButton(
+            icon: const Icon(Icons.more_vert_rounded, size: 18),
+            tooltip: 'More',
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
           ),
-          MenuAnchor(
-            menuChildren: [
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.edit_rounded, size: 18),
-                onPressed: onEdit,
-                child: const Text('Edit'),
-              ),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.copy_rounded, size: 18),
-                onPressed: () => unawaited(
-                  Clipboard.setData(ClipboardData(text: forward.argument)),
-                ),
-                child: const Text('Copy ssh argument'),
-              ),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-                onPressed: () => unawaited(
-                  ref.read(portForwardsProvider.notifier).remove(forward.id),
-                ),
-                child: const Text('Delete'),
-              ),
-            ],
-            builder: (context, controller, _) => IconButton(
-              icon: const Icon(Icons.more_vert_rounded),
-              onPressed: () =>
-                  controller.isOpen ? controller.close() : controller.open(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const new({required this.status});
-
-  final PortForwardStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = switch (status) {
-      PortForwardStatus.active => Colors.green,
-      PortForwardStatus.starting => theme.colorScheme.secondary,
-      PortForwardStatus.failed => theme.colorScheme.error,
-      PortForwardStatus.stopped => theme.colorScheme.outline,
-    };
-
-    return Semantics(
-      label: 'Status: ${status.name}',
-      child: Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
+        ),
+      ],
     );
   }
 }

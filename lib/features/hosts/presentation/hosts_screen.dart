@@ -19,7 +19,6 @@ import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/infrastructure/ssh/import/ssh_config_import.dart';
 import 'package:termino/infrastructure/ssh/ssh_backend.dart';
 import 'package:termino/shared/design/breakpoints.dart';
-import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
@@ -306,203 +305,82 @@ class _HostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final accent = host.colorValue != null
-        ? Color(host.colorValue!)
-        : theme.colorScheme.primary;
     final health = _health(ref);
 
     // On a phone there is not room for three buttons and a readable host name,
-    // and the name is what the user is looking for. Browse and Tunnels move
-    // into the menu rather than squeezing the label to an ellipsis.
+    // and the name is what the user came for. Browse and Tunnels move into the
+    // menu rather than squeezing the label to an ellipsis.
     final roomy = Breakpoints.ofContext(context) != WindowSize.compact;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.lg,
-        vertical: Spacing.sm,
-      ),
-      child: NeonPanel(
-        accent: health == ConnectionHealth.idle ? null : accent,
-        selected: health == ConnectionHealth.online,
-        onTap: onConnect,
-        padding: const EdgeInsets.fromLTRB(
-          Spacing.lg,
-          Spacing.md,
-          Spacing.sm,
-          Spacing.md,
+    return NeonListCard(
+      icon: Icons.dns_rounded,
+      accent: host.colorValue == null ? null : Color(host.colorValue!),
+      status: health,
+      selected: health == ConnectionHealth.online,
+      title: host.label,
+      subtitle: host.target,
+      meta: lastConnectedLabel(host.lastConnectedAt, long: roomy),
+      tags: [?host.folder, if (host.jumpHostId != null) 'via jump'],
+      onTap: onConnect,
+      actions: [
+        NeonAction(
+          icon: Icons.bolt_rounded,
+          tooltip: 'Connect',
+          accent: host.colorValue == null ? null : Color(host.colorValue!),
+          onPressed: onConnect,
         ),
-        child: Row(
-          children: [
-            _Identity(accent: accent, health: health),
-            const SizedBox(width: Spacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          host.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
-                      if (host.folder case final folder?) ...[
-                        const SizedBox(width: Spacing.sm),
-                        _Tag(folder),
-                      ],
-                      if (host.jumpHostId != null) ...[
-                        const SizedBox(width: Spacing.xs),
-                        const _Tag('via jump'),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: Spacing.xxs),
-                  Text(
-                    host.target,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium,
-                  ),
-                  const SizedBox(height: Spacing.xs),
-                  Text(
-                    lastConnectedLabel(host.lastConnectedAt, long: roomy),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: Spacing.sm),
-            NeonAction(
-              icon: Icons.bolt_rounded,
-              tooltip: 'Connect',
-              accent: accent,
-              onPressed: onConnect,
-            ),
-            if (roomy) ...[
-              const SizedBox(width: Spacing.xs),
-              NeonAction(
-                icon: Icons.folder_open_rounded,
-                tooltip: 'Browse files',
-                onPressed: onBrowse,
-              ),
-              const SizedBox(width: Spacing.xs),
-              NeonAction(
-                icon: Icons.swap_horiz_rounded,
-                tooltip: 'Port forwards',
-                onPressed: onTunnels,
-              ),
-            ],
-            MenuAnchor(
-              menuChildren: [
-                if (!roomy) ...[
-                  MenuItemButton(
-                    leadingIcon: const Icon(
-                      Icons.folder_open_rounded,
-                      size: 18,
-                    ),
-                    onPressed: onBrowse,
-                    child: const Text('Browse files'),
-                  ),
-                  MenuItemButton(
-                    leadingIcon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                    onPressed: onTunnels,
-                    child: const Text('Port forwards'),
-                  ),
-                ],
-                MenuItemButton(
-                  leadingIcon: const Icon(Icons.edit_rounded, size: 18),
-                  onPressed: onEdit,
-                  child: const Text('Edit'),
-                ),
-                MenuItemButton(
-                  leadingIcon: const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 18,
-                  ),
-                  onPressed: onDelete,
-                  child: const Text('Delete'),
-                ),
-              ],
-              builder: (context, controller, _) => IconButton(
-                icon: const Icon(Icons.more_vert_rounded, size: 18),
-                tooltip: 'More',
-                onPressed: () =>
-                    controller.isOpen ? controller.close() : controller.open(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The host's colour, its initial, and its current state in one mark.
-class _Identity extends StatelessWidget {
-  const new({required this.accent, required this.health});
-
-  final Color accent;
-  final ConnectionHealth health;
-
-  @override
-  Widget build(BuildContext context) {
-    final neon = NeonAccents.of(context);
-    final colour = neon.readable(accent);
-
-    return SizedBox(
-      width: 34,
-      height: 34,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              borderRadius: Radii.borderSm,
-              color: colour.withValues(alpha: neon.accentFill),
-              border: Border.all(
-                color: colour.withValues(alpha: neon.accentEdge),
-              ),
-              boxShadow: health == ConnectionHealth.idle
-                  ? null
-                  : neon.glow(colour, blur: 12),
-            ),
-            child: Icon(Icons.dns_rounded, size: 17, color: colour),
+        if (roomy) ...[
+          const SizedBox(width: Spacing.xs),
+          NeonAction(
+            icon: Icons.folder_open_rounded,
+            tooltip: 'Browse files',
+            onPressed: onBrowse,
           ),
-          Positioned(
-            right: -3,
-            bottom: -3,
-            child: StatusDot(status: health, size: 9),
+          const SizedBox(width: Spacing.xs),
+          NeonAction(
+            icon: Icons.swap_horiz_rounded,
+            tooltip: 'Port forwards',
+            onPressed: onTunnels,
           ),
         ],
-      ),
+        _OverflowMenu(
+          items: [
+            if (!roomy) ...[
+              (Icons.folder_open_rounded, 'Browse files', onBrowse),
+              (Icons.swap_horiz_rounded, 'Port forwards', onTunnels),
+            ],
+            (Icons.edit_rounded, 'Edit', onEdit),
+            (Icons.delete_outline_rounded, 'Delete', onDelete),
+          ],
+        ),
+      ],
     );
   }
 }
 
-/// A small pill for a folder name or a connection detail.
-class _Tag extends StatelessWidget {
-  const new(this.text);
+/// The "more" button every row carries.
+class _OverflowMenu extends StatelessWidget {
+  const new({required this.items});
 
-  final String text;
+  final List<(IconData, String, VoidCallback)> items;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 1),
-      decoration: BoxDecoration(
-        borderRadius: Radii.borderXs,
-        border: Border.all(color: NeonAccents.of(context).panelBorder),
+    return MenuAnchor(
+      menuChildren: [
+        for (final (icon, label, action) in items)
+          MenuItemButton(
+            leadingIcon: Icon(icon, size: 18),
+            onPressed: action,
+            child: Text(label),
+          ),
+      ],
+      builder: (context, controller, _) => IconButton(
+        icon: const Icon(Icons.more_vert_rounded, size: 18),
+        tooltip: 'More',
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
       ),
-      child: Text(text, style: theme.textTheme.labelSmall),
     );
   }
 }

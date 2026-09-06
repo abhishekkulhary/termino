@@ -482,3 +482,216 @@ class _BreathingState extends State<_Breathing>
     child: widget.child,
   );
 }
+
+/// The app's list row: a lit panel with an identity mark, a title, a detail
+/// line and the actions worth reaching without a menu.
+///
+/// Extracted from the host card so that Keys, Files and Tunnels are the same
+/// thing rather than three imitations of it — which is what "make them look
+/// like Hosts" has to mean if it is going to survive the next change to any
+/// of them.
+class NeonListCard extends StatelessWidget {
+  /// Creates a row.
+  const new({
+    required this.icon,
+    required this.title,
+    super.key,
+    this.accent,
+    this.subtitle,
+    this.meta,
+    this.tags = const [],
+    this.status,
+    this.actions = const [],
+    this.onTap,
+    this.selected = false,
+    this.dense = false,
+  });
+
+  /// The glyph in the identity mark.
+  final IconData icon;
+
+  /// The name the user is looking for.
+  final String title;
+
+  /// The detail line beneath it, set in the terminal face.
+  final String? subtitle;
+
+  /// A third, quieter line — a time, a count, a size.
+  final String? meta;
+
+  /// Small pills after the title.
+  final List<String> tags;
+
+  /// A light on the identity mark, when this row has a live state.
+  final ConnectionHealth? status;
+
+  /// This row's own colour, adapted to the surface it is drawn on.
+  final Color? accent;
+
+  /// Buttons at the trailing edge.
+  final List<Widget> actions;
+
+  /// Tapping the row itself.
+  final VoidCallback? onTap;
+
+  /// Draws the row as the current selection.
+  final bool selected;
+
+  /// A tighter row, for a list that is routinely hundreds long — a directory
+  /// listing, where a comfortable card would mean scrolling past four files a
+  /// screen.
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final neon = NeonAccents.of(context);
+    final colour = neon.readable(accent ?? theme.colorScheme.primary);
+    final gap = dense ? Spacing.md : Spacing.lg;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: Spacing.lg,
+        vertical: dense ? Spacing.xxs : Spacing.sm,
+      ),
+      child: NeonPanel(
+        accent: status == null || status == ConnectionHealth.idle
+            ? null
+            : accent ?? theme.colorScheme.primary,
+        selected: selected,
+        onTap: onTap,
+        padding: EdgeInsets.fromLTRB(
+          gap,
+          dense ? Spacing.sm : Spacing.md,
+          Spacing.sm,
+          dense ? Spacing.sm : Spacing.md,
+        ),
+        child: Row(
+          children: [
+            _Mark(
+              icon: icon,
+              colour: colour,
+              status: status,
+              size: dense ? 28 : 34,
+            ),
+            SizedBox(width: gap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                      for (final tag in tags) ...[
+                        const SizedBox(width: Spacing.sm),
+                        NeonTag(tag),
+                      ],
+                    ],
+                  ),
+                  if (subtitle case final detail?) ...[
+                    const SizedBox(height: Spacing.xxs),
+                    Text(
+                      detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ],
+                  if (meta case final line?) ...[
+                    const SizedBox(height: Spacing.xs),
+                    Text(
+                      line,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (actions.isNotEmpty) const SizedBox(width: Spacing.sm),
+            ...actions,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The coloured square with a glyph, and a status light when there is one.
+class _Mark extends StatelessWidget {
+  const new({
+    required this.icon,
+    required this.colour,
+    required this.size,
+    this.status,
+  });
+
+  final IconData icon;
+  final Color colour;
+  final double size;
+  final ConnectionHealth? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final neon = NeonAccents.of(context);
+    final lit = status != null && status != ConnectionHealth.idle;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              borderRadius: Radii.borderSm,
+              color: colour.withValues(alpha: neon.accentFill),
+              border: Border.all(
+                color: colour.withValues(alpha: neon.accentEdge),
+              ),
+              boxShadow: lit ? neon.glow(colour, blur: 12) : null,
+            ),
+            child: Icon(icon, size: size * 0.5, color: colour),
+          ),
+          if (status case final health?)
+            Positioned(
+              right: -3,
+              bottom: -3,
+              child: StatusDot(status: health, size: size * 0.26),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small pill for a category, a folder, or a fact about a row.
+class NeonTag extends StatelessWidget {
+  /// Creates a pill reading [text].
+  const new(this.text, {super.key});
+
+  /// What it says.
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: Radii.borderXs,
+        border: Border.all(color: NeonAccents.of(context).panelBorder),
+      ),
+      child: Text(text, style: Theme.of(context).textTheme.labelSmall),
+    );
+  }
+}
