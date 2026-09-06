@@ -78,6 +78,12 @@ class SshConnectionFactory {
     final hops = <SSHClient>[];
     SSHClient? previous;
 
+    HostKeyCheck? refusedCheck;
+    void noteRefusal(HostKeyCheck check) {
+      refusedCheck = check;
+      refused?.call(check);
+    }
+
     try {
       for (final hop in jumpChain) {
         final socket = previous == null
@@ -87,7 +93,7 @@ class SshConnectionFactory {
           socket: socket,
           target: hop,
           prompts: jumpPrompts[hop.id] ?? const SshAuthPrompts(),
-          refused: refused,
+          refused: noteRefusal,
         );
         hops.add(client);
         previous = client;
@@ -101,17 +107,25 @@ class SshConnectionFactory {
         socket: socket,
         target: host,
         prompts: prompts,
-        refused: refused,
+        refused: noteRefusal,
       );
 
       return SshConnection(client: client, hops: hops);
-    } on Object {
+    } on Object catch (error, stackTrace) {
       // A hop that was opened before a later one failed must not be left
       // running.
       for (final hop in hops.reversed) {
         await hop.close();
       }
-      rethrow;
+      // Mapped here rather than in each caller. SFTP and port forwarding used
+      // to receive the raw dartssh2 exception and had nothing to show but a
+      // generic "connection failed", which is the least useful thing an SSH
+      // client can say: a wrong password, an unreachable host and a changed
+      // host key all need different actions from the user.
+      Error.throwWithStackTrace(
+        mapSshFailure(error, host: host, refused: refusedCheck),
+        stackTrace,
+      );
     }
   }
 
@@ -186,4 +200,61 @@ class SshConnectionFactory {
     await verifier.trust(check);
     return true;
   }
+}
+
+/// Turns anything thrown during a connection attempt into a failure a user can
+/// act on.
+///
+/// Shared by the shell backend, SFTP and port forwarding so that the same
+/// cause produces the same message wherever the user meets it. A failure that
+/// has already been classified passes through unchanged.
+TerminalBackendFailure mapSshFailure(
+  Object error, {
+  required SshHost host,
+  HostKeyCheck? refused,
+}) {
+  if (error is TerminalBackendFailure) return error;
+
+  if (refused != null) {
+    final mismatch = refused.verdict == HostKeyVerdict.mismatch;
+    return TerminalBackendFailure(
+      mismatch
+          ? TerminalBackendFailureKind.hostKeyMismatch
+          : TerminalBackendFailureKind.authentication,
+      mismatch
+          ? 'The host key for ${refused.target} has changed. '
+                'The connection was refused.'
+          : 'The host key for ${refused.target} was not accepted.',
+      cause: error,
+    );
+  }
+
+  return switch (error) {
+    SSHAuthFailError() || SSHAuthAbortError() => TerminalBackendFailure(
+      TerminalBackendFailureKind.authentication,
+      'Authentication to ${host.target} failed. Check the username and '
+      'the authentication method saved for this host.',
+      cause: error,
+    ),
+    SSHHostkeyError() => TerminalBackendFailure(
+      TerminalBackendFailureKind.hostKeyMismatch,
+      'The host key for ${host.hostname} could not be verified.',
+      cause: error,
+    ),
+    SSHSocketError() => TerminalBackendFailure(
+      TerminalBackendFailureKind.network,
+      '${host.hostname}:${host.port} could not be reached.',
+      cause: error,
+    ),
+    SSHDisconnectError() => TerminalBackendFailure(
+      TerminalBackendFailureKind.disconnected,
+      '${host.hostname} closed the connection.',
+      cause: error,
+    ),
+    _ => TerminalBackendFailure(
+      TerminalBackendFailureKind.unknown,
+      'The connection to ${host.hostname} failed.',
+      cause: error,
+    ),
+  };
 }

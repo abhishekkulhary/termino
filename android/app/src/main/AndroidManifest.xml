@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Every remote feature in this app is a socket: SSH shells, SFTP and
+         port forwarding. Flutter's template declares INTERNET only in the
+         debug and profile manifests, for hot reload, so a release build
+         silently loses all networking and every connection fails instantly —
+         with no error a user could act on. It belongs here. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="termino"
         android:name="${applicationName}"

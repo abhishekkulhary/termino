@@ -185,49 +185,10 @@ class SshBackend extends TerminalBackendBase {
     return controller.stream;
   }
 
-  TerminalBackendFailure _mapError(Object error) {
-    final refused = _refusedCheck;
-    if (refused != null) {
-      return TerminalBackendFailure(
-        refused.verdict == HostKeyVerdict.mismatch
-            ? TerminalBackendFailureKind.hostKeyMismatch
-            : TerminalBackendFailureKind.authentication,
-        refused.verdict == HostKeyVerdict.mismatch
-            ? 'The host key for ${refused.target} has changed. '
-                  'The connection was refused.'
-            : 'The host key for ${refused.target} was not accepted.',
-        cause: error,
-      );
-    }
-
-    return switch (error) {
-      SSHAuthFailError() || SSHAuthAbortError() => TerminalBackendFailure(
-        TerminalBackendFailureKind.authentication,
-        'Authentication to ${host.target} failed.',
-        cause: error,
-      ),
-      SSHHostkeyError() => TerminalBackendFailure(
-        TerminalBackendFailureKind.hostKeyMismatch,
-        'The host key for ${host.hostname} could not be verified.',
-        cause: error,
-      ),
-      SSHSocketError() => TerminalBackendFailure(
-        TerminalBackendFailureKind.network,
-        '${host.hostname}:${host.port} could not be reached.',
-        cause: error,
-      ),
-      SSHDisconnectError() => TerminalBackendFailure(
-        TerminalBackendFailureKind.disconnected,
-        '${host.hostname} closed the connection.',
-        cause: error,
-      ),
-      _ => TerminalBackendFailure(
-        TerminalBackendFailureKind.unknown,
-        'The connection to ${host.hostname} failed.',
-        cause: error,
-      ),
-    };
-  }
+  /// Delegates to the shared mapper so that a failure reads the same here as
+  /// it does in the file browser or a port forward.
+  TerminalBackendFailure _mapError(Object error) =>
+      mapSshFailure(error, host: host, refused: _refusedCheck);
 
   @override
   void send(Uint8List data) => _session?.write(data);

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
@@ -28,6 +29,7 @@ class SftpScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => _ConnectionError(
         host: host,
+        reason: error is TerminalBackendFailure ? error.message : null,
         onBack: () => ref.read(selectedSftpHostProvider.notifier).select(null),
       ),
       data: (session) =>
@@ -87,9 +89,14 @@ class _HostPicker extends ConsumerWidget {
 }
 
 class _ConnectionError extends StatelessWidget {
-  const new({required this.host, required this.onBack});
+  const new({required this.host, required this.onBack, this.reason});
 
   final SshHost host;
+
+  /// What actually went wrong, from the failure taxonomy. Null only when the
+  /// error escaped classification, which is a bug rather than a normal case.
+  final String? reason;
+
   final VoidCallback onBack;
 
   @override
@@ -113,8 +120,9 @@ class _ConnectionError extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.sm),
             Text(
-              'The connection failed or was refused. Check the host under '
-              'Hosts, then try again.',
+              reason ??
+                  'The connection failed or was refused. Check the host '
+                      'under Hosts, then try again.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,

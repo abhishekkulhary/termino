@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_pty/flutter_pty.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/backends/terminal_backend_base.dart';
 import 'package:termino/domain/entities/shell_profile.dart';
@@ -56,13 +57,16 @@ class LocalPtyBackend extends TerminalBackendBase {
     // a clear message instead of a terminal that blinks open and shuts.
     _ensureExecutable();
 
+    final defaults = await _platformDefaults();
+    final environment = {...defaults.environment, ...profile.environment};
+
     final Pty pty;
     try {
       pty = Pty.start(
         profile.executable,
         arguments: profile.arguments,
-        workingDirectory: profile.workingDirectory,
-        environment: profile.environment.isEmpty ? null : profile.environment,
+        workingDirectory: profile.workingDirectory ?? defaults.workingDirectory,
+        environment: environment.isEmpty ? null : environment,
         columns: columns,
         rows: rows,
         // Native flow control: the read thread waits for an acknowledgement
@@ -188,6 +192,46 @@ class LocalPtyBackend extends TerminalBackendBase {
   }
 }
 
+/// Where a shell should start, and what it needs in its environment, on this
+/// platform.
+typedef _ShellDefaults = ({
+  String? workingDirectory,
+  Map<String, String> environment,
+});
+
+/// Fills in what the operating system does not.
+///
+/// On desktop this is nothing: the process already starts in the user's home
+/// directory with `HOME` set, and `flutter_pty` copies `HOME` and `PATH`
+/// through while setting `TERM` and `LANG` itself.
+///
+/// Android is the exception, and it is why a local shell there looked
+/// completely broken. An Android app process starts with its working
+/// directory at `/`, which the app's own UID may not read — so the first `ls`
+/// a user types comes back `Permission denied`, and any redirect fails on a
+/// read-only filesystem. The process environment has no `HOME` either, so
+/// `cd` reports "no home directory", `~` does not expand, and anything that
+/// writes a dotfile fails. Neither is a sandbox limit we have to accept: the
+/// app's private directory is readable, writable and persistent, and pointing
+/// the shell at it makes an ordinary session behave ordinarily.
+Future<_ShellDefaults> _platformDefaults() async {
+  if (!Platform.isAndroid) {
+    return (workingDirectory: null, environment: const <String, String>{});
+  }
+
+  final home = await getApplicationDocumentsDirectory();
+  final temporary = await getTemporaryDirectory();
+  return (
+    workingDirectory: home.path,
+    environment: {
+      'HOME': home.path,
+      // Android has no /tmp, and /data/local/tmp belongs to the shell user,
+      // not to us. Without this, mktemp and everything built on it fail.
+      'TMPDIR': temporary.path,
+    },
+  );
+}
+
 /// The shells available on this machine, best first.
 ///
 /// Discovery is deliberately conservative: a profile is only offered if its
@@ -209,7 +253,9 @@ List<ShellProfile> _unixProfiles() {
 
   // $SHELL is the user's own choice and outranks anything we might guess.
   final userShell = Platform.environment['SHELL'];
-  if (userShell != null && userShell.isNotEmpty && _exists(userShell)) {
+  final hasUserShell =
+      userShell != null && userShell.isNotEmpty && _exists(userShell);
+  if (hasUserShell) {
     profiles.add(
       ShellProfile(
         id: 'login',
@@ -225,23 +271,34 @@ List<ShellProfile> _unixProfiles() {
   const candidates = <String, String>{
     '/bin/zsh': 'zsh',
     '/bin/bash': 'bash',
-    '/system/bin/sh': 'sh (Android)',
+    '/system/bin/sh': 'sh',
     '/bin/sh': 'sh',
   };
 
+  // Android has both /system/bin/sh and /bin/sh, and the second is a symlink
+  // to the first. Offering the same shell twice under the same name is
+  // confusing on its own; giving two profiles the same id is worse, because
+  // the id is what a saved preference refers to. Compare resolved paths.
+  final seen = <String>{if (hasUserShell) _resolve(userShell)};
+
   for (final entry in candidates.entries) {
     if (!_exists(entry.key)) continue;
-    if (entry.key == userShell) continue;
+    if (!seen.add(_resolve(entry.key))) continue;
     profiles.add(
-      ShellProfile(
-        id: entry.value.split(' ').first,
-        name: entry.value,
-        executable: entry.key,
-      ),
+      ShellProfile(id: entry.value, name: entry.value, executable: entry.key),
     );
   }
 
   return profiles;
+}
+
+/// The real path behind [path], or [path] itself when it cannot be resolved.
+String _resolve(String path) {
+  try {
+    return File(path).resolveSymbolicLinksSync();
+  } on Object {
+    return path;
+  }
 }
 
 List<ShellProfile> _windowsProfiles() {

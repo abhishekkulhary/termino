@@ -28,6 +28,16 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
     });
 
+    test('never offers the same shell twice under two names', () {
+      // Android has /bin/sh symlinked to /system/bin/sh, so both candidates
+      // matched and the picker listed one shell twice — under one id, which is
+      // what a saved preference refers to.
+      final resolved = discoverShellProfiles()
+          .map((p) => File(p.executable).resolveSymbolicLinksSync())
+          .toList();
+      expect(resolved.toSet(), hasLength(resolved.length));
+    });
+
     test(r"prefers the user's own $SHELL first when it is set", () {
       final userShell = Platform.environment['SHELL'];
       if (userShell == null || !File(userShell).existsSync()) {
