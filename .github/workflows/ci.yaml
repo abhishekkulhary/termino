@@ -39,6 +39,16 @@ jobs:
       - name: Domain layer purity
         run: ./tool/check_domain_purity.sh
 
+      # The relay is its own package, so the app's analyze and test do not
+      # reach it.
+      - name: Relay — analyze and test
+        working-directory: tools/relay
+        run: |
+          dart pub get
+          dart format --set-exit-if-changed .
+          dart analyze --fatal-infos --fatal-warnings
+          dart test
+
       - name: Test
         run: flutter test --coverage
 

@@ -66,7 +66,7 @@ lib/
   shared/
     design/             tokens, breakpoints, app theme, terminal palettes
     widgets/            AdaptiveScaffold
-tools/relay/            reference WebSocket→TCP relay (planned, Phase 7)
+tools/relay/            reference WebSocket→TCP relay, its own Dart package
 ```
 
 ### Input, and the rule about gestures

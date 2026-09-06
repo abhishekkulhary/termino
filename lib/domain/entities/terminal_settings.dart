@@ -74,6 +74,12 @@ abstract class TerminalSettings with _$TerminalSettings {
     @Default(true) bool cursorBlinks,
     @Default(BellBehaviour.visual) BellBehaviour bell,
     @Default(10000) int scrollbackLines,
+
+    /// Where the web build's SSH relay lives, e.g. `wss://relay.example.com/ssh`.
+    ///
+    /// Only meaningful on the web, where a browser cannot open a raw TCP
+    /// socket. Everywhere else SSH connects directly and this is ignored.
+    String? relayUrl,
   }) = _TerminalSettings;
 
   const new _();

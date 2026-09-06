@@ -53,6 +53,7 @@ class PlatformCapabilities {
     required this.canUseBiometrics,
     required this.hasWindowManagement,
     required this.canReadUserSshConfig,
+    this.needsRelay = false,
     this.localShellUnavailableReason,
   });
 
@@ -73,6 +74,9 @@ class PlatformCapabilities {
             LocalShellUnavailableReason.noProcessesInBrowser,
         // SSH itself runs in the browser; only the transport needs a relay.
         canUseSsh: true,
+        // A browser cannot open a raw TCP socket, so SSH reaches a server
+        // through a WebSocket relay. The protocol still runs here.
+        needsRelay: true,
         canUseBiometrics: false,
         hasWindowManagement: false,
         canReadUserSshConfig: false,
@@ -113,6 +117,9 @@ class PlatformCapabilities {
   /// Whether SSH sessions are possible.
   final bool canUseSsh;
 
+  /// Whether SSH must go through a WebSocket relay rather than a TCP socket.
+  final bool needsRelay;
+
   /// Whether a biometric or device-credential gate can guard stored secrets.
   final bool canUseBiometrics;
 
@@ -129,6 +136,7 @@ class PlatformCapabilities {
           other.canRunLocalShell == canRunLocalShell &&
           other.localShellUnavailableReason == localShellUnavailableReason &&
           other.canUseSsh == canUseSsh &&
+          other.needsRelay == needsRelay &&
           other.canUseBiometrics == canUseBiometrics &&
           other.hasWindowManagement == hasWindowManagement &&
           other.canReadUserSshConfig == canReadUserSshConfig;
@@ -138,6 +146,7 @@ class PlatformCapabilities {
     canRunLocalShell,
     localShellUnavailableReason,
     canUseSsh,
+    needsRelay,
     canUseBiometrics,
     hasWindowManagement,
     canReadUserSshConfig,

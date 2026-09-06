@@ -25,6 +25,7 @@ _TerminalSettings _$TerminalSettingsFromJson(Map<String, dynamic> json) =>
           $enumDecodeNullable(_$BellBehaviourEnumMap, json['bell']) ??
           BellBehaviour.visual,
       scrollbackLines: (json['scrollbackLines'] as num?)?.toInt() ?? 10000,
+      relayUrl: json['relayUrl'] as String?,
     );
 
 Map<String, dynamic> _$TerminalSettingsToJson(_TerminalSettings instance) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _$TerminalSettingsToJson(_TerminalSettings instance) =>
       'cursorBlinks': instance.cursorBlinks,
       'bell': _$BellBehaviourEnumMap[instance.bell]!,
       'scrollbackLines': instance.scrollbackLines,
+      'relayUrl': instance.relayUrl,
     };
 
 const _$AppThemeModeEnumMap = {

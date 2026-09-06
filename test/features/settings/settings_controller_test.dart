@@ -150,6 +150,35 @@ void main() {
     });
   });
 
+  group('the web relay', () {
+    test('is unset by default', () async {
+      expect((await settings()).relayUrl, isNull);
+    });
+
+    test('round-trips', () async {
+      await settings();
+      await container
+          .read(settingsProvider.notifier)
+          .setRelayUrl('wss://relay.example.com/ssh');
+
+      final stored = await container.read(settingsStoreProvider).read();
+      expect(stored.relayUrl, 'wss://relay.example.com/ssh');
+    });
+
+    test('a blank address clears it rather than storing empty text', () async {
+      await settings();
+      final controller = container.read(settingsProvider.notifier);
+      await controller.setRelayUrl('wss://relay.example.com/ssh');
+
+      await controller.setRelayUrl('   ');
+
+      expect(
+        (await container.read(settingsStoreProvider).read()).relayUrl,
+        isNull,
+      );
+    });
+  });
+
   group('palette catalogue', () {
     test('ships the palettes the brief names', () {
       final ids = TerminalPalettes.all.map((p) => p.id);

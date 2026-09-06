@@ -13,7 +13,7 @@ part of 'session_manager.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$SessionsState {
+mixin _$SessionsState implements DiagnosticableTreeMixin {
 
  List<TerminalSession> get sessions; String? get activeId;/// The session shown beside the active one, when the window is split.
 ///
@@ -28,6 +28,13 @@ mixin _$SessionsState {
 $SessionsStateCopyWith<SessionsState> get copyWith => _$SessionsStateCopyWithImpl<SessionsState>(this as SessionsState, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  final _this = this as SessionsState;
+  properties
+    ..add(DiagnosticsProperty('type', 'SessionsState'))
+    ..add(DiagnosticsProperty('sessions', _this.sessions))..add(DiagnosticsProperty('activeId', _this.activeId))..add(DiagnosticsProperty('secondaryId', _this.secondaryId));
+}
 
 @override
 bool operator ==(Object other) {
@@ -43,7 +50,7 @@ int get hashCode {
 }
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   final _this = this as SessionsState;
   return 'SessionsState(sessions: ${_this.sessions}, activeId: ${_this.activeId}, secondaryId: ${_this.secondaryId})';
 }
@@ -218,7 +225,7 @@ return $default(_that.sessions,_that.activeId,_that.secondaryId);case _:
 /// @nodoc
 
 
-class _SessionsState extends SessionsState {
+class _SessionsState extends SessionsState with DiagnosticableTreeMixin {
   const _SessionsState({ List<TerminalSession> sessions = const <TerminalSession>[], this.activeId, this.secondaryId}): _sessions = sessions,super._();
   
 
@@ -244,6 +251,12 @@ class _SessionsState extends SessionsState {
 _$SessionsStateCopyWith<_SessionsState> get copyWith => __$SessionsStateCopyWithImpl<_SessionsState>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SessionsState'))
+    ..add(DiagnosticsProperty('sessions', sessions))..add(DiagnosticsProperty('activeId', activeId))..add(DiagnosticsProperty('secondaryId', secondaryId));
+}
 
 @override
 bool operator ==(Object other) {
@@ -257,7 +270,7 @@ int get hashCode {
 }
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
     return 'SessionsState(sessions: $sessions, activeId: $activeId, secondaryId: $secondaryId)';
 }
 

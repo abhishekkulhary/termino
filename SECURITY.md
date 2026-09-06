@@ -38,7 +38,8 @@ concept touches a real host, redact hostnames and keys.
 | A man-in-the-middle on the network | Host keys are verified against a persistent `known_hosts` store. A first sighting prompts with the fingerprint; **a changed key is a hard, blocking stop and is never auto-accepted.** `dartssh2` 4.x also terminates the connection if the host key changes during a rekey. |
 | Secrets leaking into diagnostics | The logger redacts passwords, passphrases, private key material, authentication banners and the session byte stream. A unit test asserts that a log line containing a known secret comes out redacted. |
 | Secrets leaking into the database | Connection profiles are stored in drift; secrets never are. A test asserts that no secret string appears in the database file. |
-| A compromised web relay | The relay is a TCP tunnel, not an SSH endpoint. SSH runs in the browser, so the relay sees only ciphertext, never a private key, and cannot impersonate a host — key verification happens on your device. See [ARCHITECTURE.md](ARCHITECTURE.md#there-is-no-separate-web-backend). |
+| A compromised web relay | The relay is a TCP tunnel, not an SSH endpoint. SSH runs in the browser, so the relay sees only ciphertext, never a private key, and cannot impersonate a host — key verification happens on your device. A test asserts it: a marker typed into a session does not appear in the bytes the relay carries. See [ARCHITECTURE.md](ARCHITECTURE.md#there-is-no-separate-web-backend). |
+| An open proxy in the relay | The relay refuses to start without an explicit destination allowlist, and supports a shared-secret token. See [tools/relay/README.md](tools/relay/README.md). |
 | Weak negotiated cryptography | `dartssh2` 4.0.0 removed SHA-1 key exchange, `ssh-rsa` host key signatures and CBC ciphers from the default proposals, matching OpenSSH. A server offering only those will fail to negotiate rather than connect weakly. |
 | Telemetry exfiltration | There is none. No analytics, no crash reporting, no phone-home. If any is ever added it will be opt-in and documented here. |
 
@@ -48,6 +49,13 @@ concept touches a real host, redact hostnames and keys.
   malicious root user, or a debugger attached to the process can read anything
   the app can read. Platform keystores raise the cost of extraction; they do not
   make it impossible.
+- **A forged relay certificate, in the web build.** A browser does not expose
+  the certificate of a WebSocket connection, so the app has no mechanism to pin
+  it; the browser's certificate authorities are the only check. An attacker who
+  fully controls the relay can deny service and learn which hosts you connect to
+  and when. They cannot read a session or impersonate a server, because SSH runs
+  on your device and the host key is checked there. Native builds do not use a
+  relay at all.
 - **A compromised remote server.** If you connect to a machine an attacker
   controls, they see everything you type in that session. That is what SSH is
   for, not something a client can prevent.

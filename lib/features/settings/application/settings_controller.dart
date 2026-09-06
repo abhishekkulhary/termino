@@ -73,6 +73,11 @@ class Settings extends _$Settings {
   Future<void> setScrollback(int lines) =>
       _update((s) => s.copyWith(scrollbackLines: lines));
 
+  /// Sets the relay used by the web build.
+  Future<void> setRelayUrl(String? url) => _update(
+    (s) => s.copyWith(relayUrl: (url?.trim().isEmpty ?? true) ? null : url),
+  );
+
   /// Returns everything to its default.
   Future<void> reset() => _update((_) => const TerminalSettings());
 }

@@ -7,10 +7,9 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 6 — polish.** Eight terminal palettes, persisted settings,
-> session recording as text or asciicast, and reconnection with backoff. What
-> remains before v1 is the web relay and release engineering. See
-> [Roadmap](#roadmap).
+> **Status: Phase 7 — web.** SSH now works in a browser through a reference
+> relay that only ever carries ciphertext. What remains before v1 is release
+> engineering. See [Roadmap](#roadmap).
 
 ---
 
@@ -23,7 +22,7 @@ an interactive shell, SFTP file transfer and port forwarding.
 | iOS / iPadOS | **no** — not permitted by the platform | yes | builds, local shell gated off with an explanation |
 | Linux | yes | yes | CI only |
 | Windows | yes | yes | CI only |
-| Web | **no** | Phase 7, via a relay | builds, gated off with an explanation |
+| Web | **no** | **working**, via a relay | local shell gated off with an explanation |
 
 On macOS the App Sandbox is disabled, because a sandboxed process cannot run the
 user's own programs or read their files — which is the whole point of a
@@ -95,6 +94,12 @@ SSH is covered by ordinary `flutter test` runs: they start a throwaway `sshd`
 unprivileged on a free port and connect to it for real, so no Docker or daemon
 is needed.
 
+The relay is its own package and has its own tests:
+
+```bash
+cd tools/relay && dart test
+```
+
 The local PTY is the one thing `flutter test` cannot exercise — it needs the
 native plugin loaded into a real app — so it has its own suite that runs against
 a real shell:
@@ -144,8 +149,8 @@ Termino explicitly does *not* protect against — is in
 | 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | **done** |
 | 5 | SFTP browser and port forwarding | **done** |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |
-| 7 | Web: reference relay and WebSocket transport | next |
-| 8 | Release: signing, icons, store pipelines | |
+| 7 | Web: reference relay and WebSocket transport | **done** |
+| 8 | Release: signing, icons, store pipelines | next |
 
 Notable decisions and their reasoning are logged in
 [DECISIONS.md](DECISIONS.md).

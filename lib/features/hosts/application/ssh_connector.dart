@@ -10,9 +10,11 @@ import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
+import 'package:termino/infrastructure/ssh/sockets/socket_factory_provider.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
 import 'package:termino/infrastructure/ssh/ssh_backend.dart';
 import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
+import 'package:termino/infrastructure/ssh/ssh_socket_factory.dart';
 
 part 'ssh_connector.g.dart';
 
@@ -31,6 +33,7 @@ class SshConnector {
     required this.verifier,
     required this.prompts,
     required this.knownHosts,
+    required this.socketFactory,
   });
 
   /// Saved connections, for resolving jump hosts.
@@ -51,6 +54,9 @@ class SshConnector {
   /// Trusted keys, for forgetting one after a mismatch.
   final KnownHostsRepository knownHosts;
 
+  /// How to reach a server: a TCP socket, or a relay on the web.
+  final SshSocketFactory socketFactory;
+
   /// Opens an authenticated connection to [host], for SFTP or forwarding.
   ///
   /// Separate from the shell's connection on purpose: a transfer that fails,
@@ -62,6 +68,7 @@ class SshConnector {
     return await SshConnectionFactory(
       verifier: verifier,
       onHostKeyPrompt: prompts.confirmHostKey,
+      socketFactory: socketFactory,
     ).connect(
       host: host,
       prompts: await _promptsFor(host),
@@ -81,6 +88,7 @@ class SshConnector {
     return SshBackend(
       host: host,
       verifier: verifier,
+      socketFactory: socketFactory,
       onHostKeyPrompt: prompts.confirmHostKey,
       prompts: await _promptsFor(host),
       jumpChain: chain,
@@ -195,4 +203,5 @@ SshConnector sshConnector(Ref ref) => SshConnector(
   verifier: ref.watch(hostKeyVerifierProvider),
   prompts: ref.watch(sshPromptServiceProvider),
   knownHosts: ref.watch(knownHostsRepositoryProvider),
+  socketFactory: ref.watch(sshSocketFactoryProvider),
 );

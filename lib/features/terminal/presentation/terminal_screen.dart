@@ -337,10 +337,10 @@ class _EmptyState extends ConsumerWidget {
                 const SizedBox(height: Spacing.sm),
                 Text(
                   capabilities.canRunLocalShell
-                      ? 'Open a shell on this machine, or replay the demo. '
-                            'SSH arrives in Phase 3.'
-                      : 'Replay the demo to try the terminal. '
-                            'SSH arrives in Phase 3.',
+                      ? 'Open a shell on this machine, or connect to a saved '
+                            'host under Hosts.'
+                      : 'Connect to a saved host under Hosts, or replay the '
+                            'demo to try the terminal.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

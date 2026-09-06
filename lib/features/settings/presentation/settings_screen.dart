@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/terminal_palette.dart';
@@ -107,6 +108,13 @@ class SettingsScreen extends ConsumerWidget {
                 : unawaited(controller.setScrollback(lines)),
           ),
         ),
+        if (ref.watch(platformCapabilitiesProvider).needsRelay) ...[
+          const _SectionHeader('Relay'),
+          _RelayTile(
+            url: settings.relayUrl,
+            onChanged: (url) => unawaited(controller.setRelayUrl(url)),
+          ),
+        ],
         const Divider(height: Spacing.xxl),
         ListTile(
           leading: const Icon(Icons.restart_alt_rounded),
@@ -114,6 +122,60 @@ class SettingsScreen extends ConsumerWidget {
           onTap: () => unawaited(controller.reset()),
         ),
       ],
+    );
+  }
+}
+
+/// Where the web build sends its SSH traffic.
+///
+/// Shown only in a browser, where there is no other way to reach a server.
+class _RelayTile extends StatelessWidget {
+  const new({required this.url, required this.onChanged});
+
+  final String? url;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            initialValue: url,
+            autocorrect: false,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: 'Relay address',
+              hintText: 'wss://relay.example.com/ssh',
+            ),
+            onFieldSubmitted: onChanged,
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'A browser cannot open a network connection directly, so SSH goes '
+            'through a relay. The relay only forwards bytes: SSH runs here, so '
+            'it carries ciphertext and cannot read your session, your password '
+            'or your keys — and it cannot impersonate a server, because the '
+            'host key is checked on this device.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'Use wss:// rather than ws://. A browser will not let the app pin '
+            'the relay certificate, so the connection relies on the ordinary '
+            'certificate authorities.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
