@@ -22,6 +22,7 @@ import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
+import 'package:termino/shared/widgets/swipe_to_delete.dart';
 
 /// The saved SSH connections.
 class HostsScreen extends ConsumerWidget {
@@ -58,20 +59,28 @@ class HostsScreen extends ConsumerWidget {
                 itemCount: list.length,
                 itemBuilder: (context, index) => Reveal.staggered(
                   index: index,
-                  child: _HostCard(
-                    host: list[index],
-                    onConnect: () =>
-                        unawaited(_connect(context, ref, list[index])),
-                    onBrowse: () {
-                      ref
-                          .read(selectedSftpHostProvider.notifier)
-                          .select(list[index]);
-                      context.go(AppDestinations.files.route);
-                    },
-                    onTunnels: () => context.go(AppDestinations.tunnels.route),
-                    onEdit: () => unawaited(_edit(context, ref, list[index])),
-                    onDelete: () =>
-                        unawaited(_delete(context, ref, list[index])),
+                  child: SwipeToDelete(
+                    itemKey: ValueKey(list[index].id),
+                    confirm: () => _confirmDelete(context, list[index]),
+                    onDelete: () => ref
+                        .read(sshHostRepositoryProvider)
+                        .delete(list[index].id),
+                    child: _HostCard(
+                      host: list[index],
+                      onConnect: () =>
+                          unawaited(_connect(context, ref, list[index])),
+                      onBrowse: () {
+                        ref
+                            .read(selectedSftpHostProvider.notifier)
+                            .select(list[index]);
+                        context.go(AppDestinations.files.route);
+                      },
+                      onTunnels: () =>
+                          context.go(AppDestinations.tunnels.route),
+                      onEdit: () => unawaited(_edit(context, ref, list[index])),
+                      onDelete: () =>
+                          unawaited(_delete(context, ref, list[index])),
+                    ),
                   ),
                 ),
               ),
@@ -197,6 +206,13 @@ class HostsScreen extends ConsumerWidget {
     WidgetRef ref,
     SshHost host,
   ) async {
+    if (await _confirmDelete(context, host)) {
+      await ref.read(sshHostRepositoryProvider).delete(host.id);
+    }
+  }
+
+  /// The one dialog, shared by the menu and the swipe.
+  static Future<bool> _confirmDelete(BuildContext context, SshHost host) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -218,9 +234,7 @@ class HostsScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirmed ?? false) {
-      await ref.read(sshHostRepositoryProvider).delete(host.id);
-    }
+    return confirmed ?? false;
   }
 }
 

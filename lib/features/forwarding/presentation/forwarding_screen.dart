@@ -11,6 +11,7 @@ import 'package:termino/features/forwarding/application/forwarding_providers.dar
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
+import 'package:termino/shared/widgets/swipe_to_delete.dart';
 
 /// The port forwarding manager.
 class ForwardingScreen extends ConsumerWidget {
@@ -47,14 +48,24 @@ class ForwardingScreen extends ConsumerWidget {
                 : ListView.builder(
                     padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
                     itemCount: forwards.length,
-                    itemBuilder: (context, index) => Reveal.staggered(
-                      index: index,
-                      child: _ForwardCard(
-                        forward: forwards[index],
-                        onEdit: () =>
-                            unawaited(_edit(context, ref, forwards[index])),
-                      ),
-                    ),
+                    itemBuilder: (context, index) {
+                      final forward = forwards[index];
+                      final card = _ForwardCard(
+                        forward: forward,
+                        onEdit: () => unawaited(_edit(context, ref, forward)),
+                      );
+                      return Reveal.staggered(
+                        index: index,
+                        child: SwipeToDelete(
+                          itemKey: ValueKey(forward.id),
+                          confirm: () => card.confirmDelete(context),
+                          onDelete: () => ref
+                              .read(portForwardsProvider.notifier)
+                              .remove(forward.id),
+                          child: card,
+                        ),
+                      );
+                    },
                   ),
           ),
         ],
@@ -137,6 +148,40 @@ class _ForwardCard extends ConsumerWidget {
     PortForwardStatus.stopped => ConnectionHealth.idle,
   };
 
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    if (await confirmDelete(context)) {
+      await ref.read(portForwardsProvider.notifier).remove(forward.id);
+    }
+  }
+
+  /// The one dialog, shared by the menu and the swipe.
+  ///
+  /// This delete had no confirmation at all, which was survivable while it
+  /// took two taps through a menu. It is not, now that a drag can reach it.
+  Future<bool> confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${forward.label ?? forward.summary}?'),
+        content: const Text(
+          'The tunnel definition is removed. If it is running it is stopped '
+          'first; nothing on either end is affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(forwardStatusProvider(forward.id));
@@ -186,9 +231,7 @@ class _ForwardCard extends ConsumerWidget {
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-              onPressed: () => unawaited(
-                ref.read(portForwardsProvider.notifier).remove(forward.id),
-              ),
+              onPressed: () => unawaited(_delete(context, ref)),
               child: const Text('Delete'),
             ),
           ],

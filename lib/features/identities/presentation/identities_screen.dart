@@ -10,6 +10,7 @@ import 'package:termino/features/identities/presentation/key_dialogs.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
+import 'package:termino/shared/widgets/swipe_to_delete.dart';
 
 /// The user's SSH keys.
 class IdentitiesScreen extends ConsumerWidget {
@@ -31,10 +32,20 @@ class IdentitiesScreen extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
                 itemCount: list.length,
-                itemBuilder: (context, index) => Reveal.staggered(
-                  index: index,
-                  child: _IdentityCard(identity: list[index]),
-                ),
+                itemBuilder: (context, index) {
+                  final identity = list[index];
+                  final card = _IdentityCard(identity: identity);
+                  return Reveal.staggered(
+                    index: index,
+                    child: SwipeToDelete(
+                      itemKey: ValueKey(identity.id),
+                      confirm: () => card.confirmDelete(context),
+                      onDelete: () =>
+                          ref.read(identityServiceProvider).delete(identity.id),
+                      child: card,
+                    ),
+                  );
+                },
               ),
       ),
     );
@@ -96,7 +107,7 @@ class _IdentityCard extends ConsumerWidget {
           menuChildren: [
             MenuItemButton(
               leadingIcon: const Icon(Icons.delete_outline_rounded, size: 18),
-              onPressed: () => unawaited(_confirmDelete(context, ref)),
+              onPressed: () => unawaited(_delete(context, ref)),
               child: const Text('Delete'),
             ),
           ],
@@ -120,7 +131,14 @@ class _IdentityCard extends ConsumerWidget {
     messenger.showSnackBar(const SnackBar(content: Text('Public key copied.')));
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    if (await confirmDelete(context)) {
+      await ref.read(identityServiceProvider).delete(identity.id);
+    }
+  }
+
+  /// The one dialog, shared by the menu and the swipe.
+  Future<bool> confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,9 +160,7 @@ class _IdentityCard extends ConsumerWidget {
       ),
     );
 
-    if (confirmed ?? false) {
-      await ref.read(identityServiceProvider).delete(identity.id);
-    }
+    return confirmed ?? false;
   }
 }
 
