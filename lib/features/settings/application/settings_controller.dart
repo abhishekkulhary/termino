@@ -82,8 +82,15 @@ class Settings extends _$Settings {
   Future<void> completeOnboarding() =>
       _update((s) => s.copyWith(onboardingComplete: true));
 
-  /// Returns everything to its default.
-  Future<void> reset() => _update((_) => const TerminalSettings());
+  /// Returns every preference to its default.
+  ///
+  /// Except the record that the introduction has been seen. That is not a
+  /// preference — it is a fact about this installation — and resetting it threw
+  /// the user back into the first-run screens for asking to restore a default
+  /// font size.
+  Future<void> reset() => _update(
+    (s) => TerminalSettings(onboardingComplete: s.onboardingComplete),
+  );
 }
 
 /// The settings as a plain value.

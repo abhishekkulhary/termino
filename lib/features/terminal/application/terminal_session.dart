@@ -50,7 +50,7 @@ class TerminalSession {
 
   /// The saved host this session connects to, when it is an SSH session.
   ///
-  /// Null for a local shell or the demo. Snippets use it to decide which of
+  /// Null for a local shell. Snippets use it to decide which of
   /// them apply here.
   final String? hostId;
 

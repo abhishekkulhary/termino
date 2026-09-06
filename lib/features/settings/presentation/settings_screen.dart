@@ -17,112 +17,170 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(currentSettingsProvider);
     final controller = ref.read(settingsProvider.notifier);
+    final capabilities = ref.watch(platformCapabilitiesProvider);
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: Spacing.xxl),
-      children: [
-        const _SectionHeader('Appearance'),
-        ListTile(
-          title: const Text('App theme'),
-          subtitle: Text(settings.themeMode.label),
-          trailing: DropdownButton<AppThemeMode>(
-            value: settings.themeMode,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final mode in AppThemeMode.values)
-                DropdownMenuItem(value: mode, child: Text(mode.label)),
-            ],
-            onChanged: (mode) =>
-                mode == null ? null : unawaited(controller.setThemeMode(mode)),
+    // A Scaffold of its own, as every other screen has. Without one the tiles
+    // have no Material ancestor and the whole list fails to build the moment
+    // it is shown anywhere but inside the app shell.
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: Spacing.xxl),
+        children: [
+          const _SectionHeader('Appearance'),
+          ListTile(
+            title: const Text('App theme'),
+            subtitle: Text(settings.themeMode.label),
+            trailing: DropdownButton<AppThemeMode>(
+              value: settings.themeMode,
+              underline: const SizedBox.shrink(),
+              items: [
+                for (final mode in AppThemeMode.values)
+                  DropdownMenuItem(value: mode, child: Text(mode.label)),
+              ],
+              onChanged: (mode) => mode == null
+                  ? null
+                  : unawaited(controller.setThemeMode(mode)),
+            ),
           ),
-        ),
-        const _SectionHeader('Terminal palette'),
-        _PaletteGrid(
-          selectedId: settings.paletteId,
-          onSelected: (id) => unawaited(controller.setPalette(id)),
-        ),
-        const _SectionHeader('Text'),
-        _SliderTile(
-          title: 'Font size',
-          value: settings.fontSize,
-          min: TerminalSettings.minFontSize,
-          max: TerminalSettings.maxFontSize,
-          format: (value) => '${value.round()} pt',
-          onChanged: (value) => unawaited(controller.setFontSize(value)),
-        ),
-        _SliderTile(
-          title: 'Line height',
-          value: settings.lineHeight,
-          min: 1,
-          max: 2,
-          format: (value) => value.toStringAsFixed(2),
-          onChanged: (value) => unawaited(controller.setLineHeight(value)),
-        ),
-        const _SectionHeader('Cursor'),
-        ListTile(
-          title: const Text('Shape'),
-          trailing: SegmentedButton<TerminalCursorShape>(
-            segments: [
-              for (final shape in TerminalCursorShape.values)
-                ButtonSegment(value: shape, label: Text(shape.label)),
-            ],
-            selected: {settings.cursorShape},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) =>
-                unawaited(controller.setCursorShape(selection.first)),
+          const _SectionHeader('Terminal palette'),
+          _PaletteGrid(
+            selectedId: settings.paletteId,
+            onSelected: (id) => unawaited(controller.setPalette(id)),
           ),
-        ),
-        SwitchListTile(
-          title: const Text('Blink'),
-          value: settings.cursorBlinks,
-          onChanged: (value) =>
-              unawaited(controller.setCursorBlinks(blinks: value)),
-        ),
-        const _SectionHeader('Behaviour'),
-        ListTile(
-          title: const Text('Bell'),
-          subtitle: Text(settings.bell.label),
-          trailing: DropdownButton<BellBehaviour>(
-            value: settings.bell,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final bell in BellBehaviour.values)
-                DropdownMenuItem(value: bell, child: Text(bell.label)),
-            ],
-            onChanged: (bell) =>
-                bell == null ? null : unawaited(controller.setBell(bell)),
+          const _SectionHeader('Text'),
+          _SliderTile(
+            title: 'Font size',
+            value: settings.fontSize,
+            min: TerminalSettings.minFontSize,
+            max: TerminalSettings.maxFontSize,
+            format: (value) => '${value.round()} pt',
+            onChanged: (value) => unawaited(controller.setFontSize(value)),
           ),
-        ),
-        ListTile(
-          title: const Text('Scrollback'),
-          subtitle: Text('${settings.scrollbackLines} lines'),
-          trailing: DropdownButton<int>(
-            value: settings.scrollbackLines,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final lines in TerminalSettings.scrollbackOptions)
-                DropdownMenuItem(value: lines, child: Text('$lines')),
-            ],
-            onChanged: (lines) => lines == null
-                ? null
-                : unawaited(controller.setScrollback(lines)),
+          _SliderTile(
+            title: 'Line height',
+            value: settings.lineHeight,
+            min: 1,
+            max: 2,
+            format: (value) => value.toStringAsFixed(2),
+            onChanged: (value) => unawaited(controller.setLineHeight(value)),
           ),
-        ),
-        if (ref.watch(platformCapabilitiesProvider).needsRelay) ...[
-          const _SectionHeader('Relay'),
-          _RelayTile(
-            url: settings.relayUrl,
-            onChanged: (url) => unawaited(controller.setRelayUrl(url)),
+          const _SectionHeader('Cursor'),
+          ListTile(
+            title: const Text('Shape'),
+            trailing: SegmentedButton<TerminalCursorShape>(
+              segments: [
+                for (final shape in TerminalCursorShape.values)
+                  ButtonSegment(value: shape, label: Text(shape.label)),
+              ],
+              selected: {settings.cursorShape},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) =>
+                  unawaited(controller.setCursorShape(selection.first)),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('Blink'),
+            value: settings.cursorBlinks,
+            onChanged: (value) =>
+                unawaited(controller.setCursorBlinks(blinks: value)),
+          ),
+          const _SectionHeader('Behaviour'),
+          ListTile(
+            title: const Text('Bell'),
+            subtitle: Text(settings.bell.label),
+            trailing: DropdownButton<BellBehaviour>(
+              value: settings.bell,
+              underline: const SizedBox.shrink(),
+              items: [
+                // Vibration is offered only where there is something to
+                // vibrate. On a desktop it would be a control that does
+                // nothing — which is what this whole setting used to be.
+                //
+                // The stored value is always listed, whatever it is. A
+                // DropdownButton asserts when its value is not among its
+                // items, so a setting carried over from a phone would
+                // otherwise take the whole settings screen down.
+                for (final bell in BellBehaviour.values)
+                  if (bell != BellBehaviour.haptic ||
+                      capabilities.hasHaptics ||
+                      settings.bell == bell)
+                    DropdownMenuItem(value: bell, child: Text(bell.label)),
+              ],
+              onChanged: (bell) =>
+                  bell == null ? null : unawaited(controller.setBell(bell)),
+            ),
+          ),
+          ListTile(
+            title: const Text('Scrollback'),
+            subtitle: Text(
+              '${settings.scrollbackLines} lines — applies to new sessions',
+            ),
+            trailing: DropdownButton<int>(
+              value: settings.scrollbackLines,
+              underline: const SizedBox.shrink(),
+              items: [
+                // The stored value is included even when it is not one of the
+                // offered sizes. `setScrollback` takes any integer, and a
+                // value from another version of the app — or a larger one set
+                // before the list changed — must not crash this screen.
+                for (final lines in {
+                  ...TerminalSettings.scrollbackOptions,
+                  settings.scrollbackLines,
+                }.toList()..sort())
+                  DropdownMenuItem(value: lines, child: Text('$lines')),
+              ],
+              onChanged: (lines) => lines == null
+                  ? null
+                  : unawaited(controller.setScrollback(lines)),
+            ),
+          ),
+          if (capabilities.needsRelay) ...[
+            const _SectionHeader('Relay'),
+            _RelayTile(
+              url: settings.relayUrl,
+              onChanged: (url) => unawaited(controller.setRelayUrl(url)),
+            ),
+          ],
+          const Divider(height: Spacing.xxl),
+          ListTile(
+            leading: const Icon(Icons.restart_alt_rounded),
+            title: const Text('Reset to defaults'),
+            subtitle: const Text('Appearance, text, cursor and behaviour'),
+            onTap: () => unawaited(_confirmReset(context, controller)),
           ),
         ],
-        const Divider(height: Spacing.xxl),
-        ListTile(
-          leading: const Icon(Icons.restart_alt_rounded),
-          title: const Text('Reset to defaults'),
-          onTap: () => unawaited(controller.reset()),
-        ),
-      ],
+      ),
     );
+  }
+
+  /// Asks before undoing every preference at once.
+  ///
+  /// It was a single tap with no confirmation and no undo, sitting at the
+  /// bottom of a list people scroll through.
+  Future<void> _confirmReset(BuildContext context, Settings controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset settings?'),
+        content: const Text(
+          'Every preference goes back to its default. Saved hosts, keys and '
+          'snippets are not affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) await controller.reset();
   }
 }
 

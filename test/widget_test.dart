@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/app/app.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
+import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
+import 'package:termino/infrastructure/backends/mock_backend.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 
 import 'support/test_database.dart';
@@ -21,7 +23,7 @@ const _noLocalShell = PlatformCapabilities(
   canReadUserSshConfig: false,
 );
 
-Future<void> _pumpApp(WidgetTester tester) async {
+Future<ProviderContainer> _pumpApp(WidgetTester tester) async {
   tester.view
     ..physicalSize = const Size(1280, 800)
     ..devicePixelRatio = 1.0;
@@ -36,6 +38,18 @@ Future<void> _pumpApp(WidgetTester tester) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const TerminoApp()),
   );
+  await tester.pumpAndSettle();
+  return container;
+}
+
+/// Opens a session without a real backend, the way these tests need one.
+Future<void> _openSession(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await container
+      .read(sessionManagerProvider.notifier)
+      .open(backend: MockBackend.text('ready'), title: 'Fixture');
   await tester.pumpAndSettle();
 }
 
@@ -58,23 +72,18 @@ void main() {
   });
 
   testWidgets('opening a session replaces the empty state', (tester) async {
-    await _pumpApp(tester);
-
-    await tester.tap(find.text('Demo session'));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pumpAndSettle();
+    final container = await _pumpApp(tester);
+    await _openSession(tester, container);
 
     expect(find.text('No sessions open'), findsNothing);
-    expect(find.text('Demo'), findsOneWidget, reason: 'the tab is labelled');
+    expect(find.text('Fixture'), findsOneWidget, reason: 'the tab is labelled');
   });
 
   testWidgets('navigating to another destination keeps the session alive', (
     tester,
   ) async {
-    await _pumpApp(tester);
-    await tester.tap(find.text('Demo session'));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pumpAndSettle();
+    final container = await _pumpApp(tester);
+    await _openSession(tester, container);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
@@ -83,7 +92,7 @@ void main() {
     await tester.tap(find.text('Terminal'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Demo'),
+      find.text('Fixture'),
       findsOneWidget,
       reason: 'the session must survive a trip through another destination',
     );

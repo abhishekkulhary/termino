@@ -58,7 +58,7 @@ void main() {
   testWidgets('a platform with no local shell explains itself', (tester) async {
     await _pump(tester, _withoutLocalShell);
 
-    expect(find.text('Demo session'), findsOneWidget);
+    expect(find.text('Connect to a host'), findsOneWidget);
     await expectLater(
       find.byType(TerminalScreen),
       matchesGoldenFile('goldens/empty_state_no_local_shell.png'),

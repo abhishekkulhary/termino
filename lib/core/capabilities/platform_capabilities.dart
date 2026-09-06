@@ -53,6 +53,7 @@ class PlatformCapabilities {
     required this.canUseBiometrics,
     required this.hasWindowManagement,
     required this.canReadUserSshConfig,
+    this.hasHaptics = false,
     this.needsRelay = false,
     this.localShellUnavailableReason,
   });
@@ -105,8 +106,15 @@ class PlatformCapabilities {
       hasWindowManagement: isDesktop,
       // Only a desktop has a ~/.ssh to import from.
       canReadUserSshConfig: isDesktop,
+      // A vibration motor is a phone thing. `HapticFeedback` is silently a
+      // no-op everywhere else, which is exactly how the bell ended up with a
+      // setting that did nothing.
+      hasHaptics: !isDesktop,
     );
   }
+
+  /// Whether the device can vibrate.
+  final bool hasHaptics;
 
   /// Whether a PTY-backed local shell can be opened.
   final bool canRunLocalShell;
@@ -139,6 +147,7 @@ class PlatformCapabilities {
           other.needsRelay == needsRelay &&
           other.canUseBiometrics == canUseBiometrics &&
           other.hasWindowManagement == hasWindowManagement &&
+          other.hasHaptics == hasHaptics &&
           other.canReadUserSshConfig == canReadUserSshConfig;
 
   @override
@@ -149,6 +158,7 @@ class PlatformCapabilities {
     needsRelay,
     canUseBiometrics,
     hasWindowManagement,
+    hasHaptics,
     canReadUserSshConfig,
   );
 }

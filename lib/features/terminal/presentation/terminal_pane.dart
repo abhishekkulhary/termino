@@ -12,6 +12,7 @@ import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
 import 'package:termino/features/terminal/application/sticky_modifiers.dart';
 import 'package:termino/features/terminal/application/terminal_search_controller.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
+import 'package:termino/features/terminal/presentation/bell_effect.dart';
 import 'package:termino/features/terminal/presentation/key_accessory_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_search_bar.dart';
 import 'package:termino/shared/design/breakpoints.dart';
@@ -189,33 +190,38 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
       ),
     );
 
-    return ColoredBox(
-      color: palette.theme.background,
-      child: Column(
-        children: [
-          _ConnectionBanner(session: widget.session),
-          if (_search case final search?)
-            TerminalSearchBar(controller: search, onClose: closeSearch),
-          Expanded(
-            child: _PinchToZoom(
-              onScaleStart: () => _fontSizeAtGestureStart = settings.fontSize,
-              onScaleUpdate: (scale) {
-                final base = _fontSizeAtGestureStart;
-                if (base == null) return;
-                unawaited(
-                  ref.read(settingsProvider.notifier).setFontSize(base * scale),
-                );
-              },
-              onScaleEnd: () => _fontSizeAtGestureStart = null,
-              child: terminalView,
+    return BellEffect(
+      session: widget.session,
+      child: ColoredBox(
+        color: palette.theme.background,
+        child: Column(
+          children: [
+            _ConnectionBanner(session: widget.session),
+            if (_search case final search?)
+              TerminalSearchBar(controller: search, onClose: closeSearch),
+            Expanded(
+              child: _PinchToZoom(
+                onScaleStart: () => _fontSizeAtGestureStart = settings.fontSize,
+                onScaleUpdate: (scale) {
+                  final base = _fontSizeAtGestureStart;
+                  if (base == null) return;
+                  unawaited(
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setFontSize(base * scale),
+                  );
+                },
+                onScaleEnd: () => _fontSizeAtGestureStart = null,
+                child: terminalView,
+              ),
             ),
-          ),
-          if (isTouch)
-            KeyAccessoryBar(
-              terminal: widget.session.terminal,
-              modifiers: _modifiers,
-            ),
-        ],
+            if (isTouch)
+              KeyAccessoryBar(
+                terminal: widget.session.terminal,
+                modifiers: _modifiers,
+              ),
+          ],
+        ),
       ),
     );
   }

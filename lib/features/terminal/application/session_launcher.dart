@@ -6,7 +6,6 @@ import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/shell_profile.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/hosts/application/ssh_connector.dart';
-import 'package:termino/features/terminal/application/demo_backend.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/infrastructure/backends/local_pty/local_pty_backend.dart';
@@ -93,15 +92,5 @@ class SessionLauncher extends _$SessionLauncher {
           // user was probably looking at.
           reconnect: () => connector.connect(host),
         );
-  }
-
-  /// Opens a session replaying the built-in demo transcript.
-  ///
-  /// Available everywhere, including platforms with no local shell, so that the
-  /// terminal itself can always be seen and exercised.
-  Future<TerminalSession> openDemo() {
-    return ref
-        .read(sessionManagerProvider.notifier)
-        .open(backend: createDemoBackend(), title: 'Demo');
   }
 }

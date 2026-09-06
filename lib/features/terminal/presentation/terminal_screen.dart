@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:termino/app/destinations.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/command_palette/presentation/command_palette.dart';
@@ -70,9 +72,9 @@ class _NewSessionButton extends ConsumerWidget {
           ),
         if (profiles.isNotEmpty) const Divider(height: Spacing.sm),
         MenuItemButton(
-          leadingIcon: const Icon(Icons.play_circle_outline_rounded, size: 18),
-          onPressed: () => unawaited(launcher.openDemo()),
-          child: const Text('Demo session'),
+          leadingIcon: const Icon(Icons.dns_rounded, size: 18),
+          onPressed: () => context.go(AppDestinations.hosts.route),
+          child: const Text('Connect to a host'),
         ),
       ],
       builder: (context, controller, _) => IconButton(
@@ -443,9 +445,8 @@ class _EmptyState extends ConsumerWidget {
                   child: Text(
                     capabilities.canRunLocalShell
                         ? 'Open a shell on this machine, or connect to a '
-                              'saved host under Hosts.'
-                        : 'Connect to a saved host under Hosts, or replay the '
-                              'demo to try the terminal.',
+                              'saved host.'
+                        : 'Connect to a saved host to open a session here.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -471,15 +472,19 @@ class _EmptyState extends ConsumerWidget {
                     label: Text('Open ${profiles.first.name}'),
                   ),
                   const SizedBox(height: Spacing.sm),
-                  TextButton(
-                    onPressed: () => unawaited(launcher.openDemo()),
-                    child: const Text('Demo session'),
+                  TextButton.icon(
+                    onPressed: () => context.go(AppDestinations.hosts.route),
+                    icon: const Icon(Icons.dns_rounded, size: 18),
+                    label: const Text('Connect to a host'),
                   ),
                 ] else ...[
+                  // Where there is no local shell, connecting is the only
+                  // thing this screen can offer — so it is the primary
+                  // action rather than a link under one.
                   FilledButton.icon(
-                    onPressed: () => unawaited(launcher.openDemo()),
-                    icon: const Icon(Icons.play_circle_outline_rounded),
-                    label: const Text('Demo session'),
+                    onPressed: () => context.go(AppDestinations.hosts.route),
+                    icon: const Icon(Icons.dns_rounded),
+                    label: const Text('Connect to a host'),
                   ),
                   if (reason != null) ...[
                     const SizedBox(height: Spacing.xl),

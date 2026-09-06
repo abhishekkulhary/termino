@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/terminal/application/reconnect_policy.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 
@@ -125,6 +126,11 @@ class SessionManager extends _$SessionManager {
       backend: backend,
       hostId: hostId,
       initialTitle: title,
+      // The setting only applies to sessions opened after it changes: the
+      // emulator's scrollback is allocated when it is built, and silently
+      // discarding history someone is reading would be worse than the setting
+      // taking effect on the next tab.
+      maxLines: ref.read(currentSettingsProvider).scrollbackLines,
     );
 
     _owned.add(session);
