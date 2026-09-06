@@ -16,6 +16,7 @@ import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/presentation/sftp_screen.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
+import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
@@ -175,6 +176,11 @@ class _PaletteButton extends StatelessWidget {
     final theme = Theme.of(context);
     final neon = NeonAccents.of(context);
 
+    // A phone has no Ctrl key and no Cmd key, so naming one is telling the
+    // user to press something they do not have. The palette is still there,
+    // still reachable, and on a touch device it is a button.
+    final showShortcut = Breakpoints.ofContext(context) != WindowSize.compact;
+
     return Tooltip(
       message: 'Command palette',
       child: InkWell(
@@ -197,11 +203,13 @@ class _PaletteButton extends StatelessWidget {
                 size: 14,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: Spacing.sm),
-              Text(
-                commandPaletteHint(context),
-                style: theme.textTheme.labelSmall,
-              ),
+              if (showShortcut) ...[
+                const SizedBox(width: Spacing.sm),
+                Text(
+                  commandPaletteHint(context),
+                  style: theme.textTheme.labelSmall,
+                ),
+              ],
             ],
           ),
         ),

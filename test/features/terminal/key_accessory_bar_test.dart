@@ -35,6 +35,10 @@ void main() {
           ),
         ),
         size: size,
+        // The keycaps animate between modifier states, so a golden taken a
+        // single pump after a tap catches the transition rather than the
+        // result.
+        animations: false,
       );
 
   group('sending keys', () {
@@ -181,7 +185,11 @@ void main() {
       await tester.tap(find.text('Alt'));
       await tester.pump();
       await tester.tap(find.text('Alt'));
-      await tester.pump();
+      // Settled, not pumped: the keycaps animate between states, and
+      // `disableAnimations` does not stop an implicit AnimatedContainer — it
+      // is only honoured by widgets that ask. A single pump catches the
+      // transition, which is how a locked key came out unreadable here.
+      await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(KeyAccessoryBar),

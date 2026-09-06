@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:termino/features/terminal/application/key_bar_actions.dart';
 import 'package:termino/features/terminal/application/sticky_modifiers.dart';
+import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:xterm/xterm.dart';
 
@@ -194,19 +195,25 @@ class _KeyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final (background, foreground) = switch (state) {
+    final neon = NeonAccents.of(context);
+    final accent = theme.colorScheme.primary;
+
+    // A keycap, not a chip. These are the app's only real buttons on a phone —
+    // the brief put touch input among the three things that decide whether
+    // this is good software — and a modifier's state has to be readable at a
+    // glance while typing, not squinted at.
+    final (background, foreground, edge) = switch (state) {
       ModifierState.off => (
-        theme.colorScheme.surfaceContainerHighest,
+        theme.colorScheme.surfaceContainerHigh,
         theme.colorScheme.onSurface,
+        neon.panelBorder,
       ),
       ModifierState.armed => (
-        theme.colorScheme.primaryContainer,
-        theme.colorScheme.onPrimaryContainer,
+        accent.withValues(alpha: 0.16),
+        accent,
+        accent.withValues(alpha: 0.55),
       ),
-      ModifierState.locked => (
-        theme.colorScheme.primary,
-        theme.colorScheme.onPrimary,
-      ),
+      ModifierState.locked => (accent, theme.colorScheme.onPrimary, accent),
     };
 
     return Semantics(
@@ -222,15 +229,26 @@ class _KeyButton extends StatelessWidget {
       child: Tooltip(
         message: action.tooltip ?? action.label,
         child: Material(
-          color: background,
+          color: Colors.transparent,
           borderRadius: Radii.borderSm,
           child: InkWell(
             onTap: onTap,
             borderRadius: Radii.borderSm,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 40),
+            child: AnimatedContainer(
+              duration: Motion.fast,
+              // 44 is the smallest target Apple and Google both consider
+              // reliable for a fingertip, and these are pressed mid-sentence.
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 38),
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: Radii.borderSm,
+                border: Border.all(color: edge),
+                boxShadow: state == ModifierState.off
+                    ? null
+                    : neon.glow(accent, blur: 10),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

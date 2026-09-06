@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:termino/domain/ssh/host_key_verdict.dart';
+import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 
 /// Asks the user whether to trust a host key they have not seen before.
@@ -63,7 +64,10 @@ class _TrustHostKeyDialog extends StatelessWidget {
     final isNewType = check.verdict == HostKeyVerdict.newKeyType;
 
     return AlertDialog(
-      icon: const Icon(Icons.help_outline_rounded),
+      // Amber, not the app accent: this is a question the user has to
+      // answer carefully, and the colour should say so.
+      icon: Icon(Icons.shield_outlined, color: NeonAccents.of(context).busy),
+      iconColor: NeonAccents.of(context).busy,
       title: Text(
         isNewType ? 'New key type for ${check.target}' : 'Unknown host',
       ),
@@ -207,39 +211,85 @@ class _FingerprintBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final neon = NeonAccents.of(context);
+    final accent = emphasise
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          label.toUpperCase(),
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: Spacing.xxs),
-        Row(
-          children: [
-            Expanded(
-              child: SelectableText(
-                fingerprint,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontFamily: Fonts.mono,
-                  fontFamilyFallback: Fonts.monoFallback,
-                  color: emphasise ? theme.colorScheme.error : null,
-                  fontWeight: emphasise ? FontWeight.w600 : null,
+        const SizedBox(height: Spacing.xs),
+        // Given its own lit panel. This string is the entire security decision
+        // the dialog is asking about, and it was set in the same body text as
+        // the sentence explaining it.
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: Spacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: emphasise ? 0.10 : 0.06),
+            borderRadius: Radii.borderSm,
+            border: Border.all(color: accent.withValues(alpha: 0.45)),
+            boxShadow: emphasise ? neon.glow(accent, blur: 12) : null,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: SelectableText(
+                  groupFingerprint(fingerprint),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFamily: Fonts.mono,
+                    fontFamilyFallback: Fonts.monoFallback,
+                    color: emphasise ? theme.colorScheme.error : null,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    height: 1.5,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.copy_rounded, size: 16),
-              tooltip: 'Copy fingerprint',
-              onPressed: () => unawaited(
-                Clipboard.setData(ClipboardData(text: fingerprint)),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                tooltip: 'Copy fingerprint',
+                // The clipboard gets the real string, ungrouped, because that
+                // is what will be compared against a server's output.
+                onPressed: () => unawaited(
+                  Clipboard.setData(ClipboardData(text: fingerprint)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
+}
+
+/// A fingerprint broken into blocks of four, for comparing by eye.
+///
+/// Forty-three unbroken base64 characters is exactly the string a person gives
+/// up on halfway and accepts — which is the failure this dialog exists to
+/// prevent. Grouping is what every other security surface does with a value
+/// someone has to check by hand, and it costs nothing: the clipboard still
+/// carries the real thing.
+String groupFingerprint(String fingerprint) {
+  final colon = fingerprint.indexOf(':');
+  if (colon < 0) return _inFours(fingerprint);
+  final prefix = fingerprint.substring(0, colon + 1);
+  return '$prefix ${_inFours(fingerprint.substring(colon + 1))}';
+}
+
+String _inFours(String value) {
+  final blocks = <String>[];
+  for (var i = 0; i < value.length; i += 4) {
+    blocks.add(value.substring(i, (i + 4).clamp(0, value.length)));
+  }
+  return blocks.join(' ');
 }
