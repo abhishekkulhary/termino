@@ -45,6 +45,40 @@ class TerminalPalette {
 
 /// The palettes shipped in Phase 1.
 abstract final class TerminalPalettes {
+  /// The default dark palette: the grid lit the same way as the chrome around
+  /// it, so a maximised terminal reads as one surface rather than a panel
+  /// dropped into a window. Backgrounds match `AppTheme`'s canvas exactly.
+  static const neon = TerminalPalette(
+    id: 'termino-neon',
+    name: 'Termino Neon',
+    brightness: Brightness.dark,
+    theme: TerminalTheme(
+      cursor: Color(0xFF2BE3FF),
+      selection: Color(0x452BE3FF),
+      foreground: Color(0xFFDCE6F2),
+      background: Color(0xFF05070C),
+      black: Color(0xFF141C2A),
+      red: Color(0xFFFF5470),
+      green: Color(0xFF2BE58B),
+      yellow: Color(0xFFFFC24D),
+      blue: Color(0xFF5AA9FF),
+      magenta: Color(0xFF9D6BFF),
+      cyan: Color(0xFF2BE3FF),
+      white: Color(0xFFC3D0E0),
+      brightBlack: Color(0xFF5A6C86),
+      brightRed: Color(0xFFFF8098),
+      brightGreen: Color(0xFF6DF3B4),
+      brightYellow: Color(0xFFFFD98A),
+      brightBlue: Color(0xFF8CC4FF),
+      brightMagenta: Color(0xFFC49BFF),
+      brightCyan: Color(0xFF88EEFF),
+      brightWhite: Color(0xFFF2F7FC),
+      searchHitBackground: Color(0xFF1B2436),
+      searchHitBackgroundCurrent: Color(0xFF2BE3FF),
+      searchHitForeground: Color(0xFF05070C),
+    ),
+  );
+
   /// The default dark palette: high contrast, low glare, and a background that
   /// sits comfortably next to a dark Material surface.
   static const dark = TerminalPalette(
@@ -307,6 +341,7 @@ abstract final class TerminalPalettes {
 
   /// Every palette available, in display order.
   static const all = <TerminalPalette>[
+    neon,
     dark,
     light,
     dracula,
@@ -328,5 +363,5 @@ abstract final class TerminalPalettes {
   /// The default palette matching [brightness], used when the user has not
   /// chosen one.
   static TerminalPalette forBrightness(Brightness brightness) =>
-      brightness == Brightness.dark ? dark : light;
+      brightness == Brightness.dark ? neon : light;
 }

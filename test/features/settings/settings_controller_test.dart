@@ -118,7 +118,7 @@ void main() {
 
       expect(
         container.read(activePaletteProvider(Brightness.dark)).id,
-        TerminalPalettes.dark.id,
+        TerminalPalettes.neon.id,
       );
       expect(
         container.read(activePaletteProvider(Brightness.light)).id,
@@ -145,7 +145,7 @@ void main() {
 
       expect(
         container.read(activePaletteProvider(Brightness.dark)).id,
-        TerminalPalettes.dark.id,
+        TerminalPalettes.neon.id,
       );
     });
   });

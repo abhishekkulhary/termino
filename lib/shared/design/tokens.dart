@@ -42,6 +42,9 @@ abstract final class Radii {
   /// 20 — dialogs and sheets.
   static const lg = Radius.circular(20);
 
+  /// Rounded rectangle at [xs].
+  static const borderXs = BorderRadius.all(xs);
+
   /// Rounded rectangle at [sm].
   static const borderSm = BorderRadius.all(sm);
 
