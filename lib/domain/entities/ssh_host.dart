@@ -58,6 +58,9 @@ abstract class SshHost with _$SshHost {
     /// Free-text grouping, shown as a folder in the host list.
     String? folder,
 
+    /// When this host was last connected to, or null if never.
+    DateTime? lastConnectedAt,
+
     /// Whether a remembered password exists in the keystore.
     @Default(false) bool hasSavedPassword,
 

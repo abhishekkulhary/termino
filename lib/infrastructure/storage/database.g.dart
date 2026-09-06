@@ -136,6 +136,17 @@ class $SshHostRowsTable extends SshHostRows
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lastConnectedAtMeta = const VerificationMeta(
+    'lastConnectedAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastConnectedAt = GeneratedColumn<int>(
+    'last_connected_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _hasSavedPasswordMeta = const VerificationMeta(
     'hasSavedPassword',
   );
@@ -180,6 +191,7 @@ class $SshHostRowsTable extends SshHostRows
     startupCommand,
     colorValue,
     folder,
+    lastConnectedAt,
     hasSavedPassword,
     forwardAgent,
   ];
@@ -284,6 +296,15 @@ class $SshHostRowsTable extends SshHostRows
         folder.isAcceptableOrUnknown(data['folder']!, _folderMeta),
       );
     }
+    if (data.containsKey('last_connected_at')) {
+      context.handle(
+        _lastConnectedAtMeta,
+        lastConnectedAt.isAcceptableOrUnknown(
+          data['last_connected_at']!,
+          _lastConnectedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('has_saved_password')) {
       context.handle(
         _hasSavedPasswordMeta,
@@ -359,6 +380,10 @@ class $SshHostRowsTable extends SshHostRows
         DriftSqlType.string,
         data['${effectivePrefix}folder'],
       ),
+      lastConnectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_connected_at'],
+      ),
       hasSavedPassword: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}has_saved_password'],
@@ -413,6 +438,13 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
   /// Grouping shown as a folder in the host list.
   final String? folder;
 
+  /// When this host was last connected to, as epoch milliseconds.
+  ///
+  /// Worth naming as a deliberate choice: it is the only column here that
+  /// records what the user actually did, and it exists so the host list can
+  /// lead with what they use rather than with the alphabet.
+  final int? lastConnectedAt;
+
   /// Whether a password for this host exists in the keystore.
   final bool hasSavedPassword;
 
@@ -431,6 +463,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     this.startupCommand,
     this.colorValue,
     this.folder,
+    this.lastConnectedAt,
     required this.hasSavedPassword,
     required this.forwardAgent,
   });
@@ -458,6 +491,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     }
     if (!nullToAbsent || folder != null) {
       map['folder'] = Variable<String>(folder);
+    }
+    if (!nullToAbsent || lastConnectedAt != null) {
+      map['last_connected_at'] = Variable<int>(lastConnectedAt);
     }
     map['has_saved_password'] = Variable<bool>(hasSavedPassword);
     map['forward_agent'] = Variable<bool>(forwardAgent);
@@ -488,6 +524,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       folder: folder == null && nullToAbsent
           ? const Value.absent()
           : Value(folder),
+      lastConnectedAt: lastConnectedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastConnectedAt),
       hasSavedPassword: Value(hasSavedPassword),
       forwardAgent: Value(forwardAgent),
     );
@@ -511,6 +550,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       startupCommand: serializer.fromJson<String?>(json['startupCommand']),
       colorValue: serializer.fromJson<int?>(json['colorValue']),
       folder: serializer.fromJson<String?>(json['folder']),
+      lastConnectedAt: serializer.fromJson<int?>(json['lastConnectedAt']),
       hasSavedPassword: serializer.fromJson<bool>(json['hasSavedPassword']),
       forwardAgent: serializer.fromJson<bool>(json['forwardAgent']),
     );
@@ -531,6 +571,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
       'startupCommand': serializer.toJson<String?>(startupCommand),
       'colorValue': serializer.toJson<int?>(colorValue),
       'folder': serializer.toJson<String?>(folder),
+      'lastConnectedAt': serializer.toJson<int?>(lastConnectedAt),
       'hasSavedPassword': serializer.toJson<bool>(hasSavedPassword),
       'forwardAgent': serializer.toJson<bool>(forwardAgent),
     };
@@ -549,6 +590,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     Value<String?> startupCommand = const Value.absent(),
     Value<int?> colorValue = const Value.absent(),
     Value<String?> folder = const Value.absent(),
+    Value<int?> lastConnectedAt = const Value.absent(),
     bool? hasSavedPassword,
     bool? forwardAgent,
   }) => SshHostRow(
@@ -566,6 +608,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
         : this.startupCommand,
     colorValue: colorValue.present ? colorValue.value : this.colorValue,
     folder: folder.present ? folder.value : this.folder,
+    lastConnectedAt: lastConnectedAt.present
+        ? lastConnectedAt.value
+        : this.lastConnectedAt,
     hasSavedPassword: hasSavedPassword ?? this.hasSavedPassword,
     forwardAgent: forwardAgent ?? this.forwardAgent,
   );
@@ -595,6 +640,9 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           ? data.colorValue.value
           : this.colorValue,
       folder: data.folder.present ? data.folder.value : this.folder,
+      lastConnectedAt: data.lastConnectedAt.present
+          ? data.lastConnectedAt.value
+          : this.lastConnectedAt,
       hasSavedPassword: data.hasSavedPassword.present
           ? data.hasSavedPassword.value
           : this.hasSavedPassword,
@@ -619,6 +667,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           ..write('startupCommand: $startupCommand, ')
           ..write('colorValue: $colorValue, ')
           ..write('folder: $folder, ')
+          ..write('lastConnectedAt: $lastConnectedAt, ')
           ..write('hasSavedPassword: $hasSavedPassword, ')
           ..write('forwardAgent: $forwardAgent')
           ..write(')'))
@@ -639,6 +688,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
     startupCommand,
     colorValue,
     folder,
+    lastConnectedAt,
     hasSavedPassword,
     forwardAgent,
   );
@@ -658,6 +708,7 @@ class SshHostRow extends DataClass implements Insertable<SshHostRow> {
           other.startupCommand == this.startupCommand &&
           other.colorValue == this.colorValue &&
           other.folder == this.folder &&
+          other.lastConnectedAt == this.lastConnectedAt &&
           other.hasSavedPassword == this.hasSavedPassword &&
           other.forwardAgent == this.forwardAgent);
 }
@@ -675,6 +726,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
   final Value<String?> startupCommand;
   final Value<int?> colorValue;
   final Value<String?> folder;
+  final Value<int?> lastConnectedAt;
   final Value<bool> hasSavedPassword;
   final Value<bool> forwardAgent;
   final Value<int> rowid;
@@ -691,6 +743,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     this.startupCommand = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.folder = const Value.absent(),
+    this.lastConnectedAt = const Value.absent(),
     this.hasSavedPassword = const Value.absent(),
     this.forwardAgent = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -708,6 +761,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     this.startupCommand = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.folder = const Value.absent(),
+    this.lastConnectedAt = const Value.absent(),
     this.hasSavedPassword = const Value.absent(),
     this.forwardAgent = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -728,6 +782,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     Expression<String>? startupCommand,
     Expression<int>? colorValue,
     Expression<String>? folder,
+    Expression<int>? lastConnectedAt,
     Expression<bool>? hasSavedPassword,
     Expression<bool>? forwardAgent,
     Expression<int>? rowid,
@@ -745,6 +800,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
       if (startupCommand != null) 'startup_command': startupCommand,
       if (colorValue != null) 'color_value': colorValue,
       if (folder != null) 'folder': folder,
+      if (lastConnectedAt != null) 'last_connected_at': lastConnectedAt,
       if (hasSavedPassword != null) 'has_saved_password': hasSavedPassword,
       if (forwardAgent != null) 'forward_agent': forwardAgent,
       if (rowid != null) 'rowid': rowid,
@@ -764,6 +820,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     Value<String?>? startupCommand,
     Value<int?>? colorValue,
     Value<String?>? folder,
+    Value<int?>? lastConnectedAt,
     Value<bool>? hasSavedPassword,
     Value<bool>? forwardAgent,
     Value<int>? rowid,
@@ -781,6 +838,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
       startupCommand: startupCommand ?? this.startupCommand,
       colorValue: colorValue ?? this.colorValue,
       folder: folder ?? this.folder,
+      lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
       hasSavedPassword: hasSavedPassword ?? this.hasSavedPassword,
       forwardAgent: forwardAgent ?? this.forwardAgent,
       rowid: rowid ?? this.rowid,
@@ -826,6 +884,9 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
     if (folder.present) {
       map['folder'] = Variable<String>(folder.value);
     }
+    if (lastConnectedAt.present) {
+      map['last_connected_at'] = Variable<int>(lastConnectedAt.value);
+    }
     if (hasSavedPassword.present) {
       map['has_saved_password'] = Variable<bool>(hasSavedPassword.value);
     }
@@ -853,6 +914,7 @@ class SshHostRowsCompanion extends UpdateCompanion<SshHostRow> {
           ..write('startupCommand: $startupCommand, ')
           ..write('colorValue: $colorValue, ')
           ..write('folder: $folder, ')
+          ..write('lastConnectedAt: $lastConnectedAt, ')
           ..write('hasSavedPassword: $hasSavedPassword, ')
           ..write('forwardAgent: $forwardAgent, ')
           ..write('rowid: $rowid')
@@ -3190,6 +3252,7 @@ typedef $$SshHostRowsTableCreateCompanionBuilder =
       Value<String?> startupCommand,
       Value<int?> colorValue,
       Value<String?> folder,
+      Value<int?> lastConnectedAt,
       Value<bool> hasSavedPassword,
       Value<bool> forwardAgent,
       Value<int> rowid,
@@ -3208,6 +3271,7 @@ typedef $$SshHostRowsTableUpdateCompanionBuilder =
       Value<String?> startupCommand,
       Value<int?> colorValue,
       Value<String?> folder,
+      Value<int?> lastConnectedAt,
       Value<bool> hasSavedPassword,
       Value<bool> forwardAgent,
       Value<int> rowid,
@@ -3279,6 +3343,11 @@ class $$SshHostRowsTableFilterComposer
 
   ColumnFilters<String> get folder => $composableBuilder(
     column: $table.folder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastConnectedAt => $composableBuilder(
+    column: $table.lastConnectedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3362,6 +3431,11 @@ class $$SshHostRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get lastConnectedAt => $composableBuilder(
+    column: $table.lastConnectedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get hasSavedPassword => $composableBuilder(
     column: $table.hasSavedPassword,
     builder: (column) => ColumnOrderings(column),
@@ -3430,6 +3504,11 @@ class $$SshHostRowsTableAnnotationComposer
   GeneratedColumn<String> get folder =>
       $composableBuilder(column: $table.folder, builder: (column) => column);
 
+  GeneratedColumn<int> get lastConnectedAt => $composableBuilder(
+    column: $table.lastConnectedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get hasSavedPassword => $composableBuilder(
     column: $table.hasSavedPassword,
     builder: (column) => column,
@@ -3484,6 +3563,7 @@ class $$SshHostRowsTableTableManager
                 Value<String?> startupCommand = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<String?> folder = const Value.absent(),
+                Value<int?> lastConnectedAt = const Value.absent(),
                 Value<bool> hasSavedPassword = const Value.absent(),
                 Value<bool> forwardAgent = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3500,6 +3580,7 @@ class $$SshHostRowsTableTableManager
                 startupCommand: startupCommand,
                 colorValue: colorValue,
                 folder: folder,
+                lastConnectedAt: lastConnectedAt,
                 hasSavedPassword: hasSavedPassword,
                 forwardAgent: forwardAgent,
                 rowid: rowid,
@@ -3518,6 +3599,7 @@ class $$SshHostRowsTableTableManager
                 Value<String?> startupCommand = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<String?> folder = const Value.absent(),
+                Value<int?> lastConnectedAt = const Value.absent(),
                 Value<bool> hasSavedPassword = const Value.absent(),
                 Value<bool> forwardAgent = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3534,6 +3616,7 @@ class $$SshHostRowsTableTableManager
                 startupCommand: startupCommand,
                 colorValue: colorValue,
                 folder: folder,
+                lastConnectedAt: lastConnectedAt,
                 hasSavedPassword: hasSavedPassword,
                 forwardAgent: forwardAgent,
                 rowid: rowid,

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/shell_profile.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
@@ -69,6 +72,15 @@ class SessionLauncher extends _$SessionLauncher {
 
     final connector = ref.read(sshConnectorProvider);
     final backend = await connector.connect(host);
+
+    // Recorded before the session opens rather than after: what the host list
+    // wants to show is when the user last reached for this host, and that is
+    // true whether or not the shell that followed lasted a second or a day.
+    unawaited(
+      ref
+          .read(sshHostRepositoryProvider)
+          .markConnected(host.id, DateTime.now()),
+    );
 
     return await ref
         .read(sessionManagerProvider.notifier)

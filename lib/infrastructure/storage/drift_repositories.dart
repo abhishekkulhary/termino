@@ -21,17 +21,26 @@ class DriftSshHostRepository implements SshHostRepository {
   final TerminoDatabase _db;
   final SecretStore _secrets;
 
+  /// Most recently connected first, then everything never connected, by label.
+  ///
+  /// SQLite sorts NULLs last under DESC, which is exactly what is wanted here:
+  /// hosts in use rise to the top, and a host never reached sits at the bottom
+  /// with the others, alphabetically, rather than leading the list.
+  static List<OrderClauseGenerator<$SshHostRowsTable>> get _byRecentUse => [
+    (row) =>
+        OrderingTerm(expression: row.lastConnectedAt, mode: OrderingMode.desc),
+    (row) => OrderingTerm(expression: row.label),
+  ];
+
   @override
   Future<List<SshHost>> all() async {
-    final query = _db.select(_db.sshHostRows)
-      ..orderBy([(row) => OrderingTerm(expression: row.label)]);
+    final query = _db.select(_db.sshHostRows)..orderBy(_byRecentUse);
     return (await query.get()).map(_toDomain).toList();
   }
 
   @override
   Stream<List<SshHost>> watch() {
-    final query = _db.select(_db.sshHostRows)
-      ..orderBy([(row) => OrderingTerm(expression: row.label)]);
+    final query = _db.select(_db.sshHostRows)..orderBy(_byRecentUse);
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 
@@ -46,6 +55,17 @@ class DriftSshHostRepository implements SshHostRepository {
   @override
   Future<void> save(SshHost host) =>
       _db.into(_db.sshHostRows).insertOnConflictUpdate(_toRow(host));
+
+  @override
+  Future<void> markConnected(String id, DateTime at) async {
+    // A targeted update rather than save(): recording a connection must not
+    // write back a whole host that may be stale in the caller's hands.
+    await (_db.update(
+      _db.sshHostRows,
+    )..where((row) => row.id.equals(id))).write(
+      SshHostRowsCompanion(lastConnectedAt: Value(at.millisecondsSinceEpoch)),
+    );
+  }
 
   @override
   Future<void> delete(String id) async {
@@ -68,6 +88,9 @@ class DriftSshHostRepository implements SshHostRepository {
     startupCommand: row.startupCommand,
     colorValue: row.colorValue,
     folder: row.folder,
+    lastConnectedAt: row.lastConnectedAt == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row.lastConnectedAt!),
     hasSavedPassword: row.hasSavedPassword,
     forwardAgent: row.forwardAgent,
   );
@@ -85,6 +108,7 @@ class DriftSshHostRepository implements SshHostRepository {
     startupCommand: host.startupCommand,
     colorValue: host.colorValue,
     folder: host.folder,
+    lastConnectedAt: host.lastConnectedAt?.millisecondsSinceEpoch,
     hasSavedPassword: host.hasSavedPassword,
     forwardAgent: host.forwardAgent,
   );

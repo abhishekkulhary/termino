@@ -14,6 +14,12 @@ abstract class SshHostRepository {
   /// Creates or updates a connection.
   Future<void> save(SshHost host);
 
+  /// Records that a connection to [id] succeeded at [at].
+  ///
+  /// Separate from [save] so that noting a connection cannot overwrite fields
+  /// the caller happens to be holding an old copy of.
+  Future<void> markConnected(String id, DateTime at);
+
   /// Deletes a connection and any password remembered for it.
   Future<void> delete(String id);
 }

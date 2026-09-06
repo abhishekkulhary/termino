@@ -25,6 +25,9 @@ _SshHost _$SshHostFromJson(Map<String, dynamic> json) => _SshHost(
   startupCommand: json['startupCommand'] as String?,
   colorValue: (json['colorValue'] as num?)?.toInt(),
   folder: json['folder'] as String?,
+  lastConnectedAt: json['lastConnectedAt'] == null
+      ? null
+      : DateTime.parse(json['lastConnectedAt'] as String),
   hasSavedPassword: json['hasSavedPassword'] as bool? ?? false,
   forwardAgent: json['forwardAgent'] as bool? ?? false,
 );
@@ -44,6 +47,7 @@ Map<String, dynamic> _$SshHostToJson(_SshHost instance) => <String, dynamic>{
   'startupCommand': instance.startupCommand,
   'colorValue': instance.colorValue,
   'folder': instance.folder,
+  'lastConnectedAt': instance.lastConnectedAt?.toIso8601String(),
   'hasSavedPassword': instance.hasSavedPassword,
   'forwardAgent': instance.forwardAgent,
 };

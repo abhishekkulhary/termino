@@ -46,6 +46,13 @@ class SshHostRows extends Table {
   /// Grouping shown as a folder in the host list.
   TextColumn get folder => text().nullable()();
 
+  /// When this host was last connected to, as epoch milliseconds.
+  ///
+  /// Worth naming as a deliberate choice: it is the only column here that
+  /// records what the user actually did, and it exists so the host list can
+  /// lead with what they use rather than with the alphabet.
+  IntColumn get lastConnectedAt => integer().nullable()();
+
   /// Whether a password for this host exists in the keystore.
   BoolColumn get hasSavedPassword =>
       boolean().withDefault(const Constant(false))();
@@ -219,7 +226,7 @@ class TerminoDatabase extends _$TerminoDatabase {
   new withExecutor(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -231,6 +238,9 @@ class TerminoDatabase extends _$TerminoDatabase {
         await m.createTable(settingRows);
         await m.createTable(portForwardRows);
         await m.createTable(snippetRows);
+      }
+      if (from < 4) {
+        await m.addColumn(sshHostRows, sshHostRows.lastConnectedAt);
       }
     },
     beforeOpen: (details) async {
