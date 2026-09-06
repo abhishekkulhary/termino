@@ -3,14 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/domain/backends/terminal_backend.dart';
+import 'package:termino/features/command_palette/presentation/command_palette.dart';
 import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
 import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/local_shell_notice.dart';
+import 'package:termino/features/terminal/presentation/session_status_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_pane.dart';
 import 'package:termino/shared/design/breakpoints.dart';
+import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/neon.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// The terminal workspace: a tab strip and the active session's pane.
 ///
@@ -99,7 +105,7 @@ class _Panes extends ConsumerWidget {
       ),
       children: [
         for (final session in sessions.sessions)
-          TerminalPane(
+          _Pane(
             key: ValueKey(session.id),
             session: session,
             autofocus: session.id == sessions.activeId,
@@ -118,12 +124,35 @@ class _Panes extends ConsumerWidget {
           color: Theme.of(context).colorScheme.outlineVariant,
         ),
         Expanded(
-          child: TerminalPane(
+          child: _Pane(
             key: ValueKey('split-${secondary.id}'),
             session: secondary,
             autofocus: false,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// A terminal with its readout beneath it.
+///
+/// The status bar belongs to the pane rather than to the screen because a
+/// split shows two sessions, and each one's state is its own.
+class _Pane extends StatelessWidget {
+  const new({required this.session, required this.autofocus, super.key});
+
+  final TerminalSession session;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: TerminalPane(session: session, autofocus: autofocus),
+        ),
+        SessionStatusBar(session: session),
       ],
     );
   }
@@ -275,7 +304,9 @@ class _Tab extends StatelessWidget {
         return InkWell(
           onTap: onTap,
           onSecondaryTap: canSplit || inSplit ? _showMenu(context) : null,
-          child: Container(
+          child: AnimatedContainer(
+            duration: Motion.fast,
+            curve: Curves.easeOut,
             constraints: const BoxConstraints(maxWidth: 220),
             padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
             decoration: BoxDecoration(
@@ -296,6 +327,15 @@ class _Tab extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // The tab's own light. A session that dropped while the user
+                // was in another tab is otherwise indistinguishable from one
+                // that is fine, until they switch to it and find out.
+                ValueListenableBuilder<BackendConnectionState>(
+                  valueListenable: session.connectionState,
+                  builder: (context, state, _) =>
+                      StatusDot(status: healthOf(state), size: 7),
+                ),
+                const SizedBox(width: Spacing.sm),
                 if (inSplit) ...[
                   Tooltip(
                     message: 'Shown in the second pane',
@@ -341,6 +381,33 @@ class _Tab extends StatelessWidget {
   }
 }
 
+/// A terminal glyph inside a glowing ring.
+///
+/// The empty terminal is the first thing a new user sees, and a flat icon on
+/// a black field says nothing at all. This says the app is on.
+class _EmptyMark extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final neon = NeonAccents.of(context);
+    final accent = theme.colorScheme.primary;
+
+    return Container(
+      width: 84,
+      height: 84,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: accent.withValues(alpha: 0.07),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+        boxShadow: neon.glowStrong(accent),
+      ),
+      child: Icon(Icons.terminal_rounded, size: 38, color: accent),
+    );
+  }
+}
+
 class _EmptyState extends ConsumerWidget {
   const new();
 
@@ -361,23 +428,39 @@ class _EmptyState extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.terminal_rounded,
-                  size: 48,
-                  color: theme.colorScheme.primary,
+                const Reveal(child: _EmptyMark()),
+                const SizedBox(height: Spacing.xl),
+                Reveal(
+                  delay: const Duration(milliseconds: 60),
+                  child: Text(
+                    'No sessions open',
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
-                const SizedBox(height: Spacing.lg),
-                Text('No sessions open', style: theme.textTheme.titleMedium),
                 const SizedBox(height: Spacing.sm),
-                Text(
-                  capabilities.canRunLocalShell
-                      ? 'Open a shell on this machine, or connect to a saved '
-                            'host under Hosts.'
-                      : 'Connect to a saved host under Hosts, or replay the '
-                            'demo to try the terminal.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                Reveal(
+                  delay: const Duration(milliseconds: 100),
+                  child: Text(
+                    capabilities.canRunLocalShell
+                        ? 'Open a shell on this machine, or connect to a '
+                              'saved host under Hosts.'
+                        : 'Connect to a saved host under Hosts, or replay the '
+                              'demo to try the terminal.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Spacing.md),
+                // The empty screen is where someone is most likely to be
+                // looking for a way in, so it is where the shortcut is worth
+                // saying out loud.
+                Reveal(
+                  delay: const Duration(milliseconds: 140),
+                  child: Text(
+                    'Press ${commandPaletteHint(context)} for anything',
+                    style: theme.textTheme.labelSmall,
                   ),
                 ),
                 const SizedBox(height: Spacing.xl),

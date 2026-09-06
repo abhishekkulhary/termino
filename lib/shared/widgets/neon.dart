@@ -118,8 +118,8 @@ class _StatusDotState extends State<StatusDot>
   );
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _syncAnimation();
   }
 
@@ -131,9 +131,17 @@ class _StatusDotState extends State<StatusDot>
 
   /// Only the busy state animates. A steady green that breathes is noise in
   /// the corner of the eye all day.
+  ///
+  /// Stopped entirely under reduce-motion — which also keeps an endlessly
+  /// repeating animation out of widget tests, where `pumpAndSettle` waits for
+  /// the tree to go still and a pulse means it never does.
   void _syncAnimation() {
-    if (widget.status == ConnectionHealth.busy) {
-      _pulse.repeat(reverse: true);
+    final animate =
+        widget.status == ConnectionHealth.busy &&
+        !MediaQuery.disableAnimationsOf(context);
+
+    if (animate) {
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
     } else {
       _pulse
         ..stop()
@@ -366,4 +374,102 @@ class _PressableState extends State<_Pressable> {
       ),
     );
   }
+}
+
+/// A small count worn on the corner of a navigation icon.
+///
+/// Shows what the app is doing while the user is looking somewhere else: two
+/// transfers running, a session still connecting. Zero renders nothing at all
+/// rather than a "0" — a badge exists to be noticed, and one that is always
+/// there stops being noticed.
+class NeonBadge extends StatelessWidget {
+  /// Creates a badge showing [count].
+  const new({required this.count, super.key, this.accent, this.pulse = false});
+
+  /// How many. Zero draws nothing.
+  final int count;
+
+  /// The colour to draw it in. Defaults to the primary accent.
+  final Color? accent;
+
+  /// Whether to animate, for work still in progress.
+  final bool pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final neon = NeonAccents.of(context);
+    final colour = accent ?? theme.colorScheme.primary;
+
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      constraints: const BoxConstraints(minWidth: 15),
+      decoration: BoxDecoration(
+        color: colour,
+        borderRadius: const BorderRadius.all(Radius.circular(7)),
+        boxShadow: neon.glow(colour, blur: 8, spread: -1),
+      ),
+      child: Text(
+        // A precise count above nine is not worth the width it costs.
+        count > 9 ? '9+' : '$count',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.surface,
+          fontWeight: FontWeight.w700,
+          height: 1.1,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+
+    if (!pulse) return badge;
+    return _Breathing(child: badge);
+  }
+}
+
+/// A slow fade in and out, for something still in progress.
+class _Breathing extends StatefulWidget {
+  const new({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_Breathing> createState() => _BreathingState();
+}
+
+class _BreathingState extends State<_Breathing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 1),
+    value: 1,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // See StatusDot: a repeating animation never lets a widget test settle,
+    // and someone who asked for no motion asked for a reason.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller
+        ..stop()
+        ..value = 1;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: Tween<double>(begin: 0.55, end: 1).animate(_controller),
+    child: widget.child,
+  );
 }

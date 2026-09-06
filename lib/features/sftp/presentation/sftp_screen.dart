@@ -13,6 +13,7 @@ import 'package:termino/features/sftp/application/sftp_session.dart';
 import 'package:termino/features/sftp/presentation/transfer_queue_sheet.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// The remote file browser.
 class SftpScreen extends ConsumerWidget {
@@ -180,9 +181,12 @@ class _Browser extends ConsumerWidget {
                     : ListView.separated(
                         itemCount: session.entries.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) => _EntryTile(
-                          session: session,
-                          entry: session.entries[index],
+                        itemBuilder: (context, index) => Reveal.staggered(
+                          index: index,
+                          child: _EntryTile(
+                            session: session,
+                            entry: session.entries[index],
+                          ),
                         ),
                       ),
               ),

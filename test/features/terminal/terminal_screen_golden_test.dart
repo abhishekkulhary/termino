@@ -4,7 +4,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
+import 'package:termino/infrastructure/backends/mock_backend.dart';
 
 import '../../support/pump.dart';
 import '../../support/test_database.dart';
@@ -72,6 +74,31 @@ void main() {
     await expectLater(
       find.byType(TerminalScreen),
       matchesGoldenFile('goldens/empty_state_web.png'),
+    );
+  });
+
+  testWidgets('a live session shows its own readout', (tester) async {
+    // The status bar is the app's answer to "is this thing still working?",
+    // so what it shows is pinned: state, size, and the bytes that arrived.
+    final container = testContainer(capabilities: _withoutLocalShell);
+    addTearDown(container.dispose);
+
+    await pumpApp(
+      tester,
+      const Scaffold(body: TerminalScreen()),
+      size: const Size(720, 560),
+      container: container,
+    );
+
+    await container
+        .read(sessionManagerProvider.notifier)
+        .open(backend: MockBackend.text(r'$ uname -a'), title: 'demo');
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('connected'), findsOneWidget);
+    await expectLater(
+      find.byType(TerminalScreen),
+      matchesGoldenFile('goldens/session_status_bar.png'),
     );
   });
 

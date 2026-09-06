@@ -72,6 +72,30 @@ class SshBackend extends TerminalBackendBase {
   /// say *why* rather than surfacing a generic handshake error.
   HostKeyCheck? _refusedCheck;
 
+  /// How long a round trip to the server takes, or null when it has not been
+  /// measured or the connection is not up.
+  ///
+  /// Measured with the protocol's own keepalive request, which the server must
+  /// answer and which carries no payload — so this is the connection's latency
+  /// rather than the latency of running something on the far end.
+  Future<Duration?> measureLatency() async {
+    final client = _connection?.client;
+    if (client == null || state != BackendConnectionState.connected) {
+      return null;
+    }
+
+    final clock = Stopwatch()..start();
+    try {
+      await client.ping().timeout(const Duration(seconds: 5));
+    } on Object {
+      // A ping that fails tells us nothing useful on its own — the state
+      // machine already reports a dropped connection — so it reads as
+      // "unknown" rather than as an error of its own.
+      return null;
+    }
+    return clock.elapsed;
+  }
+
   /// The host key check that refused this connection, if one did.
   ///
   /// The mismatch dialog needs both fingerprints to show side by side, and

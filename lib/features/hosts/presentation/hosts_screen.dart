@@ -22,6 +22,7 @@ import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// The saved SSH connections.
 class HostsScreen extends ConsumerWidget {
@@ -56,19 +57,23 @@ class HostsScreen extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
                 itemCount: list.length,
-                itemBuilder: (context, index) => _HostCard(
-                  host: list[index],
-                  onConnect: () =>
-                      unawaited(_connect(context, ref, list[index])),
-                  onBrowse: () {
-                    ref
-                        .read(selectedSftpHostProvider.notifier)
-                        .select(list[index]);
-                    context.go(AppDestinations.files.route);
-                  },
-                  onTunnels: () => context.go(AppDestinations.tunnels.route),
-                  onEdit: () => unawaited(_edit(context, ref, list[index])),
-                  onDelete: () => unawaited(_delete(context, ref, list[index])),
+                itemBuilder: (context, index) => Reveal.staggered(
+                  index: index,
+                  child: _HostCard(
+                    host: list[index],
+                    onConnect: () =>
+                        unawaited(_connect(context, ref, list[index])),
+                    onBrowse: () {
+                      ref
+                          .read(selectedSftpHostProvider.notifier)
+                          .select(list[index]);
+                      context.go(AppDestinations.files.route);
+                    },
+                    onTunnels: () => context.go(AppDestinations.tunnels.route),
+                    onEdit: () => unawaited(_edit(context, ref, list[index])),
+                    onDelete: () =>
+                        unawaited(_delete(context, ref, list[index])),
+                  ),
                 ),
               ),
       ),
@@ -134,7 +139,7 @@ class HostsScreen extends ConsumerWidget {
 
   Future<void> _edit(BuildContext context, WidgetRef ref, [SshHost? host]) =>
       Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (_) => HostEditorScreen(host: host)),
+        FadeThroughPageRoute(builder: (_) => HostEditorScreen(host: host)),
       );
 
   Future<void> _connect(

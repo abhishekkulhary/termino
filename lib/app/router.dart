@@ -2,19 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
+import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/command_palette/presentation/command_palette.dart';
 import 'package:termino/features/forwarding/presentation/forwarding_screen.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/features/hosts/presentation/hosts_screen.dart';
 import 'package:termino/features/identities/presentation/identities_screen.dart';
 import 'package:termino/features/settings/presentation/settings_screen.dart';
+import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/presentation/sftp_screen.dart';
+import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/adaptive_scaffold.dart';
+import 'package:termino/shared/widgets/neon.dart';
 
 /// The app's routes.
 ///
@@ -85,13 +90,45 @@ GoRouter buildRouter() {
   );
 }
 
-class _Shell extends StatelessWidget {
+class _Shell extends ConsumerWidget {
   const new({required this.shell});
 
   final StatefulNavigationShell shell;
 
+  /// What each destination should wear right now.
+  ///
+  /// Read here rather than inside the scaffold: the shell is the only place
+  /// that knows about both the navigation and the application's state, and the
+  /// scaffold stays a widget that renders what it is told.
+  Widget? _badgeFor(WidgetRef ref, AppDestination destination) {
+    if (destination.route == AppDestinations.terminal.route) {
+      final sessions = ref.watch(sessionManagerProvider).sessions;
+      final connecting = sessions.any(
+        (session) =>
+            session.connectionState.value == BackendConnectionState.connecting,
+      );
+      return NeonBadge(
+        count: sessions.length,
+        pulse: connecting,
+        accent: connecting ? NeonAccents.of(ref.context).busy : null,
+      );
+    }
+
+    if (destination.route == AppDestinations.files.route) {
+      final queue = ref.watch(sftpSessionProvider).value?.queue;
+      final running = queue?.active.length ?? 0;
+      return NeonBadge(
+        count: running,
+        pulse: running > 0,
+        accent: NeonAccents.of(ref.context).busy,
+      );
+    }
+
+    return null;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Bound at the shell rather than per screen so the palette is reachable
     // from anywhere, including while a terminal has the keyboard. The terminal
     // sees every other keystroke; this is the one combination the app keeps.
@@ -112,6 +149,7 @@ class _Shell extends StatelessWidget {
             initialLocation: index == shell.currentIndex,
           ),
           title: Text(AppDestinations.all[shell.currentIndex].label),
+          badgeFor: (destination) => _badgeFor(ref, destination),
           actions: [
             _PaletteButton(onPressed: () => showCommandPalette(context)),
             const SizedBox(width: Spacing.sm),

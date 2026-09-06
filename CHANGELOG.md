@@ -35,6 +35,12 @@ order releases.
 
 ### Added
 
+- A live readout under every terminal: connection state, throughput while
+  output is arriving, SSH round-trip latency, bytes received and the grid size.
+- Status lights on session tabs, and counts on the navigation for open sessions
+  and transfers in flight.
+- Motion: staggered list entrances, fade-through page transitions, animated
+  tab selection. All of it stops under the platform's reduce-motion setting.
 - An acceptance suite that runs `vim` and a process monitor through the real
   pipeline and checks the emulator against what they draw.
 

@@ -53,6 +53,7 @@ class AdaptiveScaffold extends StatelessWidget {
     super.key,
     this.title,
     this.actions,
+    this.badgeFor,
   });
 
   /// The primary navigation entries.
@@ -73,6 +74,14 @@ class AdaptiveScaffold extends StatelessWidget {
 
   /// Optional actions for the top bar.
   final List<Widget>? actions;
+
+  /// An indicator drawn on a destination's icon — a count of transfers in
+  /// flight, a session still connecting.
+  ///
+  /// A builder rather than a field on [AppDestination] because a destination
+  /// is a static description of the app's shape, and this is a fact about
+  /// right now.
+  final Widget? Function(AppDestination destination)? badgeFor;
 
   void _select(int index) {
     if (!destinations[index].enabled) return;
@@ -104,9 +113,15 @@ class AdaptiveScaffold extends StatelessWidget {
                 message: destination.enabled
                     ? ''
                     : destination.disabledReason ?? '',
-                child: Icon(destination.icon),
+                child: _Badged(
+                  badge: badgeFor?.call(destination),
+                  child: Icon(destination.icon),
+                ),
               ),
-              selectedIcon: Icon(destination.selectedIcon),
+              selectedIcon: _Badged(
+                badge: badgeFor?.call(destination),
+                child: Icon(destination.selectedIcon),
+              ),
               label: destination.label,
               enabled: destination.enabled,
             ),
@@ -139,9 +154,15 @@ class AdaptiveScaffold extends StatelessWidget {
                       message: destination.enabled
                           ? destination.label
                           : destination.disabledReason ?? destination.label,
-                      child: Icon(destination.icon),
+                      child: _Badged(
+                        badge: badgeFor?.call(destination),
+                        child: Icon(destination.icon),
+                      ),
                     ),
-                    selectedIcon: Icon(destination.selectedIcon),
+                    selectedIcon: _Badged(
+                      badge: badgeFor?.call(destination),
+                      child: Icon(destination.selectedIcon),
+                    ),
                     label: Text(destination.label),
                     disabled: !destination.enabled,
                   ),
@@ -226,6 +247,31 @@ class _TopBar extends StatelessWidget {
           ...actions,
         ],
       ),
+    );
+  }
+}
+
+/// Hangs an indicator off the corner of a navigation icon.
+///
+/// Allowed to overflow its icon, deliberately: a badge that fits inside the
+/// icon's box either shrinks the icon or is too small to read.
+class _Badged extends StatelessWidget {
+  const new({required this.child, this.badge});
+
+  final Widget child;
+  final Widget? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = this.badge;
+    if (badge == null) return child;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(right: -7, top: -5, child: badge),
+      ],
     );
   }
 }

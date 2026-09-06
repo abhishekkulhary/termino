@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/terminal/session_recorder.dart';
+import 'package:termino/features/terminal/application/throughput_meter.dart';
 import 'package:termino/infrastructure/terminal/output_batcher.dart';
 import 'package:xterm/xterm.dart';
 
@@ -65,6 +66,12 @@ class TerminalSession {
   /// Increments every time the program rings the bell. A counter rather than an
   /// event so a widget can react with `ValueListenableBuilder`.
   final ValueNotifier<int> bellCount;
+
+  /// How fast output is arriving, and how much has arrived in total.
+  ///
+  /// Measured in bytes, before decoding: what the user wants to know is what
+  /// the connection is doing, and a multi-byte character is not two events.
+  final ThroughputMeter throughput = ThroughputMeter();
 
   /// How backend output is coalesced before reaching the emulator.
   final TerminalOutputBatcher batcher;
@@ -149,7 +156,14 @@ class TerminalSession {
     // Batch first, then decode: coalescing before decoding means far fewer
     // decoder invocations, and the decoder carries any partial UTF-8 sequence
     // across chunk boundaries so a split multi-byte character still renders.
-    _output = _decoder.bind(batcher.bind(backend.output)).listen((data) {
+    // Counted between the batcher and the decoder, so the measurement is of
+    // bytes off the wire rather than of characters after they are assembled.
+    final counted = batcher.bind(backend.output).map((chunk) {
+      throughput.add(chunk.length);
+      return chunk;
+    });
+
+    _output = _decoder.bind(counted).listen((data) {
       _recorder?.record(data, _recordingClock?.elapsed ?? Duration.zero);
       terminal.write(data);
     });
