@@ -132,6 +132,10 @@ class SshConnectionFactory {
   Future<SSHSocket> _openSocket(String hostname, int port) async {
     try {
       return await socketFactory(hostname, port, timeout: connectTimeout);
+    } on TerminalBackendFailure {
+      // Already says something more useful than "could not be reached" —
+      // a relay that is not configured, or a .local name nothing answered.
+      rethrow;
     } on Object catch (error) {
       throw TerminalBackendFailure(
         TerminalBackendFailureKind.network,

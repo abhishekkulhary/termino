@@ -1,4 +1,5 @@
 import 'package:dartssh2/dartssh2.dart';
+import 'package:termino/infrastructure/ssh/sockets/hostname_resolver.dart';
 
 /// Opens the transport an SSH session runs over.
 ///
@@ -18,10 +19,18 @@ typedef SshSocketFactory = Future<SSHSocket> Function(
 
 /// The default factory: a real TCP socket.
 ///
+/// The name is resolved first rather than left to `SSHSocket.connect`, because
+/// a `.local` name is not ordinary DNS and Android cannot resolve one at all.
+/// Doing it here means every transport — shells, SFTP and port forwards —
+/// reaches a home-network host the same way.
+///
 /// Throws `UnsupportedError` on the web, where browsers cannot open raw TCP
 /// sockets. `PlatformCapabilities` prevents that from being reached.
 Future<SSHSocket> connectTcpSocket(
   String host,
   int port, {
   Duration? timeout,
-}) => SSHSocket.connect(host, port, timeout: timeout);
+}) async {
+  final address = await resolveHostname(host);
+  return await SSHSocket.connect(address, port, timeout: timeout);
+}
