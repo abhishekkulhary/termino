@@ -1,0 +1,21 @@
+# The splash is deliberately plain: the mark on the terminal ground, no text
+# and no spinner. It is on screen for well under a second on every target, and
+# anything more elaborate would only be noticed when the app is slow.
+flutter_native_splash:
+  color: "#11141B"
+  image: assets/icon/foreground.png
+
+  android: true
+  ios: true
+  web: true
+
+  android_12:
+    # Android 12 masks the splash icon into a circle and draws its own
+    # background, so it gets the padded foreground and the colour separately.
+    image: assets/icon/foreground.png
+    color: "#11141B"
+
+  # The dark variants are the same: the splash is already dark, and flashing a
+  # light screen before a dark app is worse than not adapting at all.
+  color_dark: "#11141B"
+  image_dark: assets/icon/foreground.png

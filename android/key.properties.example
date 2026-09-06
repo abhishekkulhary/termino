@@ -1,0 +1,14 @@
+# Copy to android/key.properties and fill in. Never commit the real file — it
+# is in .gitignore, and the keystore it points at must live outside the repo.
+#
+# Create a keystore with:
+#   keytool -genkey -v -keystore ~/termino-release.jks \
+#     -keyalg RSA -keysize 4096 -validity 10000 -alias termino
+#
+# Losing this keystore means losing the ability to update the app on Google
+# Play, permanently. Back it up somewhere you would trust with a password
+# manager.
+storeFile=/absolute/path/to/termino-release.jks
+storePassword=
+keyAlias=termino
+keyPassword=

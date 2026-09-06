@@ -7,9 +7,9 @@ Termino does two things: it gives you a real PTY-backed local shell on every
 platform that permits one, and it connects you to remote machines over SSH with
 an interactive shell, SFTP file transfer and port forwarding.
 
-> **Status: Phase 7 — web.** SSH now works in a browser through a reference
-> relay that only ever carries ciphertext. What remains before v1 is release
-> engineering. See [Roadmap](#roadmap).
+> **Status: 1.0.0.** Every phase in the plan is complete. See
+> [CHANGELOG.md](CHANGELOG.md) for what is in it and
+> [docs/RELEASING.md](docs/RELEASING.md) for how to ship it.
 
 ---
 
@@ -150,10 +150,24 @@ Termino explicitly does *not* protect against — is in
 | 5 | SFTP browser and port forwarding | **done** |
 | 6 | Themes, settings, onboarding, error taxonomy, session recording | |
 | 7 | Web: reference relay and WebSocket transport | **done** |
-| 8 | Release: signing, icons, store pipelines | next |
+| 8 | Release: signing, icons, store pipelines | **done** |
 
 Notable decisions and their reasoning are logged in
 [DECISIONS.md](DECISIONS.md).
+
+## Releasing
+
+Icons and the splash screen are generated rather than hand-drawn, and a `v*`
+tag builds every platform:
+
+```bash
+flutter test test/tools/generate_icon_test.dart --update-goldens
+dart run flutter_launcher_icons && dart run flutter_native_splash:create
+```
+
+Signing material and store credentials cannot live in the repository; what you
+need to supply is listed in [docs/RELEASING.md](docs/RELEASING.md). The release
+workflow builds unsigned artifacts without any of it, so a fork still works.
 
 ## Licence
 

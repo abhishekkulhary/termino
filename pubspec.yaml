@@ -60,12 +60,15 @@ dev_dependencies:
   build_runner: ^2.16.1
   drift_dev: ^2.34.6
   fake_async: ^1.3.3
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
   flutter_test:
     sdk: flutter
   freezed: ^4.0.1
   integration_test:
     sdk: flutter
   json_serializable: ^6.14.1
+  msix: ^3.18.0
   riverpod_generator: ^4.0.9
   riverpod_lint: ^3.1.9
   # The reference relay, so tests can run a real one in-process and prove the
@@ -123,3 +126,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Windows installer. Unsigned unless a certificate is configured, which means
+# SmartScreen warns on first run — see docs/RELEASING.md.
+msix_config:
+  display_name: Termino
+  publisher_display_name: Termino contributors
+  identity_name: com.termino.app
+  logo_path: assets/icon/icon.png
+  capabilities: internetClient, privateNetworkClientServer
+  install_certificate: false

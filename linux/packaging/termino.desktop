@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Termino
+GenericName=Terminal
+Comment=Terminal emulator and SSH client
+Exec=termino
+Icon=termino
+Categories=System;TerminalEmulator;Network;
+Keywords=terminal;shell;ssh;sftp;console;
+Terminal=false
+StartupWMClass=termino

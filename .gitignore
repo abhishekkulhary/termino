@@ -33,6 +33,16 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Signing material. The example file is committed; the real one never is, and
+# neither is a keystore that wanders into the tree.
+/android/key.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+/ios/ExportOptions.plist
+/macos/ExportOptions.plist
+
 # Symbolication related
 app.*.symbols
 

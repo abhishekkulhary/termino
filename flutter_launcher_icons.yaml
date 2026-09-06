@@ -1,0 +1,39 @@
+# Generated from assets/icon/*.png, which are themselves rendered by
+# test/tools/generate_icon_test.dart. Regenerate with:
+#
+#   flutter test test/tools/generate_icon_test.dart --update-goldens
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+
+  android: true
+  # A separate foreground so Android's mask cannot crop the mark. The
+  # background matches the icon's own ground rather than white, which would
+  # show as a halo on a dark launcher.
+  adaptive_icon_background: "#11141B"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  min_sdk_android: 24
+
+  ios: true
+  # The App Store rejects an icon with transparency, so the flattened image is
+  # used rather than the foreground.
+  remove_alpha_ios: true
+
+  macos:
+    generate: true
+    image_path: assets/icon/icon.png
+
+  windows:
+    generate: true
+    image_path: assets/icon/icon.png
+    icon_size: 256
+
+  linux:
+    generate: true
+    image_path: assets/icon/icon.png
+
+  web:
+    generate: true
+    image_path: assets/icon/icon.png
+    background_color: "#11141B"
+    theme_color: "#3B7DD8"
