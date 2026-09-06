@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
-import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/domain/terminal/link_detector.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
@@ -14,6 +13,7 @@ import 'package:termino/features/terminal/application/terminal_search_controller
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/bell_effect.dart';
 import 'package:termino/features/terminal/presentation/key_accessory_bar.dart';
+import 'package:termino/features/terminal/presentation/terminal_cursor.dart';
 import 'package:termino/features/terminal/presentation/terminal_search_bar.dart';
 import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/tokens.dart';
@@ -48,6 +48,9 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
   final _controller = TerminalController();
   final _modifiers = StickyModifiers();
   final _focus = FocusNode();
+  // Owned here so the cursor overlay can read the same scroll position
+  // the grid is drawn at.
+  final _scroll = ScrollController();
 
   TerminalSearchController? _search;
   double? _fontSizeAtGestureStart;
@@ -93,6 +96,7 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
     _controller.dispose();
     _modifiers.dispose();
     _focus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -160,11 +164,22 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
     final size = Breakpoints.ofContext(context);
     final isTouch = size == WindowSize.compact;
 
+    const gridPadding = EdgeInsets.symmetric(
+      horizontal: Spacing.sm,
+      vertical: Spacing.xs,
+    );
+    final textStyle = palette.styleWith(
+      fontSize: settings.fontSize,
+      lineHeight: settings.lineHeight,
+    );
+
     final terminalView = TerminalView(
       widget.session.terminal,
       controller: _controller,
       focusNode: _focus,
-      theme: palette.theme,
+      scrollController: _scroll,
+      // The view is given no cursor of its own; see TerminalCursorOverlay.
+      theme: palette.themeWithoutCursor,
       textStyle: palette.styleWith(
         fontSize: settings.fontSize,
         lineHeight: settings.lineHeight,
@@ -174,20 +189,30 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
       // and break alignment of box drawing. UI chrome still honours it.
       textScaler: TextScaler.noScaling,
       autofocus: widget.autofocus,
-      cursorType: switch (settings.cursorShape) {
-        TerminalCursorShape.block => TerminalCursorType.block,
-        TerminalCursorShape.bar => TerminalCursorType.verticalBar,
-        TerminalCursorShape.underline => TerminalCursorType.underline,
-      },
-      alwaysShowCursor: !settings.cursorBlinks,
       onKeyEvent: _handleKeyEvent,
       onTapUp: (details, offset) => unawaited(_openLinkAt(offset)),
       onSecondaryTapDown: (details, offset) =>
           unawaited(_showContextMenu(details.globalPosition)),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.sm,
-        vertical: Spacing.xs,
-      ),
+      padding: gridPadding,
+    );
+
+    final grid = Stack(
+      children: [
+        Positioned.fill(child: terminalView),
+        Positioned.fill(
+          child: TerminalCursorOverlay(
+            terminal: widget.session.terminal,
+            scrollController: _scroll,
+            style: textStyle,
+            textScaler: TextScaler.noScaling,
+            padding: gridPadding,
+            color: palette.theme.cursor,
+            shape: settings.cursorShape,
+            blinks: settings.cursorBlinks,
+            focusNode: _focus,
+          ),
+        ),
+      ],
     );
 
     return BellEffect(
@@ -212,7 +237,7 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
                   );
                 },
                 onScaleEnd: () => _fontSizeAtGestureStart = null,
-                child: terminalView,
+                child: grid,
               ),
             ),
             if (isTouch)

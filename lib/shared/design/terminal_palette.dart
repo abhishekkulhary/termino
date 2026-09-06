@@ -29,6 +29,39 @@ class TerminalPalette {
   /// The colours themselves, in the form xterm renders.
   final TerminalTheme theme;
 
+  /// The same colours, with no cursor.
+  ///
+  /// `xterm` 4.0.0 draws the bar and underline cursors at the top of the canvas
+  /// rather than at the cursor's own line, and cannot blink at all. Its painter
+  /// cannot be replaced — but `cursor` is used in exactly one place, painting
+  /// the cursor, so a transparent one removes it entirely and leaves the field
+  /// clear for `TerminalCursorOverlay` to draw a correct one on top.
+  TerminalTheme get themeWithoutCursor => TerminalTheme(
+    cursor: const Color(0x00000000),
+    selection: theme.selection,
+    foreground: theme.foreground,
+    background: theme.background,
+    black: theme.black,
+    red: theme.red,
+    green: theme.green,
+    yellow: theme.yellow,
+    blue: theme.blue,
+    magenta: theme.magenta,
+    cyan: theme.cyan,
+    white: theme.white,
+    brightBlack: theme.brightBlack,
+    brightRed: theme.brightRed,
+    brightGreen: theme.brightGreen,
+    brightYellow: theme.brightYellow,
+    brightBlue: theme.brightBlue,
+    brightMagenta: theme.brightMagenta,
+    brightCyan: theme.brightCyan,
+    brightWhite: theme.brightWhite,
+    searchHitBackground: theme.searchHitBackground,
+    searchHitBackgroundCurrent: theme.searchHitBackgroundCurrent,
+    searchHitForeground: theme.searchHitForeground,
+  );
+
   /// The text style used to paint cells.
   ///
   /// Font size and line height are user settings (pinch-to-zoom changes the
