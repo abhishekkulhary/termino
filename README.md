@@ -41,6 +41,15 @@ Phase 8.
 
 ---
 
+### Connecting to a `.local` host
+
+A name ending in `.local` is answered by the machine itself over multicast DNS,
+not by a DNS server. macOS and iOS have that built into the resolver; Android
+does not, and Windows and Linux depend on what is installed. Termino therefore
+asks the network directly when the system resolver has no answer, so
+`pi@my-server.local` works the same everywhere — provided the phone and the
+server are on the same network. If it is not found, use the IP address.
+
 ## Getting started
 
 Requires **Flutter 3.47.1** or later (Dart 3.13.1+).
@@ -111,6 +120,13 @@ for suite in integration_test/*_test.dart; do flutter test "$suite" -d macos; do
 One file at a time is deliberate: on desktop, Flutter relaunches the app for
 each test file, and a second launch inside a single `flutter test` invocation
 fails with "Unable to start the app on the device".
+
+`tui_acceptance_test.dart` is the acceptance criterion the brief named: it runs
+`vim` and a process monitor for real, through the whole pipeline, and judges
+them on what ends up in the emulator's buffer — the alternate screen, absolute
+cursor addressing, a wrap point that only the program can decide, and a clean
+restore on exit. It runs `htop` where it is installed and `top` otherwise; both
+exercise the same emulator behaviour.
 
 CI additionally runs the architecture and coverage gates:
 

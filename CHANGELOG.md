@@ -7,6 +7,29 @@ order releases.
 
 ## [Unreleased]
 
+### Fixed
+
+- Android: the local shell reported "permission denied" for almost everything.
+  An app process starts with its working directory at `/`, which its own UID
+  may not read, and with no `HOME`. The shell now starts in the app's private
+  directory, with `HOME` and `TMPDIR` set.
+- Android: a release build declared no `INTERNET` permission, so every
+  connection failed instantly. Flutter's template declares it only for debug
+  and profile builds.
+- Android: hosts named `*.local` could not be reached at all, because Android
+  has no multicast DNS in its resolver. Names are now resolved over mDNS when
+  the system resolver has no answer.
+- Android: the shell picker offered the same shell twice, under one id, because
+  `/bin/sh` is a symlink to `/system/bin/sh`.
+- The file browser reported every connection failure with the same sentence.
+  Failure classification is now shared with the shell backend, so a wrong
+  password, an unreachable host and a changed host key each say so.
+
+### Added
+
+- An acceptance suite that runs `vim` and a process monitor through the real
+  pipeline and checks the emulator against what they draw.
+
 ## [1.0.0] — 2026-09-06
 
 The first release. Termino is a terminal emulator and SSH client built as one
