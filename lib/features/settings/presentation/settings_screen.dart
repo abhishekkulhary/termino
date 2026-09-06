@@ -7,6 +7,7 @@ import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/terminal_palette.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/neon.dart';
 
 /// Appearance and behaviour settings.
 class SettingsScreen extends ConsumerWidget {
@@ -24,132 +25,187 @@ class SettingsScreen extends ConsumerWidget {
     // it is shown anywhere but inside the app shell.
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: Spacing.xxl),
-        children: [
-          const _SectionHeader('Appearance'),
-          ListTile(
-            title: const Text('App theme'),
-            subtitle: Text(settings.themeMode.label),
-            trailing: DropdownButton<AppThemeMode>(
-              value: settings.themeMode,
-              underline: const SizedBox.shrink(),
-              items: [
-                for (final mode in AppThemeMode.values)
-                  DropdownMenuItem(value: mode, child: Text(mode.label)),
-              ],
-              onChanged: (mode) => mode == null
-                  ? null
-                  : unawaited(controller.setThemeMode(mode)),
+      // Constrained and centred. A slider spanning a 1280-pixel window is not
+      // more adjustable, only harder to aim at, and settings read as a column
+      // whatever the window is doing.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.xxl,
             ),
+            children: [
+              _Group(
+                label: 'Appearance',
+                children: [
+                  ListTile(
+                    title: const Text('App theme'),
+                    subtitle: Text(settings.themeMode.label),
+                    trailing: DropdownButton<AppThemeMode>(
+                      value: settings.themeMode,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        for (final mode in AppThemeMode.values)
+                          DropdownMenuItem(
+                            value: mode,
+                            child: Text(mode.label),
+                          ),
+                      ],
+                      onChanged: (mode) => mode == null
+                          ? null
+                          : unawaited(controller.setThemeMode(mode)),
+                    ),
+                  ),
+                ],
+              ),
+              _Group(
+                label: 'Terminal palette',
+                padding: const EdgeInsets.all(Spacing.md),
+                children: [
+                  _PaletteGrid(
+                    selectedId: settings.paletteId,
+                    onSelected: (id) => unawaited(controller.setPalette(id)),
+                  ),
+                ],
+              ),
+              _Group(
+                label: 'Text',
+                children: [
+                  _SliderTile(
+                    title: 'Font size',
+                    value: settings.fontSize,
+                    min: TerminalSettings.minFontSize,
+                    max: TerminalSettings.maxFontSize,
+                    format: (value) => '${value.round()} pt',
+                    onChanged: (value) =>
+                        unawaited(controller.setFontSize(value)),
+                  ),
+                  _SliderTile(
+                    title: 'Line height',
+                    value: settings.lineHeight,
+                    min: 1,
+                    max: 2,
+                    format: (value) => value.toStringAsFixed(2),
+                    onChanged: (value) =>
+                        unawaited(controller.setLineHeight(value)),
+                  ),
+                ],
+              ),
+              _Group(
+                label: 'Cursor',
+                children: [
+                  ListTile(
+                    title: const Text('Shape'),
+                    trailing: SegmentedButton<TerminalCursorShape>(
+                      segments: [
+                        for (final shape in TerminalCursorShape.values)
+                          ButtonSegment(value: shape, label: Text(shape.label)),
+                      ],
+                      selected: {settings.cursorShape},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (selection) =>
+                          unawaited(controller.setCursorShape(selection.first)),
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: const Text('Blink'),
+                    value: settings.cursorBlinks,
+                    onChanged: (value) =>
+                        unawaited(controller.setCursorBlinks(blinks: value)),
+                  ),
+                ],
+              ),
+              _Group(
+                label: 'Behaviour',
+                children: [
+                  ListTile(
+                    title: const Text('Bell'),
+                    subtitle: Text(settings.bell.label),
+                    trailing: DropdownButton<BellBehaviour>(
+                      value: settings.bell,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        // Vibration is offered only where there is something
+                        // to vibrate. On a desktop it would be a control that
+                        // does nothing — which is what this whole setting used
+                        // to be.
+                        //
+                        // The stored value is always listed, whatever it is. A
+                        // DropdownButton asserts when its value is not among
+                        // its items, so a preference carried over from a phone
+                        // would otherwise take this screen down.
+                        for (final bell in BellBehaviour.values)
+                          if (bell != BellBehaviour.haptic ||
+                              capabilities.hasHaptics ||
+                              settings.bell == bell)
+                            DropdownMenuItem(
+                              value: bell,
+                              child: Text(bell.label),
+                            ),
+                      ],
+                      onChanged: (bell) => bell == null
+                          ? null
+                          : unawaited(controller.setBell(bell)),
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('Scrollback'),
+                    subtitle: Text(
+                      '${settings.scrollbackLines} lines — applies to new '
+                      'sessions',
+                    ),
+                    trailing: DropdownButton<int>(
+                      value: settings.scrollbackLines,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        // The stored value is included even when it is not one
+                        // of the offered sizes. `setScrollback` takes any
+                        // integer, and a value from another version of the app
+                        // must not crash this screen.
+                        for (final lines in {
+                          ...TerminalSettings.scrollbackOptions,
+                          settings.scrollbackLines,
+                        }.toList()..sort())
+                          DropdownMenuItem(value: lines, child: Text('$lines')),
+                      ],
+                      onChanged: (lines) => lines == null
+                          ? null
+                          : unawaited(controller.setScrollback(lines)),
+                    ),
+                  ),
+                ],
+              ),
+              if (capabilities.needsRelay)
+                _Group(
+                  label: 'Relay',
+                  children: [
+                    _RelayTile(
+                      url: settings.relayUrl,
+                      onChanged: (url) =>
+                          unawaited(controller.setRelayUrl(url)),
+                    ),
+                  ],
+                ),
+              _Group(
+                label: 'Everything else',
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.restart_alt_rounded),
+                    title: const Text('Reset to defaults'),
+                    subtitle: const Text(
+                      'Appearance, text, cursor and behaviour',
+                    ),
+                    onTap: () => unawaited(_confirmReset(context, controller)),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const _SectionHeader('Terminal palette'),
-          _PaletteGrid(
-            selectedId: settings.paletteId,
-            onSelected: (id) => unawaited(controller.setPalette(id)),
-          ),
-          const _SectionHeader('Text'),
-          _SliderTile(
-            title: 'Font size',
-            value: settings.fontSize,
-            min: TerminalSettings.minFontSize,
-            max: TerminalSettings.maxFontSize,
-            format: (value) => '${value.round()} pt',
-            onChanged: (value) => unawaited(controller.setFontSize(value)),
-          ),
-          _SliderTile(
-            title: 'Line height',
-            value: settings.lineHeight,
-            min: 1,
-            max: 2,
-            format: (value) => value.toStringAsFixed(2),
-            onChanged: (value) => unawaited(controller.setLineHeight(value)),
-          ),
-          const _SectionHeader('Cursor'),
-          ListTile(
-            title: const Text('Shape'),
-            trailing: SegmentedButton<TerminalCursorShape>(
-              segments: [
-                for (final shape in TerminalCursorShape.values)
-                  ButtonSegment(value: shape, label: Text(shape.label)),
-              ],
-              selected: {settings.cursorShape},
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) =>
-                  unawaited(controller.setCursorShape(selection.first)),
-            ),
-          ),
-          SwitchListTile(
-            title: const Text('Blink'),
-            value: settings.cursorBlinks,
-            onChanged: (value) =>
-                unawaited(controller.setCursorBlinks(blinks: value)),
-          ),
-          const _SectionHeader('Behaviour'),
-          ListTile(
-            title: const Text('Bell'),
-            subtitle: Text(settings.bell.label),
-            trailing: DropdownButton<BellBehaviour>(
-              value: settings.bell,
-              underline: const SizedBox.shrink(),
-              items: [
-                // Vibration is offered only where there is something to
-                // vibrate. On a desktop it would be a control that does
-                // nothing — which is what this whole setting used to be.
-                //
-                // The stored value is always listed, whatever it is. A
-                // DropdownButton asserts when its value is not among its
-                // items, so a setting carried over from a phone would
-                // otherwise take the whole settings screen down.
-                for (final bell in BellBehaviour.values)
-                  if (bell != BellBehaviour.haptic ||
-                      capabilities.hasHaptics ||
-                      settings.bell == bell)
-                    DropdownMenuItem(value: bell, child: Text(bell.label)),
-              ],
-              onChanged: (bell) =>
-                  bell == null ? null : unawaited(controller.setBell(bell)),
-            ),
-          ),
-          ListTile(
-            title: const Text('Scrollback'),
-            subtitle: Text(
-              '${settings.scrollbackLines} lines — applies to new sessions',
-            ),
-            trailing: DropdownButton<int>(
-              value: settings.scrollbackLines,
-              underline: const SizedBox.shrink(),
-              items: [
-                // The stored value is included even when it is not one of the
-                // offered sizes. `setScrollback` takes any integer, and a
-                // value from another version of the app — or a larger one set
-                // before the list changed — must not crash this screen.
-                for (final lines in {
-                  ...TerminalSettings.scrollbackOptions,
-                  settings.scrollbackLines,
-                }.toList()..sort())
-                  DropdownMenuItem(value: lines, child: Text('$lines')),
-              ],
-              onChanged: (lines) => lines == null
-                  ? null
-                  : unawaited(controller.setScrollback(lines)),
-            ),
-          ),
-          if (capabilities.needsRelay) ...[
-            const _SectionHeader('Relay'),
-            _RelayTile(
-              url: settings.relayUrl,
-              onChanged: (url) => unawaited(controller.setRelayUrl(url)),
-            ),
-          ],
-          const Divider(height: Spacing.xxl),
-          ListTile(
-            leading: const Icon(Icons.restart_alt_rounded),
-            title: const Text('Reset to defaults'),
-            subtitle: const Text('Appearance, text, cursor and behaviour'),
-            onTap: () => unawaited(_confirmReset(context, controller)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -181,6 +237,41 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed ?? false) await controller.reset();
+  }
+}
+
+/// A labelled panel holding a few related controls.
+///
+/// The settings were a flat list of tiles running edge to edge, which on a
+/// desktop window is a lot of nothing between a label and the control it
+/// belongs to. Grouping them into panels gives each section an edge, and
+/// matches how a host is drawn on the screen next door.
+class _Group extends StatelessWidget {
+  const new({
+    required this.label,
+    required this.children,
+    this.padding = EdgeInsets.zero,
+  });
+
+  final String label;
+  final List<Widget> children;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          NeonSectionLabel(label),
+          NeonPanel(
+            padding: padding,
+            child: Column(mainAxisSize: MainAxisSize.min, children: children),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -233,33 +324,6 @@ class _RelayTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const new(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
-        Spacing.xl,
-        Spacing.lg,
-        Spacing.sm,
-      ),
-      child: Text(
-        title.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.primary,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

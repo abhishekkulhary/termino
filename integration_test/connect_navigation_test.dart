@@ -105,6 +105,7 @@ void main() {
 
     await tester.tap(find.text('Throwaway server'));
     await tester.pump();
+    var trusted = false;
 
     // The connection is real, and `pump` only advances the fake clock — the
     // socket needs wall-clock time, which is what `runAsync` gives it.
@@ -116,9 +117,21 @@ void main() {
 
       // First sight of this server's key: the trust prompt is expected, and
       // answering it is part of what a user does to connect.
-      if (find.text('Trust and connect').evaluate().isNotEmpty) {
+      //
+      // Answered once, and only once the dialog has finished arriving. Tapping
+      // a dialog mid-transition lands on whatever is behind it, and tapping
+      // one that is on its way out does the same — either way the loop kept
+      // finding the text and kept missing it, for a hundred iterations.
+      if (!trusted && find.text('Trust and connect').evaluate().isNotEmpty) {
+        // Timed pumps, never `pumpAndSettle`: a live SSH connection has a
+        // keepalive timer, so the tree never goes still and settling waits out
+        // its full ten-minute timeout. Long enough for the dialog to arrive,
+        // then tap, then long enough for it to leave — tapping a dialog that
+        // is still moving lands on whatever is behind it.
+        await tester.pump(const Duration(milliseconds: 400));
         await tester.tap(find.text('Trust and connect'));
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        trusted = true;
         continue;
       }
 

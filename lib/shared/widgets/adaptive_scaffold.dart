@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/tokens.dart';
+import 'package:termino/shared/widgets/grid_backdrop.dart';
 
 /// One entry in the app's primary navigation.
 class AppDestination {
@@ -102,7 +103,7 @@ class AdaptiveScaffold extends StatelessWidget {
   Widget _buildCompact(BuildContext context) {
     return Scaffold(
       appBar: title == null ? null : AppBar(title: title, actions: actions),
-      body: SafeArea(child: body),
+      body: SafeArea(child: GridBackdrop(child: body)),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
         onDestinationSelected: _select,
@@ -178,7 +179,7 @@ class AdaptiveScaffold extends StatelessWidget {
                 children: [
                   if (title != null)
                     _TopBar(title: title!, actions: actions ?? const []),
-                  Expanded(child: body),
+                  Expanded(child: GridBackdrop(child: body)),
                 ],
               ),
             ),

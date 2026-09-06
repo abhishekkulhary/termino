@@ -56,3 +56,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Golden-test diff artefacts. `flutter test` writes these beside the goldens
+# whenever an image does not match, and 48 of them had been committed —
+# including the "master" copies, which makes a failed comparison look like a
+# reviewable change.
+failures/

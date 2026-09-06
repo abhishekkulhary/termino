@@ -323,6 +323,31 @@ abstract final class AppTheme {
         shape: const RoundedRectangleBorder(borderRadius: Radii.borderMd),
       ),
 
+      // Material picks the secondary container for a selected segment, which
+      // here is violet and reads as a different app's control next to
+      // everything else. Selection is the accent, as it is everywhere else.
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStatePropertyAll(
+            _mono(size: 12, weight: FontWeight.w600, spacing: 0.4),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? scheme.primary.withValues(alpha: 0.16)
+                : Colors.transparent,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? scheme.primary
+                : scheme.onSurfaceVariant,
+          ),
+          side: WidgetStatePropertyAll(BorderSide(color: accents.panelBorder)),
+          shape: const WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: Radii.borderSm),
+          ),
+        ),
+      ),
+
       chipTheme: ChipThemeData(
         backgroundColor: scheme.surfaceContainerHigh,
         side: BorderSide(color: accents.panelBorder),
