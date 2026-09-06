@@ -9,14 +9,17 @@ import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
+import 'package:termino/features/terminal/application/session_manager.dart';
+import 'package:termino/infrastructure/backends/mock_backend.dart';
 
-import '../../support/pump.dart';
-import '../../support/test_database.dart';
-import '../../support/test_fonts.dart';
+import '../support/pump.dart';
+import '../support/test_database.dart';
+import '../support/test_fonts.dart';
 
-/// The host list is where the app is judged before anything connects, so its
-/// look is pinned: colour identity, live state, last use, and the actions that
-/// save a trip through a menu.
+/// The light theme has no glow to lean on, so everything that carries meaning
+/// in the dark — depth, selection, a host's colour — has to be carried some
+/// other way. It went unwatched once and drifted into a flat, illegible
+/// version of itself; these are the three screens that showed it worst.
 void main() {
   setUpAll(loadTerminalFont);
 
@@ -28,11 +31,11 @@ void main() {
     canReadUserSshConfig: false,
   );
 
-  Future<void> pumpHosts(WidgetTester tester, Size size) async {
+  Future<ProviderContainer> pump(WidgetTester tester) async {
     tester.view
-      ..physicalSize = size
+      ..physicalSize = const Size(1280, 800)
       ..devicePixelRatio = 1.0;
-    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     withoutAnimations(tester);
@@ -42,7 +45,7 @@ void main() {
     await container.read(settingsProvider.notifier).completeOnboarding();
 
     final now = DateTime.now();
-    final hosts = [
+    for (final host in [
       SshHost(
         id: 'a',
         label: 'Build server',
@@ -76,8 +79,7 @@ void main() {
         hostname: 'backup.lan',
         username: 'root',
       ),
-    ];
-    for (final host in hosts) {
+    ]) {
       await container.read(sshHostRepositoryProvider).save(host);
     }
 
@@ -88,24 +90,49 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Hosts'));
-    await tester.pumpAndSettle();
+    return container;
   }
 
-  testWidgets('host cards on a desktop window', (tester) async {
-    await pumpHosts(tester, const Size(1280, 800));
+  testWidgets('host cards, where accent colours have to be adapted', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('Hosts'));
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/hosts_expanded.png'),
+      matchesGoldenFile('goldens/light_hosts.png'),
     );
   });
 
-  testWidgets('host cards on a phone', (tester) async {
-    await pumpHosts(tester, const Size(390, 780));
+  testWidgets('the palette, which is a surface above a surface', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.byTooltip('Command palette'));
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/hosts_compact.png'),
+      matchesGoldenFile('goldens/light_palette.png'),
+    );
+  });
+
+  testWidgets('a live terminal and its readout', (tester) async {
+    final container = await pump(tester);
+    await container
+        .read(sessionManagerProvider.notifier)
+        .open(
+          backend: MockBackend.text(
+            r'$ uname -a'
+            '\n'
+            'Linux pi 6.1.0 aarch64',
+          ),
+          title: 'pi',
+        );
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/light_terminal.png'),
     );
   });
 }

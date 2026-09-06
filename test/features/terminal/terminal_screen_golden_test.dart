@@ -48,6 +48,7 @@ Future<void> _pump(
     const Scaffold(body: TerminalScreen()),
     size: size,
     container: testContainer(capabilities: capabilities),
+    animations: false,
   );
 }
 
@@ -88,6 +89,7 @@ void main() {
       const Scaffold(body: TerminalScreen()),
       size: const Size(720, 560),
       container: container,
+      animations: false,
     );
 
     await container

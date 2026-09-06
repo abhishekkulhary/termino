@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:termino/shared/design/contrast.dart';
 
 /// The parts of the neon look that Material's [ColorScheme] has no name for.
 ///
@@ -20,6 +21,8 @@ class NeonAccents extends ThemeExtension<NeonAccents> {
     required this.panelTop,
     required this.panelBottom,
     required this.glowStrength,
+    required this.surface,
+    required this.shadow,
   });
 
   /// A live, healthy connection.
@@ -50,6 +53,59 @@ class NeonAccents extends ThemeExtension<NeonAccents> {
   /// in one place — and set to zero for the light theme, where it only looks
   /// like a printing error.
   final double glowStrength;
+
+  /// The surface an accent will be drawn against, for [readable].
+  final Color surface;
+
+  /// The colour of a cast shadow. Transparent where shadows are not used.
+  ///
+  /// The dark theme has no use for one: a shadow needs something to fall on,
+  /// and there is nothing behind a panel on a near-black ground. Light is the
+  /// opposite — it has no glow to give, and a shadow is how it says "above".
+  final Color shadow;
+
+  /// [color], adjusted so it can actually be seen on [surface].
+  ///
+  /// Host colours are chosen once, from a palette built for the dark theme, and
+  /// then drawn in both. Without this the same cyan that reads as a bright mark
+  /// on black is a pale smear on white.
+  Color readable(Color color) => Contrast.readableOn(color, surface);
+
+  /// How solidly an accent fills a chip or an avatar behind its glyph.
+  ///
+  /// A wash that reads on black is nearly invisible on white, where the eye has
+  /// no glow to help it.
+  double get accentFill => glowStrength > 0 ? 0.14 : 0.12;
+
+  /// How strongly an accent draws its own edge.
+  double get accentEdge => glowStrength > 0 ? 0.55 : 0.65;
+
+  /// The fill that marks a panel as the current selection.
+  ///
+  /// Null in the dark theme, where the glow already says it. Light has to say
+  /// it some other way, and a tint is quieter than a border alone is loud.
+  ///
+  /// Blended to an opaque colour rather than returned as a translucent one: a
+  /// panel is a surface, and a 7% tint used as the surface makes the whole
+  /// thing 93% transparent — which is exactly what it did the first time.
+  Color? selectionFill(Color accent) => glowStrength > 0
+      ? null
+      : Color.alphaBlend(readable(accent).withValues(alpha: 0.08), panelTop);
+
+  /// What lifts a panel off the page: a halo in the dark, a cast shadow in the
+  /// light. One call site, two physics.
+  List<BoxShadow> depth(Color accent, {bool selected = false}) {
+    if (glowStrength > 0) {
+      return selected ? glowStrong(accent) : glow(accent, blur: 10);
+    }
+    return [
+      BoxShadow(
+        color: shadow.withValues(alpha: selected ? 0.14 : 0.07),
+        blurRadius: selected ? 18 : 10,
+        offset: Offset(0, selected ? 4 : 2),
+      ),
+    ];
+  }
 
   /// A glow suitable for a resting element of [color].
   List<BoxShadow> glow(Color color, {double blur = 14, double spread = -2}) {
@@ -101,6 +157,8 @@ class NeonAccents extends ThemeExtension<NeonAccents> {
     Color? panelTop,
     Color? panelBottom,
     double? glowStrength,
+    Color? surface,
+    Color? shadow,
   }) => NeonAccents(
     online: online ?? this.online,
     busy: busy ?? this.busy,
@@ -110,6 +168,8 @@ class NeonAccents extends ThemeExtension<NeonAccents> {
     panelTop: panelTop ?? this.panelTop,
     panelBottom: panelBottom ?? this.panelBottom,
     glowStrength: glowStrength ?? this.glowStrength,
+    surface: surface ?? this.surface,
+    shadow: shadow ?? this.shadow,
   );
 
   @override
@@ -124,6 +184,8 @@ class NeonAccents extends ThemeExtension<NeonAccents> {
       panelTop: Color.lerp(panelTop, other.panelTop, t)!,
       panelBottom: Color.lerp(panelBottom, other.panelBottom, t)!,
       glowStrength: glowStrength + (other.glowStrength - glowStrength) * t,
+      surface: Color.lerp(surface, other.surface, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
     );
   }
 }

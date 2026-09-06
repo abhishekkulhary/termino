@@ -464,7 +464,8 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = command.accent ?? theme.colorScheme.primary;
+    final accent = NeonAccents.of(context)
+        .readable(command.accent ?? theme.colorScheme.primary);
 
     return MouseRegion(
       onEnter: (_) => onHover(),

@@ -453,6 +453,8 @@ class _Identity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final neon = NeonAccents.of(context);
+    final colour = neon.readable(accent);
+
     return SizedBox(
       width: 34,
       height: 34,
@@ -464,13 +466,15 @@ class _Identity extends StatelessWidget {
             height: 34,
             decoration: BoxDecoration(
               borderRadius: Radii.borderSm,
-              color: accent.withValues(alpha: 0.14),
-              border: Border.all(color: accent.withValues(alpha: 0.55)),
+              color: colour.withValues(alpha: neon.accentFill),
+              border: Border.all(
+                color: colour.withValues(alpha: neon.accentEdge),
+              ),
               boxShadow: health == ConnectionHealth.idle
                   ? null
-                  : neon.glow(accent, blur: 12),
+                  : neon.glow(colour, blur: 12),
             ),
-            child: Icon(Icons.dns_rounded, size: 17, color: accent),
+            child: Icon(Icons.dns_rounded, size: 17, color: colour),
           ),
           Positioned(
             right: -3,

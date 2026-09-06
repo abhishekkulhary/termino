@@ -10,6 +10,7 @@ import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 
+import '../../support/pump.dart';
 import '../../support/test_database.dart';
 import '../../support/test_fonts.dart';
 
@@ -22,6 +23,7 @@ void main() {
   testWidgets('the palette over a full workspace', (tester) async {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    withoutAnimations(tester);
     tester.view
       ..physicalSize = const Size(1280, 800)
       ..devicePixelRatio = 1.0;

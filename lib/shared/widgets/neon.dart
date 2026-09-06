@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:termino/shared/design/contrast.dart';
 import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 
@@ -44,20 +45,26 @@ class NeonPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final neon = NeonAccents.of(context);
-    final edge = accent ?? neon.panelBorder;
+    // A host's colour comes from a palette built for the dark theme; drawn
+    // straight onto a white panel it would be a pale smear.
+    final edge = accent == null ? neon.panelBorder : neon.readable(accent!);
+    final fill = selected && accent != null
+        ? neon.selectionFill(accent!)
+        : null;
 
     final panel = AnimatedContainer(
       duration: Motion.normal,
       curve: Curves.easeOut,
       padding: padding,
       decoration: BoxDecoration(
-        gradient: neon.panelGradient,
+        gradient: fill == null ? neon.panelGradient : null,
+        color: fill,
         borderRadius: borderRadius,
         border: Border.all(
           color: selected ? edge : edge.withValues(alpha: 0.8),
           width: selected ? 1.5 : 1,
         ),
-        boxShadow: selected ? neon.glowStrong(edge) : neon.glow(edge, blur: 10),
+        boxShadow: neon.depth(edge, selected: selected),
       ),
       child: child,
     );
@@ -277,7 +284,8 @@ class NeonAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colour = accent ?? theme.colorScheme.primary;
+    final colour = NeonAccents.of(context)
+        .readable(accent ?? theme.colorScheme.primary);
     final enabled = onPressed != null;
 
     return Tooltip(
@@ -401,7 +409,7 @@ class NeonBadge extends StatelessWidget {
 
     final theme = Theme.of(context);
     final neon = NeonAccents.of(context);
-    final colour = accent ?? theme.colorScheme.primary;
+    final colour = neon.readable(accent ?? theme.colorScheme.primary);
 
     final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -416,7 +424,8 @@ class NeonBadge extends StatelessWidget {
         count > 9 ? '9+' : '$count',
         textAlign: TextAlign.center,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.surface,
+          // Against the badge's own fill, not the page behind it.
+          color: Contrast.readableOn(theme.colorScheme.surface, colour),
           fontWeight: FontWeight.w700,
           height: 1.1,
           letterSpacing: 0,

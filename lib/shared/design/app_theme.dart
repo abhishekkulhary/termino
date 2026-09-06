@@ -45,14 +45,14 @@ abstract final class AppTheme {
   // drawn as ink rather than light. Glow is switched off entirely rather than
   // faded, because a soft halo on white reads as a rendering fault.
 
-  static const _lightCanvas = Color(0xFFF4F7FB);
+  static const _lightCanvas = Color(0xFFE9EEF5);
   static const _lightSurface = Color(0xFFFFFFFF);
-  static const _lightCyan = Color(0xFF007A99);
+  static const _lightCyan = Color(0xFF04697F);
   static const _lightViolet = Color(0xFF6B3FD4);
   static const _lightMagenta = Color(0xFFC2185B);
   static const _lightText = Color(0xFF101725);
   static const _lightTextDim = Color(0xFF54637A);
-  static const _lightOutline = Color(0xFFCBD6E4);
+  static const _lightOutline = Color(0xFFD2DCE8);
 
   /// The light theme.
   static ThemeData light() => _build(Brightness.light);
@@ -150,16 +150,23 @@ abstract final class AppTheme {
           panelTop: Color(0xFF121A28),
           panelBottom: Color(0xFF0B111B),
           glowStrength: 1,
+          surface: _surface,
+          // Nothing for a shadow to fall on, and nothing it could darken.
+          shadow: Color(0x00000000),
         )
       : const NeonAccents(
           online: Color(0xFF0E7A47),
           busy: Color(0xFF8A6100),
           offline: Color(0xFFB3261E),
-          grid: Color(0xFFE6ECF4),
+          grid: Color(0xFFDCE4EE),
           panelBorder: _lightOutline,
           panelTop: Color(0xFFFFFFFF),
-          panelBottom: Color(0xFFF7FAFD),
+          panelBottom: Color(0xFFFAFCFE),
           glowStrength: 0,
+          surface: _lightSurface,
+          // A cool shadow rather than a black one: on a blue-grey ground a
+          // neutral drop shadow reads as dirt.
+          shadow: Color(0xFF16324F),
         );
 
   static ThemeData _build(Brightness brightness) {

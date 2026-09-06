@@ -9,6 +9,10 @@ order releases.
 
 ### Fixed
 
+- The light theme, which had drifted into a flat and partly illegible version
+  of the dark one. Host colours are adapted for contrast against the surface
+  they are drawn on, panels cast a real shadow where they cannot glow, and
+  selection is a tint rather than a slightly thicker border.
 - macOS: the upload button in the file browser did nothing. `file_picker`
   requires a file-access entitlement even with the App Sandbox off, and the
   exception it threw was never caught, so nothing was shown either. The
