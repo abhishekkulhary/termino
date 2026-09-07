@@ -70,6 +70,14 @@ abstract class TerminalSettings with _$TerminalSettings {
     @Default(AppThemeMode.system) AppThemeMode themeMode,
     @Default(14) double fontSize,
     @Default(1.2) double lineHeight,
+
+    /// The font family to draw the grid in, or null for the bundled one.
+    ///
+    /// A family name rather than a choice from a list, because Flutter cannot
+    /// enumerate the fonts a machine has. An unknown name silently falls back,
+    /// which is why the settings screen shows a live preview: it is the only
+    /// honest way to tell someone whether their choice took.
+    String? fontFamily,
     @Default(TerminalCursorShape.block) TerminalCursorShape cursorShape,
     @Default(true) bool cursorBlinks,
     @Default(BellBehaviour.visual) BellBehaviour bell,

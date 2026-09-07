@@ -171,6 +171,7 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
     final textStyle = palette.styleWith(
       fontSize: settings.fontSize,
       lineHeight: settings.lineHeight,
+      fontFamily: settings.fontFamily,
     );
 
     final terminalView = TerminalView(
@@ -180,10 +181,7 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
       scrollController: _scroll,
       // The view is given no cursor of its own; see TerminalCursorOverlay.
       theme: palette.themeWithoutCursor,
-      textStyle: palette.styleWith(
-        fontSize: settings.fontSize,
-        lineHeight: settings.lineHeight,
-      ),
+      textStyle: textStyle,
       // The terminal grid has its own font-size setting; scaling it with the
       // platform text-scale factor would reflow the grid underneath the user
       // and break alignment of box drawing. UI chrome still honours it.

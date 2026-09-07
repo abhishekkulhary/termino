@@ -14,6 +14,7 @@ _TerminalSettings _$TerminalSettingsFromJson(Map<String, dynamic> json) =>
           AppThemeMode.system,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 14,
       lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.2,
+      fontFamily: json['fontFamily'] as String?,
       cursorShape:
           $enumDecodeNullable(
             _$TerminalCursorShapeEnumMap,
@@ -35,6 +36,7 @@ Map<String, dynamic> _$TerminalSettingsToJson(_TerminalSettings instance) =>
       'themeMode': _$AppThemeModeEnumMap[instance.themeMode]!,
       'fontSize': instance.fontSize,
       'lineHeight': instance.lineHeight,
+      'fontFamily': instance.fontFamily,
       'cursorShape': _$TerminalCursorShapeEnumMap[instance.cursorShape]!,
       'cursorBlinks': instance.cursorBlinks,
       'bell': _$BellBehaviourEnumMap[instance.bell]!,

@@ -21,9 +21,23 @@ import 'package:termino/shared/design/app_theme.dart';
 import '../../support/pump.dart';
 import '../../support/test_database.dart';
 
+/// Scrolls the settings list — the outermost one — until [target] is shown.
+///
+/// Named explicitly because the font preview contains a text field, and a text
+/// field brings a `Scrollable` of its own: `scrollUntilVisible` picks the only
+/// one it can find, and with two it picks neither.
+Future<void> scrollTo(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+}
+
 /// Brings the bell dropdown into view and opens it.
 Future<void> openBellMenu(WidgetTester tester) async {
-  await tester.scrollUntilVisible(find.text('Bell'), 200);
+  await scrollTo(tester, find.text('Bell'));
   await tester.pumpAndSettle();
   await tester.tap(find.byType(DropdownButton<BellBehaviour>));
   await tester.pumpAndSettle();
@@ -239,7 +253,7 @@ void main() {
       await container.read(settingsProvider.notifier).setFontSize(22);
 
       await pumpApp(tester, const SettingsScreen(), container: container);
-      await tester.scrollUntilVisible(find.text('Reset to defaults'), 200);
+      await scrollTo(tester, find.text('Reset to defaults'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Reset to defaults'));
@@ -266,7 +280,7 @@ void main() {
       await controller.setScrollback(500);
 
       await pumpApp(tester, const SettingsScreen(), container: container);
-      await tester.scrollUntilVisible(find.text('Reset to defaults'), 200);
+      await scrollTo(tester, find.text('Reset to defaults'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Reset to defaults'));
@@ -297,7 +311,7 @@ void main() {
       await container.read(settingsProvider.notifier).setScrollback(1234);
 
       await pumpApp(tester, const SettingsScreen(), container: container);
-      await tester.scrollUntilVisible(find.text('Scrollback'), 200);
+      await scrollTo(tester, find.text('Scrollback'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -313,7 +327,7 @@ void main() {
           .setBell(BellBehaviour.haptic);
 
       await pumpApp(tester, const SettingsScreen(), container: container);
-      await tester.scrollUntilVisible(find.text('Bell'), 200);
+      await scrollTo(tester, find.text('Bell'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -326,7 +340,7 @@ void main() {
         const SettingsScreen(),
         container: testContainer(capabilities: desktop),
       );
-      await tester.scrollUntilVisible(find.text('Scrollback'), 200);
+      await scrollTo(tester, find.text('Scrollback'));
       await tester.pumpAndSettle();
 
       expect(

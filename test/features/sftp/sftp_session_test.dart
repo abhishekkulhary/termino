@@ -126,6 +126,21 @@ void main() {
     expect(uploaded.readAsBytesSync(), source.readAsBytesSync());
   });
 
+  test('deleting through the session removes the file', () async {
+    // The path the swipe and the menu both take. Swiping a file row is
+    // reachable by accident in a way swiping a host is not — a directory is
+    // hundreds of rows and gets flicked through — so the confirmation in front
+    // of this is the whole safety of the gesture.
+    final doomed = File('${workspace.path}/doomed.txt')..writeAsStringSync('x');
+    await session.open(workspace.path);
+    await session.refresh();
+
+    final entry = session.entries.firstWhere((e) => e.name == 'doomed.txt');
+    await session.delete(entry);
+
+    expect(doomed.existsSync(), isFalse);
+  });
+
   test('the uploaded file appears in the listing afterwards', () async {
     final source = File('${workspace.path}/visible.txt')
       ..writeAsStringSync('hello');

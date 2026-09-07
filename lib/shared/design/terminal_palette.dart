@@ -67,13 +67,22 @@ class TerminalPalette {
   /// Font size and line height are user settings (pinch-to-zoom changes the
   /// first), so they are parameters rather than constants; omitting both gives
   /// the defaults from [TerminalDefaults].
-  TerminalStyle styleWith({double? fontSize, double? lineHeight}) =>
-      TerminalStyle(
-        fontFamily: Fonts.mono,
-        fontFamilyFallback: Fonts.monoFallback,
-        fontSize: fontSize ?? TerminalDefaults.fontSize,
-        height: lineHeight ?? TerminalDefaults.lineHeight,
-      );
+  TerminalStyle styleWith({
+    double? fontSize,
+    double? lineHeight,
+    String? fontFamily,
+  }) => TerminalStyle(
+    fontFamily: fontFamily ?? Fonts.mono,
+    // The bundled font leads the fallbacks whenever it is not the choice.
+    // Someone picking Menlo wants Menlo for letters and still needs the Nerd
+    // Font for the box drawing and Powerline glyphs a prompt is full of;
+    // without this, choosing a font fills the screen with tofu.
+    fontFamilyFallback: fontFamily == null
+        ? Fonts.monoFallback
+        : [Fonts.mono, ...Fonts.monoFallback],
+    fontSize: fontSize ?? TerminalDefaults.fontSize,
+    height: lineHeight ?? TerminalDefaults.lineHeight,
+  );
 }
 
 /// The palettes shipped in Phase 1.

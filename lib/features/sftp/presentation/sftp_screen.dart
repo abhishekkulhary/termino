@@ -15,6 +15,7 @@ import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
 import 'package:termino/shared/widgets/reveal.dart';
+import 'package:termino/shared/widgets/swipe_to_delete.dart';
 
 /// The remote file browser.
 class SftpScreen extends ConsumerWidget {
@@ -182,13 +183,25 @@ class _Browser extends ConsumerWidget {
                     : ListView.separated(
                         itemCount: session.entries.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) => Reveal.staggered(
-                          index: index,
-                          child: _EntryTile(
+                        itemBuilder: (context, index) {
+                          final entry = session.entries[index];
+                          final tile = _EntryTile(
                             session: session,
-                            entry: session.entries[index],
-                          ),
-                        ),
+                            entry: entry,
+                          );
+                          return Reveal.staggered(
+                            index: index,
+                            child: SwipeToDelete(
+                              // Dense, so the revealed panel lines up with a
+                              // file row rather than a host card.
+                              dense: true,
+                              itemKey: ValueKey(entry.path),
+                              confirm: () => tile.confirmDelete(context),
+                              onDelete: () => session.delete(entry),
+                              child: tile,
+                            ),
+                          );
+                        },
                       ),
               ),
               if (session.queue.tasks.isNotEmpty)
@@ -399,6 +412,11 @@ class _EntryTile extends StatelessWidget {
   }
 
   Future<void> _delete(BuildContext context) async {
+    if (await confirmDelete(context)) await session.delete(entry);
+  }
+
+  /// The one dialog, shared by the menu and the swipe.
+  Future<bool> confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -420,7 +438,7 @@ class _EntryTile extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed ?? false) await session.delete(entry);
+    return confirmed ?? false;
   }
 
   Future<void> _chmod(BuildContext context) async {

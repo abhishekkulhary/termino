@@ -57,6 +57,17 @@ class Settings extends _$Settings {
   Future<void> setLineHeight(double height) =>
       _update((s) => s.copyWith(lineHeight: height.clamp(1.0, 2.0)));
 
+  /// Chooses the terminal font family, or null for the bundled one.
+  ///
+  /// Trimmed, and an empty choice means "back to the bundled font" rather than
+  /// a family called "".
+  Future<void> setFontFamily(String? family) => _update((s) {
+    final trimmed = family?.trim();
+    return s.copyWith(
+      fontFamily: trimmed == null || trimmed.isEmpty ? null : trimmed,
+    );
+  });
+
   /// Sets the cursor shape.
   Future<void> setCursorShape(TerminalCursorShape shape) =>
       _update((s) => s.copyWith(cursorShape: shape));

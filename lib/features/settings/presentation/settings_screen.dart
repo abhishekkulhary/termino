@@ -11,6 +11,8 @@ import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/features/backup/application/backup_service.dart';
 import 'package:termino/features/known_hosts/presentation/known_hosts_screen.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
+import 'package:termino/features/settings/presentation/font_picker.dart';
+import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/terminal_palette.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
@@ -82,6 +84,11 @@ class SettingsScreen extends ConsumerWidget {
               _Group(
                 label: 'Text',
                 children: [
+                  _FontFamilyTile(
+                    family: settings.fontFamily,
+                    onChanged: (family) =>
+                        unawaited(controller.setFontFamily(family)),
+                  ),
                   _SliderTile(
                     title: 'Font size',
                     value: settings.fontSize,
@@ -619,6 +626,103 @@ class _SliderTile extends StatelessWidget {
         max: max,
         onChanged: onChanged,
       ),
+    );
+  }
+}
+
+/// Chooses the family the grid is drawn in, and shows the result.
+///
+/// The preview is the point. Flutter cannot tell whether a family is
+/// installed, so a name that is not there falls back without complaint —
+/// showing the choice rendered in itself is the only honest way to let someone
+/// see that it did not take.
+class _FontFamilyTile extends StatelessWidget {
+  const new({required this.family, required this.onChanged});
+
+  final String? family;
+  final ValueChanged<String?> onChanged;
+
+  static const _bundled = 'Termino Mono';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final suggestions = MonospaceSuggestions.forPlatform();
+    // The stored value is always offered, so a family typed in by hand — or
+    // one carried over from another platform in a backup — does not vanish
+    // from the control that holds it.
+    final options = <String?>[
+      null,
+      ...{...suggestions, ?family},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          title: const Text('Font'),
+          subtitle: Text(family ?? '$_bundled (bundled)'),
+          trailing: DropdownButton<String?>(
+            value: family,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (final option in options)
+                DropdownMenuItem(
+                  value: option,
+                  child: Text(option ?? _bundled),
+                ),
+            ],
+            onChanged: onChanged,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.lg,
+            0,
+            Spacing.lg,
+            Spacing.md,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                key: ValueKey('font-family-${family ?? ''}'),
+                initialValue: family ?? '',
+                decoration: const InputDecoration(
+                  labelText: 'Or type a family installed on this device',
+                  hintText: 'Fira Code',
+                  isDense: true,
+                ),
+                onFieldSubmitted: onChanged,
+              ),
+              const SizedBox(height: Spacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Spacing.md),
+                decoration: BoxDecoration(
+                  borderRadius: Radii.borderSm,
+                  border: Border.all(
+                    color: NeonAccents.of(context).panelBorder,
+                  ),
+                ),
+                child: Text(
+                  // Characters that differ most between monospace faces, plus
+                  // the box drawing a prompt is full of.
+                  'ILl1 O0o {}[]() =>!= ─│┌┐└┘',
+                  style: TextStyle(
+                    fontFamily: family ?? Fonts.mono,
+                    fontFamilyFallback: family == null
+                        ? Fonts.monoFallback
+                        : [Fonts.mono, ...Fonts.monoFallback],
+                    fontSize: 15,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
