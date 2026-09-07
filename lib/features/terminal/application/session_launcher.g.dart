@@ -108,7 +108,7 @@ final class SessionLauncherProvider
   }
 }
 
-String _$sessionLauncherHash() => r'f5e5eb89fbf7dd43454b02152a4617a0416bf5b6';
+String _$sessionLauncherHash() => r'3706ffe36cbd2feb588203bf6ca8d7b1705defb1';
 
 /// Opens sessions. The one place that decides which backend a request needs.
 

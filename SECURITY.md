@@ -34,7 +34,7 @@ concept touches a real host, redact hostnames and keys.
 
 | Threat | Defence |
 |---|---|
-| A stolen device with the app installed | Secrets live in the platform keystore (Keychain, Android Keystore, libsecret, DPAPI), never in the app's own database or preferences. An optional per-identity biometric or PIN gate stands in front of using one. |
+| A stolen device with the app installed | Secrets live in the platform keystore (Keychain, Android Keystore, libsecret, DPAPI), never in the app's own database or preferences. An optional per-identity biometric or device-passcode gate stands in front of using one: the check runs *before* the private key is read from the keystore, and every failure — cancellation, a plugin error, a platform that cannot ask — is treated as a refusal. |
 | A man-in-the-middle on the network | Host keys are verified against a persistent `known_hosts` store. A first sighting prompts with the fingerprint; **a changed key is a hard, blocking stop and is never auto-accepted.** `dartssh2` 4.x also terminates the connection if the host key changes during a rekey. |
 | Secrets leaking into diagnostics | The logger redacts passwords, passphrases, private key material, authentication banners and the session byte stream. A unit test asserts that a log line containing a known secret comes out redacted. |
 | Secrets leaking into the database | Connection profiles are stored in drift; secrets never are. A test asserts that no secret string appears in the database file. |

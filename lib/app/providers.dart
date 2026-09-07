@@ -1,4 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
+import 'package:termino/domain/auth/biometric_gate.dart';
 import 'package:termino/domain/entities/snippet.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
@@ -9,6 +11,7 @@ import 'package:termino/domain/repositories/snippet_repository.dart';
 import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
+import 'package:termino/infrastructure/auth/local_auth_gate.dart';
 import 'package:termino/infrastructure/ssh/key_generator.dart';
 import 'package:termino/infrastructure/storage/database.dart';
 import 'package:termino/infrastructure/storage/drift_repositories.dart';
@@ -51,6 +54,17 @@ SshIdentityRepository sshIdentityRepository(Ref ref) =>
       ref.watch(databaseProvider),
       ref.watch(secretStoreProvider),
     );
+
+/// Confirms the person holding the device before a protected key is used.
+///
+/// Refuses outright where the platform cannot ask — Linux, and the web. An
+/// identity marked as needing a check must not become usable just because the
+/// check is impossible.
+@Riverpod(keepAlive: true)
+BiometricGate biometricGate(Ref ref) =>
+    ref.watch(platformCapabilitiesProvider).canUseBiometrics
+    ? LocalAuthGate()
+    : const UnavailableBiometricGate();
 
 /// Decides whether a host key may be trusted.
 @Riverpod(keepAlive: true)

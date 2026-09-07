@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Termino asks for Face ID before using an SSH key you have marked as protected, so that only you can connect with it.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<!-- Termino's only cryptography is SSH, a standard secure protocol, which

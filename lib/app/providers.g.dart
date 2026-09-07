@@ -268,6 +268,64 @@ final class SshIdentityRepositoryProvider
 String _$sshIdentityRepositoryHash() =>
     r'4f974877fc06a45cd64f119391fabd8668edcd86';
 
+/// Confirms the person holding the device before a protected key is used.
+///
+/// Refuses outright where the platform cannot ask — Linux, and the web. An
+/// identity marked as needing a check must not become usable just because the
+/// check is impossible.
+
+@ProviderFor(biometricGate)
+final biometricGateProvider = BiometricGateProvider._();
+
+/// Confirms the person holding the device before a protected key is used.
+///
+/// Refuses outright where the platform cannot ask — Linux, and the web. An
+/// identity marked as needing a check must not become usable just because the
+/// check is impossible.
+
+final class BiometricGateProvider
+    extends $FunctionalProvider<BiometricGate, BiometricGate, BiometricGate>
+    with $Provider<BiometricGate> {
+  /// Confirms the person holding the device before a protected key is used.
+  ///
+  /// Refuses outright where the platform cannot ask — Linux, and the web. An
+  /// identity marked as needing a check must not become usable just because the
+  /// check is impossible.
+  BiometricGateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'biometricGateProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$biometricGateHash();
+
+  @$internal
+  @override
+  $ProviderElement<BiometricGate> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  BiometricGate create(Ref ref) {
+    return biometricGate(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BiometricGate value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BiometricGate>(value),
+    );
+  }
+}
+
+String _$biometricGateHash() => r'68a992617d10a42b6585db9d5f08c731237e35bf';
+
 /// Decides whether a host key may be trusted.
 
 @ProviderFor(hostKeyVerifier)

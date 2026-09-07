@@ -2,6 +2,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/app/providers.dart';
 import 'package:termino/core/logging/app_logger.dart';
+import 'package:termino/domain/auth/biometric_gate.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/repositories/known_hosts_repository.dart';
@@ -32,6 +33,7 @@ class SshConnector {
     required this.secrets,
     required this.verifier,
     required this.prompts,
+    required this.biometrics,
     required this.knownHosts,
     required this.socketFactory,
   });
@@ -50,6 +52,9 @@ class SshConnector {
 
   /// What to ask the user.
   final SshPromptService prompts;
+
+  /// Confirms the device holder before a protected key is used.
+  final BiometricGate biometrics;
 
   /// Trusted keys, for forgetting one after a mismatch.
   final KnownHostsRepository knownHosts;
@@ -163,6 +168,21 @@ class SshConnector {
       return null;
     }
 
+    // Before the key is read, not after. A check that runs once the private
+    // key is already in memory protects nothing worth protecting.
+    if (identity.requiresBiometrics) {
+      final allowed = await biometrics.confirm(
+        reason: 'Unlock ${identity.name} to connect to ${host.label}',
+      );
+      if (!allowed) {
+        // Declining is not an error and not a fallback: this identity is
+        // simply not offered, and the connection carries on with whatever
+        // other methods the host allows.
+        Loggers.ssh.info('Biometric check declined for ${identity.name}.');
+        return null;
+      }
+    }
+
     final pem = await secrets.read(identity.secretRef);
     if (pem == null) {
       Loggers.ssh.warning('No key material stored for ${identity.name}.');
@@ -202,6 +222,7 @@ SshConnector sshConnector(Ref ref) => SshConnector(
   secrets: ref.watch(secretStoreProvider),
   verifier: ref.watch(hostKeyVerifierProvider),
   prompts: ref.watch(sshPromptServiceProvider),
+  biometrics: ref.watch(biometricGateProvider),
   knownHosts: ref.watch(knownHostsRepositoryProvider),
   socketFactory: ref.watch(sshSocketFactoryProvider),
 );
