@@ -74,6 +74,22 @@ failing one download at a time with a filesystem error.
 On a phone downloads go to the app's own documents folder, which is the only
 place they can go, so nothing asks.
 
+### Going straight to a path
+
+Tap the path in the file browser — or the **Go to a path** button beside it —
+and it becomes a text field. Type or paste a path and press Enter. `~`, `..`
+and relative names all work, because the server resolves them.
+
+**Tab** completes directory names against the server: one match fills in and
+adds a separator so the next Tab descends; several fill in as far as they
+agree, exactly as a shell does. Only directories are offered, since a file is
+not somewhere you can navigate to. The list under the field shows what matches,
+and before you type anything it shows the directories visited this session —
+held in memory only, because where you went on a server is not something to
+write down.
+
+Escape puts the path back and goes nowhere.
+
 ### Transferring folders
 
 The file browser moves whole folders, in both directions. A folder download

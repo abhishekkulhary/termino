@@ -595,3 +595,34 @@ feature, so the contract it depends on — `SshConnectionHold`, which is only
 browser is still holding the connection up, the new shell attaches to it and
 authenticates nothing; if the transport itself died, the pool has already
 forgotten it and a fresh connection is made.
+
+---
+
+## 2026-09-07 — The path bar is a text field when asked, and completes with Tab
+
+**Decision.** The file browser's path becomes an editable field on tap, or from
+a toolbar button. Enter navigates, Escape cancels, Tab completes directory
+names against the server, and the menu under it offers matches — or, before
+anything is typed, the directories visited this session.
+
+**Why read-only until asked.** A field that is always a field invites a stray
+tap on a phone into opening a keyboard over the listing. The path is a label
+most of the time.
+
+**Why only directories are completed.** Completing to a file produces a path
+that cannot be navigated to, which is the only thing this field does.
+
+**Why the completion is case-sensitive.** The servers this talks to are:
+offering `Desktop` for `desk` completes to a path that does not exist.
+
+**Why recent paths are not persisted.** Where somebody went on a server is
+exactly the kind of thing that should not outlive the session that went there.
+They live in the `SftpSession` and die with it.
+
+**Why `PathField` takes an injectable `completions`.** A widget test cannot
+await a socket — the test binding's fake-async zone never lets one finish, which
+was checked directly: the listing came back empty, and after the test had
+already failed. Without a seam, nothing would tie the Tab key to the completion
+except reading the code. The rules themselves are pure and tested exhaustively
+in `path_completion_test.dart`, and what the server actually answers is tested
+against a real one in the same file as the widget.

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/transfer_task.dart';
 import 'package:termino/features/sftp/application/folder_transfer.dart';
+import 'package:termino/features/sftp/application/path_completion.dart';
 import 'package:termino/features/sftp/application/transfer_queue.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
@@ -52,6 +53,7 @@ class SftpSession extends ChangeNotifier {
   final SftpService service;
 
   String _path = '.';
+  final List<String> _recent = [];
   List<RemoteEntry> _entries = const [];
   var _loading = false;
   String? _error;
@@ -78,6 +80,17 @@ class SftpSession extends ChangeNotifier {
   /// Whether the current directory has a parent to go up to.
   bool get canGoUp => _path != '/' && _path.isNotEmpty;
 
+  /// Directories visited this session, most recent first.
+  ///
+  /// Held for the life of the browser rather than saved: where somebody went
+  /// on a server is exactly the kind of thing that should not outlive the
+  /// session that went there.
+  List<String> get recentPaths => List.unmodifiable(_recent);
+
+  /// How many are kept. Enough to hop back through an afternoon's work,
+  /// few enough to stay a list rather than a search problem.
+  static const recentLimit = 15;
+
   /// Shows or hides dotfiles.
   void toggleHidden() {
     _showHidden = !_showHidden;
@@ -97,6 +110,7 @@ class SftpSession extends ChangeNotifier {
       final resolved = await service.absolute(target);
       _entries = await service.list(resolved);
       _path = resolved;
+      _remember(resolved);
     } on Object catch (failure) {
       _error = _describe(failure);
     } finally {
@@ -114,6 +128,38 @@ class SftpSession extends ChangeNotifier {
 
   /// Re-lists the current directory.
   Future<void> refresh() => open(_path);
+
+  /// Records a visit, newest first and without repeats.
+  void _remember(String path) {
+    _recent
+      ..remove(path)
+      ..insert(0, path);
+    if (_recent.length > recentLimit) _recent.removeLast();
+  }
+
+  /// The directories [input] could be completed to.
+  ///
+  /// Returns the names inside whichever directory [input] points into, not
+  /// whole paths: what Tab fills in is a name, and the caller already knows
+  /// where it goes.
+  ///
+  /// Only directories. Completing to a file would produce a path that cannot
+  /// be navigated to, which is the only thing this field does.
+  Future<List<String>> completionsFor(String input) async {
+    final (:directory, prefix: _) = PathCompletion.split(input, current: _path);
+
+    try {
+      final resolved = await service.absolute(directory);
+      return [
+        for (final entry in await service.list(resolved))
+          if (entry.isDirectory) entry.name,
+      ];
+    } on Object {
+      // A directory that does not exist yet is the ordinary case while
+      // somebody is still typing, not something to report.
+      return const [];
+    }
+  }
 
   /// Queues a download of [entry] to [localPath].
   void download(RemoteEntry entry, String localPath) {

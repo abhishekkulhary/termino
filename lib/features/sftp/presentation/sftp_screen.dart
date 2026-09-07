@@ -17,6 +17,7 @@ import 'package:termino/features/sftp/application/download_destination.dart';
 import 'package:termino/features/sftp/application/folder_transfer.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
+import 'package:termino/features/sftp/presentation/path_field.dart';
 import 'package:termino/features/sftp/presentation/transfer_queue_sheet.dart';
 import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
@@ -334,6 +335,9 @@ class _PathBar extends StatelessWidget {
   final SftpSession session;
   final WidgetRef ref;
 
+  /// Lets the toolbar button start an edit in the field beside it.
+  static final pathFieldKey = GlobalKey<PathFieldState>();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -354,14 +358,12 @@ class _PathBar extends StatelessWidget {
             onPressed: session.canGoUp ? () => unawaited(session.goUp()) : null,
           ),
           Expanded(
-            child: Text(
-              session.path,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: Fonts.mono,
-                fontFamilyFallback: Fonts.monoFallback,
-              ),
-            ),
+            child: PathField(key: pathFieldKey, session: session),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_location_alt_outlined),
+            tooltip: 'Go to a path',
+            onPressed: () => pathFieldKey.currentState?.beginEditing(),
           ),
           IconButton(
             icon: Icon(
