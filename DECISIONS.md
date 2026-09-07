@@ -455,3 +455,42 @@ starts a real `ssh-agent`, loads the fixture keys into it, starts a real `sshd`
 that trusts one of them, and authenticates. The claim being tested — that the
 private key never enters this process — cannot be checked against a fake, since
 a fake would be holding the key in the same process.
+
+---
+
+## 2026-09-07 — Folder transfers are planned before they run, and skip links
+
+**Decision.** Downloading or uploading a folder walks the whole tree first,
+producing a `TransferPlan`, then creates every directory, then queues one
+transfer per file. Symbolic links are skipped and counted. The walk stops at
+2000 files or 32 levels.
+
+**Why plan first.** Queuing as the walk proceeds would be simpler and answers
+none of the three questions the UI has to answer the moment someone taps
+"download": how many files, how many bytes, and was anything left out. It also
+means the directories exist before a single byte moves — a transfer that fails
+half way leaves the shape it was going to fill rather than a half-built tree
+with files in the wrong places.
+
+**Why links are skipped rather than followed.** Two failure modes, neither
+hypothetical, both reproduced in tests against a real server: a link pointing at
+an ancestor makes the walk recurse until it exhausts something, and a link to a
+device or a fifo makes a "file" with no end. Following them is not what anyone
+means by "copy this folder". They are counted and the count is shown, because a
+transfer that silently omitted things would look like one that had finished.
+
+**Why there are limits.** A mistaken tap on `/` should not spend twenty minutes
+listing a server's whole filesystem before anything visible happens. Hitting a
+limit is reported in the same sentence as the file count.
+
+**Two things that had to change underneath.** SFTP has no `mkdir -p`, so
+`ensureDirectory` treats "already exists" as success — but verifies by `stat`
+that what exists is a directory, because some servers report "exists" and
+"permission denied" with the same status code. And `rmdir` refuses a non-empty
+directory, so deleting an entry now removes a directory's contents first; before
+folders could be transferred there was nothing to delete recursively.
+
+**Where the remote path comes from.** The server's resolved path, not the one
+typed: macOS reports `/var/...` as `/private/var/...`, and an upload built from
+the unresolved path would write somewhere other than where the user is looking.
+That is asserted in `folder_session_test.dart`.

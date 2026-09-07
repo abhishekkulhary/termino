@@ -91,6 +91,37 @@ class SftpService {
   /// Creates a directory.
   Future<void> makeDirectory(String path) => _client.mkdir(path);
 
+  /// Creates a directory, treating "it already exists" as success.
+  ///
+  /// Uploading a folder recreates its shape on the server, and a second upload
+  /// into the same place must not fail on the directories that are already
+  /// there. SFTP has no `mkdir -p`, and it reports "exists" and "permission
+  /// denied" with the same status code on some servers — so the existence is
+  /// checked rather than inferred from the failure.
+  Future<void> ensureDirectory(String path) async {
+    try {
+      await _client.mkdir(path);
+    } on Object {
+      final attrs = await _client.stat(path);
+      if (!attrs.isDirectory) rethrow;
+    }
+  }
+
+  /// Deletes a directory and everything in it.
+  ///
+  /// Depth first, because SFTP's `rmdir` only removes an empty directory.
+  Future<void> deleteRecursively(RemoteEntry entry) async {
+    if (!entry.isDirectory || entry.isLink) {
+      await _client.remove(entry.path);
+      return;
+    }
+
+    for (final child in await list(entry.path)) {
+      await deleteRecursively(child);
+    }
+    await _client.rmdir(entry.path);
+  }
+
   /// Renames or moves an entry.
   Future<void> rename(String from, String to) => _client.rename(from, to);
 

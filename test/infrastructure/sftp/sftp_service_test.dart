@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/transfer_task.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
+import 'package:termino/features/sftp/application/folder_transfer.dart';
 import 'package:termino/features/sftp/application/transfer_queue.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
@@ -295,6 +296,92 @@ void main() {
         await File('${workspace.path}/late-copy.txt').readAsString(),
         'now here',
       );
+    });
+  });
+
+  group('whole folders', () {
+    // Moving a folder is the operation that actually touches a filesystem on
+    // both ends, so these run against the real server rather than a plan.
+
+    test('creating a directory that exists again is not an error', () async {
+      // Uploading a folder twice must not fail on the directories that are
+      // already there. SFTP has no `mkdir -p`.
+      final path = '${workspace.path}/reports';
+
+      await sftp.ensureDirectory(path);
+      await sftp.ensureDirectory(path);
+
+      expect(Directory(path).existsSync(), isTrue);
+    });
+
+    test('a file where a directory should be is still an error', () async {
+      // "Already exists" is only acceptable when what exists is a directory.
+      final path = '${workspace.path}/occupied';
+      await File(path).writeAsString('in the way');
+
+      await expectLater(sftp.ensureDirectory(path), throwsA(anything));
+    });
+
+    test('deleting a folder takes everything in it', () async {
+      // `rmdir` refuses a directory that is not empty, so before folders could
+      // be transferred there was nothing here to delete.
+      await Directory('${workspace.path}/tree/deep').create(recursive: true);
+      await File('${workspace.path}/tree/a.txt').writeAsString('a');
+      await File('${workspace.path}/tree/deep/b.txt').writeAsString('b');
+
+      final entry = (await sftp.list(workspace.path))
+          .firstWhere((e) => e.name == 'tree');
+      await sftp.deleteRecursively(entry);
+
+      expect(Directory('${workspace.path}/tree').existsSync(), isFalse);
+    });
+
+    test('a planned download rebuilds the tree it walked', () async {
+      // The plan and the filesystem have to agree: every directory it names
+      // gets made, and every file it names is really there to fetch.
+      await Directory('${workspace.path}/src/lib').create(recursive: true);
+      await Directory('${workspace.path}/src/empty').create();
+      await File('${workspace.path}/src/one.txt').writeAsString('1');
+      await File('${workspace.path}/src/lib/two.txt').writeAsString('22');
+
+      final root = (await sftp.list(workspace.path))
+          .firstWhere((e) => e.name == 'src');
+      final plan = await FolderTransfer.planDownload(
+        root: root,
+        destination: '${workspace.path}/out',
+        list: sftp.list,
+      );
+
+      expect(
+        plan.directories,
+        containsAll([
+          '${workspace.path}/out/src',
+          '${workspace.path}/out/src/lib',
+          '${workspace.path}/out/src/empty',
+        ]),
+      );
+      expect(plan.files, hasLength(2));
+      expect(plan.totalBytes, 3);
+      for (final file in plan.files) {
+        expect(await sftp.sizeOf(file.remotePath), file.size);
+      }
+    });
+
+    test('a symbolic link in a real tree is skipped', () async {
+      await Directory('${workspace.path}/app').create();
+      await File('${workspace.path}/app/real.txt').writeAsString('x');
+      await Link('${workspace.path}/app/loop').create('${workspace.path}/app');
+
+      final root = (await sftp.list(workspace.path))
+          .firstWhere((e) => e.name == 'app');
+      final plan = await FolderTransfer.planDownload(
+        root: root,
+        destination: '${workspace.path}/out',
+        list: sftp.list,
+      );
+
+      expect(plan.files, hasLength(1));
+      expect(plan.skippedLinks, 1, reason: 'the link points at its own parent');
     });
   });
 }

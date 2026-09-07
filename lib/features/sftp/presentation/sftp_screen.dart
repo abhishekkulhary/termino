@@ -8,6 +8,7 @@ import 'package:termino/app/providers.dart';
 import 'package:termino/core/logging/app_logger.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
+import 'package:termino/features/sftp/application/folder_transfer.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
 import 'package:termino/features/sftp/presentation/transfer_queue_sheet.dart';
@@ -208,10 +209,25 @@ class _Browser extends ConsumerWidget {
                 TransferQueueBar(queue: session.queue),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            tooltip: 'Upload a file',
-            onPressed: () => unawaited(_upload(context)),
-            child: const Icon(Icons.upload_rounded),
+          floatingActionButton: MenuAnchor(
+            menuChildren: [
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.insert_drive_file_outlined),
+                onPressed: () => unawaited(_upload(context)),
+                child: const Text('Upload files…'),
+              ),
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.folder_outlined),
+                onPressed: () => unawaited(_uploadFolder(context)),
+                child: const Text('Upload a folder…'),
+              ),
+            ],
+            builder: (context, controller, _) => FloatingActionButton(
+              tooltip: 'Upload',
+              onPressed: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
+              child: const Icon(Icons.upload_rounded),
+            ),
           ),
         );
       },
@@ -252,6 +268,57 @@ class _Browser extends ConsumerWidget {
       );
     }
   }
+
+  Future<void> _uploadFolder(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final chosen = await FilePicker.getDirectoryPath(
+        dialogTitle: 'Choose a folder to upload',
+      );
+      if (chosen == null) return;
+
+      final plan = await session.uploadFolder(chosen);
+      if (plan == null) return;
+      messenger.showSnackBar(SnackBar(content: Text(describePlan(plan))));
+    } on Object catch (error, stackTrace) {
+      Loggers.session.warning(
+        'Choosing a folder to upload failed.',
+        error,
+        stackTrace,
+      );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('That folder could not be opened.')),
+      );
+    }
+  }
+}
+
+/// One line saying what a folder transfer is about to do.
+///
+/// It says how much, and it says what it left out. A transfer that quietly
+/// skipped things would look like one that had finished.
+String describePlan(TransferPlan plan) {
+  if (plan.isEmpty) return 'That folder is empty.';
+
+  final count = plan.files.length;
+  final buffer = StringBuffer(
+    count == 1
+        ? '1 file queued'
+        : '$count files queued (${_formatSize(plan.totalBytes)})',
+  );
+
+  if (plan.skippedLinks > 0) {
+    buffer.write(
+      plan.skippedLinks == 1
+          ? ', 1 symbolic link skipped'
+          : ', ${plan.skippedLinks} symbolic links skipped',
+    );
+  }
+  if (plan.truncated) {
+    buffer.write(', stopped at ${FolderTransfer.defaultMaxEntries} files');
+  }
+  return '$buffer.';
 }
 
 class _PathBar extends StatelessWidget {
@@ -358,12 +425,11 @@ class _EntryTile extends StatelessWidget {
           ? () => unawaited(session.open(entry.path))
           : null,
       actions: [
-        if (!entry.isDirectory)
-          NeonAction(
-            icon: Icons.download_rounded,
-            tooltip: 'Download',
-            onPressed: () => unawaited(_download(context)),
-          ),
+        NeonAction(
+          icon: Icons.download_rounded,
+          tooltip: entry.isDirectory ? 'Download folder' : 'Download',
+          onPressed: () => unawaited(_download(context)),
+        ),
         MenuAnchor(
           menuChildren: [
             MenuItemButton(
@@ -397,8 +463,17 @@ class _EntryTile extends StatelessWidget {
   }
 
   Future<void> _download(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final directory = await getApplicationDocumentsDirectory();
-    session.download(entry, '${directory.path}/${entry.name}');
+
+    if (!entry.isDirectory) {
+      session.download(entry, '${directory.path}/${entry.name}');
+      return;
+    }
+
+    final plan = await session.downloadFolder(entry, directory.path);
+    if (plan == null) return;
+    messenger.showSnackBar(SnackBar(content: Text(describePlan(plan))));
   }
 
   Future<void> _rename(BuildContext context) async {
@@ -452,18 +527,18 @@ class _EntryTile extends StatelessWidget {
     if (mode == null) return;
     await session.chmod(entry, mode);
   }
+}
 
-  static String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    const units = ['KB', 'MB', 'GB', 'TB'];
-    var value = bytes / 1024;
-    var unit = 0;
-    while (value >= 1024 && unit < units.length - 1) {
-      value /= 1024;
-      unit++;
-    }
-    return '${value.toStringAsFixed(1)} ${units[unit]}';
+String _formatSize(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  var value = bytes / 1024;
+  var unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
   }
+  return '${value.toStringAsFixed(1)} ${units[unit]}';
 }
 
 Future<String?> _promptForName(

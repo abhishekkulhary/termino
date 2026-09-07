@@ -50,6 +50,22 @@ asks the network directly when the system resolver has no answer, so
 `pi@my-server.local` works the same everywhere — provided the phone and the
 server are on the same network. If it is not found, use the IP address.
 
+### Transferring folders
+
+The file browser moves whole folders, in both directions. A folder download
+walks the remote tree, creates every directory locally — including the empty
+ones — and queues one transfer per file; an upload does the same in reverse.
+Either way you are told how many files are coming and how big they are before
+anything moves.
+
+Symbolic links are skipped and counted rather than followed. A link pointing at
+an ancestor makes a copy walk in circles, and a link to something like
+`/dev/zero` makes a file that never ends — neither is what anyone means by
+"download this folder", so the count is reported instead.
+
+A walk stops at 2000 files or 32 levels deep and says that it stopped, so a
+mistaken tap on `/` cannot quietly start reading an entire server.
+
 ### Links in terminal output
 
 Text that reads as a URL is recognised and opens on a tap. A program can also
