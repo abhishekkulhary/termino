@@ -172,6 +172,15 @@ Golden tests render real fonts and are tagged, so they can be skipped:
 flutter test -x golden
 ```
 
+**Run one Flutter command at a time.** Two concurrent `flutter test` invocations
+in this checkout will break each other: both rebuild the native assets under
+`build/native_assets/`, and whichever finishes second replaces `libsqlite3.dylib`
+while the first is still using it. Every test that opens the database then fails
+with `Couldn't resolve native function 'sqlite3_initialize'`. It looks exactly
+like a flaky test and is not one — reproduced here at 2 failures in 3 concurrent
+pairs, and never once in a single process, including with the native assets
+deleted first. If an IDE runs tests on save, do not also run them in a terminal.
+
 SSH is covered by ordinary `flutter test` runs: they start a throwaway `sshd`
 unprivileged on a free port and connect to it for real, so no Docker or daemon
 is needed.

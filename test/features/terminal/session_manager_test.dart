@@ -333,7 +333,15 @@ void main() {
         ),
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      // Waited for rather than slept through. The delays here are 5 ms and
+      // 10 ms, so a fixed budget generous on an idle machine is a coin toss on
+      // a loaded one — and this suite runs beside four others that each start
+      // an SSH server. Polling for the expected count and then confirming it
+      // stops growing tests the same thing without the race.
+      for (var i = 0; i < 200 && built < 2; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(
         built,

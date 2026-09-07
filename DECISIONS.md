@@ -526,3 +526,31 @@ longer mounted, or a directory since deleted, or — because settings travel
 through a backup — a path from another machine entirely. Without the check every
 download after that fails one at a time with a filesystem error and nothing
 pointing at the cause. A folder that is not there means "ask again".
+
+---
+
+## 2026-09-07 — The test harness detects losing a race for its port
+
+**Decision.** `TestSshd` holds its reserved port until the moment `sshd` starts,
+watches for `sshd` exiting, and retries on a different port when it lost the
+race. A caller that named an explicit port gets an error instead of a retry.
+
+**Why.** The harness reserved a port by binding and releasing it, then spent
+tens of milliseconds writing config files before `sshd` bound it for real.
+If another suite took the port in that window, `sshd` failed to bind and died —
+and the readiness check, which only asked whether *something* was listening,
+connected to the other suite's server and reported success. The test then ran
+against a server with a different host key, a different `authorized_keys` and a
+different working directory.
+
+Reproduced directly: two `TestSshd.start()` calls on the same port both
+"succeeded", and the banner came from the first server. A losing `sshd` was
+measured exiting after about 10 ms with "Address already in use", which is what
+makes the detection reliable.
+
+**How likely was it?** Measured, rather than assumed: 240 runs of the old
+reserve-release-wait-rebind pattern across six concurrent workers produced
+**zero** collisions, because macOS hands out ephemeral ports sequentially rather
+than immediately reusing a freed one. So this was a real defect that would have
+been very hard to hit — worth fixing because when it did hit, it would have
+presented as an unrelated test failing for no visible reason.

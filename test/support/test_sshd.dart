@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 /// A throwaway OpenSSH server for integration tests.
@@ -48,29 +49,59 @@ class TestSshd {
   static bool get isSupported =>
       !Platform.isWindows && File('/usr/sbin/sshd').existsSync();
 
-  /// Finds a free port by binding one and letting go of it.
+  /// Reserves a free port by binding it, and keeps holding it.
   ///
   /// Fixed ports left tests fighting over TIME_WAIT when suites run in
   /// parallel, which showed up as a connection that inexplicably produced no
-  /// output.
-  static Future<int> _freePort() async {
-    final socket = await ServerSocket.bind('127.0.0.1', 0);
-    final port = socket.port;
-    await socket.close();
-    return port;
-  }
+  /// output. Asking the OS for one solves that and introduces a smaller
+  /// problem: the port is only free until somebody else asks. The socket is
+  /// therefore held right up to the moment `sshd` is started, so the window in
+  /// which a second suite can be handed the same number is a few microseconds
+  /// rather than the tens of milliseconds it takes to write a config file.
+  ///
+  /// The window cannot be closed altogether — `sshd` binds the port itself, and
+  /// only after this lets go — so [start] also detects having lost the race.
+  static Future<ServerSocket> _reservePort() =>
+      ServerSocket.bind('127.0.0.1', 0);
 
   /// Starts a server, on a free port unless one is given.
   ///
   /// [hostKey] selects which fixture key the server presents, so a test can
   /// restart it with a different one — on the same port — and prove that a
   /// changed key is refused.
+  ///
+  /// When the port is chosen automatically, losing a race for it is retried
+  /// rather than reported: another suite got there first, and the answer is a
+  /// different port. When the caller named the port there is nothing to retry
+  /// to, and the failure is raised with `sshd`'s own explanation.
   static Future<TestSshd> start({
     int? port,
     String hostKey = 'ed25519_host',
     String? authorizedKey,
   }) async {
-    final chosenPort = port ?? await _freePort();
+    for (var attempt = 1; ; attempt++) {
+      final server = await _startOnce(
+        port: port,
+        hostKey: hostKey,
+        authorizedKey: authorizedKey,
+      );
+      if (server != null) return server;
+      if (port != null || attempt >= 5) {
+        throw StateError(
+          'sshd could not take port ${port ?? "any"} after $attempt attempts.',
+        );
+      }
+    }
+  }
+
+  /// One attempt. Null means the port was taken between reserving and binding.
+  static Future<TestSshd?> _startOnce({
+    int? port,
+    String hostKey = 'ed25519_host',
+    String? authorizedKey,
+  }) async {
+    final reservation = port == null ? await _reservePort() : null;
+    final chosenPort = port ?? reservation!.port;
     final directory = await Directory.systemTemp.createTemp('termino-sshd-');
 
     // sshd refuses a group- or world-readable host key, and a git checkout
@@ -131,12 +162,26 @@ ForceCommand $dispatcherPath
 Subsystem sftp $sftpServer
 ''');
 
+    // Let go of the reservation as late as possible: from here to sshd's own
+    // bind is the whole window in which another suite can take this number.
+    await reservation?.close();
+
     final process = await Process.start('/usr/sbin/sshd', [
       '-f',
       configPath,
       '-D',
       '-e',
     ]);
+
+    // A server that cannot bind exits almost at once — measured at about 10 ms,
+    // saying "Address already in use". Without watching for that, the readiness
+    // check below connects to *whoever won the port* and reports success, and
+    // the test then runs against another suite's server: different host key,
+    // different authorized_keys, different working directory. That is a rare
+    // failure in whichever test drew the short straw, and it is why this is
+    // watched rather than assumed.
+    var exited = false;
+    unawaited(process.exitCode.then((_) => exited = true));
     // Draining these is not optional, and getting it wrong is invisible until
     // it is baffling. sshd logs to stderr; if nothing reads that pipe, the OS
     // buffer fills and sshd *blocks on the write*, freezing the session. The
@@ -159,8 +204,17 @@ Subsystem sftp $sftpServer
     process.stderr.transform(const SystemEncoding().decoder).listen(collect);
     _logs[process.pid] = log;
 
+    Future<TestSshd?> giveUp() async {
+      process.kill();
+      _logs.remove(process.pid);
+      if (directory.existsSync()) await directory.delete(recursive: true);
+      return null;
+    }
+
     // Wait for the listener rather than sleeping a fixed amount.
     for (var attempt = 0; attempt < 50; attempt++) {
+      if (exited) return await giveUp();
+
       try {
         final socket = await Socket.connect(
           '127.0.0.1',
@@ -168,6 +222,14 @@ Subsystem sftp $sftpServer
           timeout: const Duration(milliseconds: 200),
         );
         socket.destroy();
+
+        // Something is listening — but on a lost race that something is the
+        // other suite's server, and ours has not finished dying yet. A short
+        // grace is enough: the failure takes about 10 ms and this is the only
+        // moment it can be told apart from success.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        if (exited) return await giveUp();
+
         return TestSshd._(process, chosenPort, directory);
       } on SocketException {
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -176,7 +238,10 @@ Subsystem sftp $sftpServer
 
     process.kill();
     await directory.delete(recursive: true);
-    throw StateError('sshd did not start listening on port $chosenPort');
+    throw StateError(
+      'sshd did not start listening on port $chosenPort. It said: '
+      '${log.toString().trim()}',
+    );
   }
 
   /// The private key a client should authenticate with.
