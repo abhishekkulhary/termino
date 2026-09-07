@@ -324,7 +324,7 @@ final class BiometricGateProvider
   }
 }
 
-String _$biometricGateHash() => r'68a992617d10a42b6585db9d5f08c731237e35bf';
+String _$biometricGateHash() => r'27b821ce175befe079b66cb742c36b76899a2760';
 
 /// Decides whether a host key may be trusted.
 

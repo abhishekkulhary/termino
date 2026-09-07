@@ -579,9 +579,18 @@ class NeonListCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  // A Wrap, not a Row. A narrow card with a long name and two
+                  // tags overflowed — the tags kept their natural width while
+                  // the title shrank, and then there was nothing left to
+                  // shrink. Letting them fall to a second line costs a few
+                  // pixels of height and loses nothing.
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: Spacing.sm,
+                    runSpacing: Spacing.xs,
                     children: [
-                      Flexible(
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
                         child: Text(
                           title,
                           maxLines: 1,
@@ -589,10 +598,7 @@ class NeonListCard extends StatelessWidget {
                           style: theme.textTheme.titleSmall,
                         ),
                       ),
-                      for (final tag in tags) ...[
-                        const SizedBox(width: Spacing.sm),
-                        NeonTag(tag),
-                      ],
+                      for (final tag in tags) NeonTag(tag),
                     ],
                   ),
                   if (subtitle case final detail?) ...[

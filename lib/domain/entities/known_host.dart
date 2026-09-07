@@ -9,7 +9,13 @@ enum KnownHostSource {
   trustOnFirstUse,
 
   /// It was imported from the user's `~/.ssh/known_hosts`.
-  imported,
+  imported;
+
+  /// How the source reads on the trusted-keys screen.
+  String get label => switch (this) {
+    KnownHostSource.trustOnFirstUse => 'accepted here',
+    KnownHostSource.imported => 'imported',
+  };
 }
 
 /// A host key this app has accepted, keyed by host, port and key type.

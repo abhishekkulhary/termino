@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
+import 'package:termino/features/known_hosts/presentation/known_hosts_screen.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/terminal_palette.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
+import 'package:termino/shared/widgets/reveal.dart';
 
 /// Appearance and behaviour settings.
 class SettingsScreen extends ConsumerWidget {
@@ -190,6 +192,24 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+              _Group(
+                label: 'Security',
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.verified_user_outlined),
+                    title: const Text('Trusted host keys'),
+                    subtitle: const Text(
+                      'Review and forget the keys you have accepted',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push<void>(
+                      FadeThroughPageRoute(
+                        builder: (_) => const KnownHostsScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               _Group(
                 label: 'Everything else',
                 children: [
