@@ -89,6 +89,14 @@ abstract class TerminalSettings with _$TerminalSettings {
     /// socket. Everywhere else SSH connects directly and this is ignored.
     String? relayUrl,
 
+    /// Where downloaded files are put, or null to use the app's own folder.
+    ///
+    /// Only settable where the platform has a folder picker and a filesystem a
+    /// person navigates by hand — desktop. On a phone, "the app's documents
+    /// folder" is the only answer that means anything, and offering a chooser
+    /// there would be offering a decision with one option.
+    String? downloadDirectory,
+
     /// Whether the user has been through the first-run introduction.
     @Default(false) bool onboardingComplete,
   }) = _TerminalSettings;

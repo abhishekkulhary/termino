@@ -204,6 +204,17 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+              if (capabilities.canChooseFolders)
+                _Group(
+                  label: 'Files',
+                  children: [
+                    _DownloadFolderTile(
+                      path: settings.downloadDirectory,
+                      onChanged: (path) =>
+                          unawaited(controller.setDownloadDirectory(path)),
+                    ),
+                  ],
+                ),
               _Group(
                 label: 'Security',
                 children: [
@@ -724,5 +735,48 @@ class _FontFamilyTile extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Where downloads are saved, and how to change it.
+///
+/// Shown only where there is a filesystem someone navigates by hand. On a
+/// phone the app's own documents folder is the only answer that means
+/// anything, and a row offering to change it would be offering a choice of
+/// one.
+class _DownloadFolderTile extends StatelessWidget {
+  const new({required this.path, required this.onChanged});
+
+  final String? path;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final chosen = path;
+
+    return ListTile(
+      leading: const Icon(Icons.folder_outlined),
+      title: const Text('Save downloads to'),
+      subtitle: Text(
+        chosen ?? 'Ask the first time, then remember',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: chosen == null
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.close_rounded),
+              tooltip: 'Forget this folder',
+              onPressed: () => onChanged(null),
+            ),
+      onTap: () => unawaited(_choose()),
+    );
+  }
+
+  Future<void> _choose() async {
+    final chosen = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Choose where downloads are saved',
+    );
+    if (chosen != null && chosen.isNotEmpty) onChanged(chosen);
   }
 }

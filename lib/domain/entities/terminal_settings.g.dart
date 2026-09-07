@@ -27,6 +27,7 @@ _TerminalSettings _$TerminalSettingsFromJson(Map<String, dynamic> json) =>
           BellBehaviour.visual,
       scrollbackLines: (json['scrollbackLines'] as num?)?.toInt() ?? 10000,
       relayUrl: json['relayUrl'] as String?,
+      downloadDirectory: json['downloadDirectory'] as String?,
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
     );
 
@@ -42,6 +43,7 @@ Map<String, dynamic> _$TerminalSettingsToJson(_TerminalSettings instance) =>
       'bell': _$BellBehaviourEnumMap[instance.bell]!,
       'scrollbackLines': instance.scrollbackLines,
       'relayUrl': instance.relayUrl,
+      'downloadDirectory': instance.downloadDirectory,
       'onboardingComplete': instance.onboardingComplete,
     };
 

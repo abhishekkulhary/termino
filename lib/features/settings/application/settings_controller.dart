@@ -89,6 +89,13 @@ class Settings extends _$Settings {
     (s) => s.copyWith(relayUrl: (url?.trim().isEmpty ?? true) ? null : url),
   );
 
+  /// Sets where downloads are saved. Null returns to the app's own folder.
+  Future<void> setDownloadDirectory(String? path) => _update(
+    (s) => s.copyWith(
+      downloadDirectory: (path?.trim().isEmpty ?? true) ? null : path,
+    ),
+  );
+
   /// Records that the first-run introduction has been seen.
   Future<void> completeOnboarding() =>
       _update((s) => s.copyWith(onboardingComplete: true));

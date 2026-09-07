@@ -494,3 +494,35 @@ folders could be transferred there was nothing to delete recursively.
 typed: macOS reports `/var/...` as `/private/var/...`, and an upload built from
 the unresolved path would write somewhere other than where the user is looking.
 That is asserted in `folder_session_test.dart`.
+
+---
+
+## 2026-09-07 — Downloads ask once, on desktop only
+
+**Decision.** On a platform with a folder chooser, the first download asks where
+to save and the answer is remembered in settings. Elsewhere downloads go to the
+app's documents folder without asking. `Download to…` on a file's menu asks
+again for a one-off.
+
+**Why once and not every time.** A chooser on every download is worse than no
+chooser: the common case is a run of files going to the same place, and a dialog
+between each of them is the thing people disable software over. Remembering also
+gives the Settings row something to show, so the destination is discoverable
+without performing a download to find out.
+
+**Why not on mobile.** The app's own documents folder is the only place a
+download can go on iOS or Android, so a chooser there is a decision with one
+option. The capability is `canChooseFolders` rather than reusing
+`hasWindowManagement`, which today has the same value: one is about windows and
+the other about files, and a flag that means two things will eventually be wrong
+about one of them.
+
+**Why a cancelled chooser cancels the download.** Falling back to the app folder
+would answer a question the user just declined to answer, and put the file
+somewhere they would then have to go looking for.
+
+**Why the remembered folder is re-checked.** It can be on a disk that is no
+longer mounted, or a directory since deleted, or — because settings travel
+through a backup — a path from another machine entirely. Without the check every
+download after that fails one at a time with a filesystem error and nothing
+pointing at the cause. A folder that is not there means "ask again".

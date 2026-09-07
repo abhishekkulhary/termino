@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/core/logging/app_logger.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
+import 'package:termino/features/settings/application/settings_controller.dart';
+import 'package:termino/features/sftp/application/download_destination.dart';
 import 'package:termino/features/sftp/application/folder_transfer.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
@@ -393,14 +397,14 @@ class _PathBar extends StatelessWidget {
   }
 }
 
-class _EntryTile extends StatelessWidget {
+class _EntryTile extends ConsumerWidget {
   const new({required this.session, required this.entry});
 
   final SftpSession session;
   final RemoteEntry entry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return NeonListCard(
@@ -428,10 +432,17 @@ class _EntryTile extends StatelessWidget {
         NeonAction(
           icon: Icons.download_rounded,
           tooltip: entry.isDirectory ? 'Download folder' : 'Download',
-          onPressed: () => unawaited(_download(context)),
+          onPressed: () => unawaited(_download(context, ref)),
         ),
         MenuAnchor(
           menuChildren: [
+            if (ref.watch(platformCapabilitiesProvider).canChooseFolders)
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.folder_open_rounded, size: 18),
+                onPressed: () =>
+                    unawaited(_download(context, ref, alwaysAsk: true)),
+                child: const Text('Download to…'),
+              ),
             MenuItemButton(
               leadingIcon: const Icon(
                 Icons.drive_file_rename_outline,
@@ -462,18 +473,34 @@ class _EntryTile extends StatelessWidget {
     );
   }
 
-  Future<void> _download(BuildContext context) async {
+  Future<void> _download(
+    BuildContext context,
+    WidgetRef ref, {
+    bool alwaysAsk = false,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
-    final directory = await getApplicationDocumentsDirectory();
+
+    final destination = await downloadDestination(ref).resolve(
+      ref.read(currentSettingsProvider).downloadDirectory,
+      alwaysAsk: alwaysAsk,
+    );
+    // Null means the chooser was dismissed. Falling back to somewhere
+    // arbitrary would be answering a question the user declined to answer.
+    if (destination == null) return;
 
     if (!entry.isDirectory) {
-      session.download(entry, '${directory.path}/${entry.name}');
+      session.download(entry, '$destination/${entry.name}');
+      messenger.showSnackBar(
+        SnackBar(content: Text('Saving to $destination.')),
+      );
       return;
     }
 
-    final plan = await session.downloadFolder(entry, directory.path);
+    final plan = await session.downloadFolder(entry, destination);
     if (plan == null) return;
-    messenger.showSnackBar(SnackBar(content: Text(describePlan(plan))));
+    messenger.showSnackBar(
+      SnackBar(content: Text('${describePlan(plan)} Saving to $destination.')),
+    );
   }
 
   Future<void> _rename(BuildContext context) async {
@@ -571,3 +598,23 @@ Future<String?> _promptForName(
     ),
   ).whenComplete(controller.dispose);
 }
+
+/// The download destination resolver, wired to the real picker and settings.
+DownloadDestination downloadDestination(WidgetRef ref) => DownloadDestination(
+  canChoose: ref.read(platformCapabilitiesProvider).canChooseFolders,
+  appFolder: () async => (await getApplicationDocumentsDirectory()).path,
+  chooseFolder: () =>
+      FilePicker.getDirectoryPath(dialogTitle: 'Choose where to save'),
+  directoryExists: (path) {
+    // A remembered folder can be on a disk that is no longer mounted, and the
+    // browser has no filesystem at all — either way the answer is "no, ask
+    // again", not an exception out of a build callback.
+    try {
+      return Directory(path).existsSync();
+    } on Object {
+      return false;
+    }
+  },
+  remember: (path) =>
+      ref.read(settingsProvider.notifier).setDownloadDirectory(path),
+);

@@ -57,6 +57,7 @@ class PlatformCapabilities {
     this.needsRelay = false,
     this.canHoldFiles = true,
     this.canUseSshAgent = false,
+    this.canChooseFolders = false,
     this.localShellUnavailableReason,
   });
 
@@ -117,6 +118,11 @@ class PlatformCapabilities {
       // offered there rather than offered and broken.
       canUseSshAgent:
           target == TargetPlatform.macOS || target == TargetPlatform.linux,
+      // Whether a person navigates their own filesystem by hand, and so has
+      // somewhere in mind for a download to go. On a phone the app's own
+      // documents folder is the only answer that means anything, and a chooser
+      // there would be a decision with one option.
+      canChooseFolders: isDesktop,
       // A vibration motor is a phone thing. `HapticFeedback` is silently a
       // no-op everywhere else, which is exactly how the bell ended up with a
       // setting that did nothing.
@@ -149,6 +155,15 @@ class PlatformCapabilities {
   /// step, and the widgets have to consult this one anyway.
   final bool canUseSshAgent;
 
+  /// Whether the user has a filesystem they navigate by hand, and so can be
+  /// asked where a download should go.
+  ///
+  /// Desktop only. Kept apart from [hasWindowManagement] even though the two
+  /// agree today: one is about windows and the other about files, and a
+  /// capability that means two things is one that will eventually be wrong
+  /// about one of them.
+  final bool canChooseFolders;
+
   /// Whether files can be written to and read from local storage.
   ///
   /// Gates ZModem (`rz` and `sz`), which is the terminal receiving and sending
@@ -177,7 +192,8 @@ class PlatformCapabilities {
           other.hasHaptics == hasHaptics &&
           other.canReadUserSshConfig == canReadUserSshConfig &&
           other.canHoldFiles == canHoldFiles &&
-          other.canUseSshAgent == canUseSshAgent;
+          other.canUseSshAgent == canUseSshAgent &&
+          other.canChooseFolders == canChooseFolders;
 
   @override
   int get hashCode => Object.hash(
@@ -191,6 +207,7 @@ class PlatformCapabilities {
     canReadUserSshConfig,
     canHoldFiles,
     canUseSshAgent,
+    canChooseFolders,
   );
 }
 
