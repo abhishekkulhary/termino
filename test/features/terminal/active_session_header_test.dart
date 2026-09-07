@@ -190,6 +190,42 @@ void main() {
     expect(find.text('deploy@host-0.example.com'), findsOneWidget);
     expect(find.text('vim README.md'), findsNothing);
   });
+
+  testWidgets('a tab fills the strip, so its underline sits on the edge', (
+    tester,
+  ) async {
+    // A horizontal `ListView` stretches its children to the full cross axis;
+    // a `Row` lets them take their natural height and centres them. Swapping
+    // one for the other turned the selected tab's fill into a short band
+    // floating in the middle of the strip, with its 2px underline hanging in
+    // mid-air instead of sitting on the bottom edge.
+    final container = testContainer();
+    addTearDown(container.dispose);
+    await openSessions(container, 2);
+
+    await pumpApp(
+      tester,
+      const Scaffold(body: TerminalScreen()),
+      container: container,
+    );
+
+    final strip = tester.getRect(find.byKey(stripKey));
+    final tab = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Session 0'),
+            matching: find.byType(AnimatedContainer),
+          )
+          .first,
+    );
+
+    expect(tab.top, strip.top, reason: 'the tab starts at the top');
+    expect(
+      strip.bottom - tab.bottom,
+      lessThanOrEqualTo(1),
+      reason: "nothing below the tab but the strip's own 1px border",
+    );
+  });
 }
 
 /// Just the app bar, which is where the title lives.

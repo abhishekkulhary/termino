@@ -164,6 +164,11 @@ class _Pane extends StatelessWidget {
   }
 }
 
+/// Finds the tab strip in a test, so a tab's height can be compared with the
+/// thing it is supposed to fill.
+@visibleForTesting
+const stripKey = ValueKey<String>('terminal-tab-strip');
+
 class _TabStrip extends StatefulWidget {
   const new({
     required this.sessions,
@@ -277,6 +282,7 @@ class _TabStripState extends State<_TabStrip> {
     );
 
     return Container(
+      key: stripKey,
       height: 40,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -296,6 +302,13 @@ class _TabStripState extends State<_TabStrip> {
               controller: _scroll,
               scrollDirection: Axis.horizontal,
               child: Row(
+                // Full height, which the horizontal `ListView` this replaced
+                // gave for free. A `Row` otherwise hands its children a loose
+                // cross-axis constraint and centres what comes back, so the
+                // selected tab's fill became a short band floating in the
+                // strip with its underline hanging in mid-air instead of
+                // sitting on the bottom edge.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (final session in sessions)
                     _Tab(
