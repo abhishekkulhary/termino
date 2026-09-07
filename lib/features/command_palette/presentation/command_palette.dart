@@ -308,6 +308,26 @@ List<PaletteCommand> _buildCommands(BuildContext context, WidgetRef ref) {
     }
   }
 
+  // ZModem is the remote end's to start: `sz` pushes a file here, `rz` waits
+  // for one. There is no way for this side to begin a transfer on its own, so
+  // the command runs `rz` on the shell and the prompt appears when the far end
+  // answers. If `rz` is not installed there, the shell says so in the terminal,
+  // which is the right place for that to be said.
+  if (capabilities.canHoldFiles && sessions.active?.zmodem != null) {
+    final target = sessions.active!;
+    commands.add(
+      PaletteCommand(
+        id: 'transfer.send',
+        group: 'Terminal',
+        title: 'Send a file to this session',
+        subtitle: 'Runs rz on the remote shell',
+        icon: Icons.upload_file_rounded,
+        keywords: const ['zmodem', 'rz', 'upload', 'send', 'file', 'transfer'],
+        run: () => target.sendText('rz\r'),
+      ),
+    );
+  }
+
   if (capabilities.canRunLocalShell) {
     commands.add(
       PaletteCommand(

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/terminal/session_recorder.dart';
 import 'package:termino/features/terminal/application/throughput_meter.dart';
+import 'package:termino/features/terminal/application/zmodem_transfers.dart';
 import 'package:termino/infrastructure/terminal/output_batcher.dart';
 import 'package:xterm/xterm.dart';
 
@@ -67,6 +68,12 @@ class TerminalSession {
   /// event so a widget can react with `ValueListenableBuilder`.
   final ValueNotifier<int> bellCount;
 
+  /// Carries `rz` and `sz` transfers, where the platform can hold files.
+  ///
+  /// Null leaves the byte path exactly as it was, which is what the web build
+  /// and the tests get.
+  ZModemTransfers? zmodem;
+
   /// How fast output is arriving, and how much has arrived in total.
   ///
   /// Measured in bytes, before decoding: what the user wants to know is what
@@ -114,7 +121,9 @@ class TerminalSession {
   /// the session over it would be absurd.
   static const _decoder = Utf8Decoder(allowMalformed: true);
 
-  StreamSubscription<String>? _output;
+  // Typed loosely because the pipeline ends in decoded text without ZModem
+  // and in raw bytes with it; only cancellation is ever needed here.
+  StreamSubscription<Object?>? _output;
   StreamSubscription<BackendConnectionState>? _states;
   var _disposed = false;
 
@@ -129,6 +138,14 @@ class TerminalSession {
   }
 
   void _handleTerminalOutput(String data) {
+    // Through the mux where there is one: it buffers keystrokes while a
+    // transfer is running, and a stray keypress written straight to the socket
+    // mid-transfer corrupts it.
+    final transfers = zmodem;
+    if (transfers != null) {
+      transfers.sendText(data);
+      return;
+    }
     backend.write(Uint8List.fromList(utf8.encode(data)));
   }
 
@@ -163,10 +180,18 @@ class TerminalSession {
       return chunk;
     });
 
-    _output = _decoder.bind(counted).listen((data) {
-      _recorder?.record(data, _recordingClock?.elapsed ?? Duration.zero);
-      terminal.write(data);
-    });
+    final transfers = zmodem;
+    if (transfers == null) {
+      _output = _decoder.bind(counted).listen(_writeToTerminal);
+    } else {
+      // With ZModem in the path the mux does the decoding, because it has to
+      // see raw bytes to spot a transfer header. Everything upstream is
+      // unchanged: the batcher still coalesces and the acknowledgement that
+      // gives this app its backpressure still happens above here, so a `yes`
+      // flood still pauses the socket rather than filling memory.
+      transfers.onTerminalText = _writeToTerminal;
+      _output = counted.listen(transfers.addFromBackend);
+    }
 
     try {
       await backend.start();
@@ -183,6 +208,12 @@ class TerminalSession {
     if (!_disposed) connectionState.value = backend.state;
   }
 
+  /// Writes decoded output to the emulator, and to a recording if one is on.
+  void _writeToTerminal(String data) {
+    _recorder?.record(data, _recordingClock?.elapsed ?? Duration.zero);
+    terminal.write(data);
+  }
+
   /// Writes [text] to the backend as if the user had typed it.
   ///
   /// Used by snippets and the key accessory bar.
@@ -195,6 +226,7 @@ class TerminalSession {
 
     await _output?.cancel();
     await _states?.cancel();
+    await zmodem?.dispose();
     await backend.close();
 
     terminal

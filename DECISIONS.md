@@ -312,3 +312,56 @@ platform.
 are both MIT) but adds an explicit patent grant, which is the safer default for
 a security-adjacent tool. GPL-3 was considered and rejected because it would
 foreclose a Mac App Store release.
+
+---
+
+## 2026-09-07 — ZModem multiplexed here, not by `xterm`, and two `zmodem` defects worked around
+
+**Decision.** Carry `rz` / `sz` transfers in `ZModemTransfers`
+(`lib/features/terminal/application/zmodem_transfers.dart`), using the `zmodem`
+package as a direct dependency rather than `xterm`'s `ZModemMux`. Correct the
+hex-header terminator on every byte we transmit.
+
+**Why.** Three things were checked against the published packages before this
+was written, and each one is a defect the app has to route around.
+
+1. **`xterm`'s `ZModemMux` cannot see a header at the end of a chunk.** Its scan
+   is `i < length - other.length`, so a header is only found when at least one
+   further byte arrives in the same chunk. `sz` announces itself and then waits
+   for a reply, so its header is routinely the last thing in a chunk — and a
+   chunk that *is* the header is never matched at all. Probed directly: a header
+   at the end of a buffer returned `null`, the same header with one byte after
+   it returned `6`. Our scanner is inclusive of the end of the buffer, and the
+   two cases have tests.
+
+2. **The `zmodem` package cannot parse its own hex headers.** Its encoder
+   (`zmodem_frame.dart`) terminates them with `CR LF` — `0x0d 0x0a` — while its
+   parser (`zmodem_parser.dart`) requires `0x8a`, the line feed with the high bit
+   set. Feeding its own sender's output into its own receiver fails with
+   `Bad state: Expected 0x8a, got 0xa`. The parser is the one that matches
+   reality: lrzsz's `zshhdr` sends `015 0212`, i.e. `0x0d 0x8a`. So
+   `ZModemTransfers.correctHexTerminators` puts the high bit back on every
+   header we send. lrzsz masks the high bit off when reading and would very
+   likely have accepted the uncorrected form, but "probably accepted by an
+   implementation we cannot test against here" is not a thing to ship — emitting
+   exactly what the reference implementation emits is.
+
+3. **The package prints on every data subpacket.** `zmodem_parser.dart:58` has a
+   leftover `print('expectDataSubpacket')`. It does not corrupt the stream — it
+   goes to the platform log, not to the terminal — but a large transfer will
+   write tens of thousands of lines to the device log. Not worked around, because
+   the only fix is vendoring the package. Flagged as the reason to vendor if
+   anything else in it needs changing.
+
+**What this costs.** A direct dependency on `zmodem` 0.0.6, a package at version
+zero-point-zero. The blast radius is one file: `TerminalSession` holds it behind
+a nullable field, so a build without it has byte-for-byte the pipeline it had
+before ZModem existed.
+
+**Safety.** An incoming file is a **prompt**, never an automatic save. A host
+that has been tampered with must not be able to write to someone's disk because
+they happened to have a shell open. The filename comes from the far end, so it
+is reduced to its last path segment with leading dots stripped
+(`../../.bashrc` becomes `bashrc`), it never overwrites an existing file, and a
+cancelled transfer deletes the partial file rather than leaving a truncated one
+under the name of a real one.

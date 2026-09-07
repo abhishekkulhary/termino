@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/terminal/application/reconnect_policy.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
+import 'package:termino/features/terminal/application/transfer_controller.dart';
+import 'package:termino/features/terminal/application/zmodem_transfers.dart';
 
 part 'session_manager.freezed.dart';
 part 'session_manager.g.dart';
@@ -133,6 +136,8 @@ class SessionManager extends _$SessionManager {
       maxLines: ref.read(currentSettingsProvider).scrollbackLines,
     );
 
+    _attachTransfers(session);
+
     _owned.add(session);
     state = state.copyWith(
       sessions: [...state.sessions, session],
@@ -147,6 +152,33 @@ class SessionManager extends _$SessionManager {
     }
     _watchForDrop(session);
     return session;
+  }
+
+  /// Gives [session] a ZModem multiplexer, where the platform can hold files.
+  ///
+  /// Wired before `start()`, because the session reads the field when it builds
+  /// its byte pipeline: attaching one afterwards would leave a feature that is
+  /// present in the object and absent from the stream, which is worse than not
+  /// having it.
+  ///
+  /// The prompts go to [TransferController] rather than to a dialog raised from
+  /// here. Bytes arriving from a socket must not reach for a `BuildContext`.
+  void _attachTransfers(TerminalSession session) {
+    if (!ref.read(platformCapabilitiesProvider).canHoldFiles) return;
+
+    final transfers = ref.read(transferControllerProvider.notifier);
+    final backend = session.backend;
+
+    session.zmodem =
+        ZModemTransfers(
+            write: backend.write,
+            onIncoming: (file) =>
+                transfers.askToReceive(file, sessionId: session.id),
+            onOutgoingRequested: () =>
+                transfers.askToSend(sessionId: session.id),
+          )
+          ..onProgress = transfers.report
+          ..onFinished = transfers.finish;
   }
 
   /// Watches a session and schedules a reconnection if it drops.
@@ -201,6 +233,7 @@ class SessionManager extends _$SessionManager {
       hostId: old.hostId,
       initialTitle: old.title.value,
     );
+    _attachTransfers(replacement);
 
     _detach(old);
     _owned
@@ -226,6 +259,11 @@ class SessionManager extends _$SessionManager {
   }
 
   void _forget(String id) {
+    // A prompt left on screen for a session that has gone would answer for a
+    // socket nobody is holding any more.
+    if (ref.read(transferControllerProvider).request?.sessionId == id) {
+      unawaited(ref.read(transferControllerProvider.notifier).abort());
+    }
     _timers.remove(id)?.cancel();
     _reconnectors.remove(id);
     _policies.remove(id);

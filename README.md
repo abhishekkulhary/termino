@@ -50,6 +50,27 @@ asks the network directly when the system resolver has no answer, so
 `pi@my-server.local` works the same everywhere — provided the phone and the
 server are on the same network. If it is not found, use the IP address.
 
+### Sending and receiving files inside a session
+
+`rz` and `sz` — ZModem — move a file through the terminal connection itself,
+with no second connection and no SFTP subsystem. It is the thing that still
+works when SFTP is disabled, when you are three `ssh` hops deep, or when you are
+on a serial console.
+
+Both directions start on the remote machine, because that is how the protocol
+works:
+
+- **Receiving.** Run `sz report.pdf` on the host. Termino asks before saving
+  anything — an offer is never accepted automatically — and then writes it to
+  `Downloads/Termino` on desktop, or the app's documents folder on a phone,
+  telling you the exact path.
+- **Sending.** Run `rz` on the host, or use **Send a file to this session** in
+  the command palette, which runs it for you. Termino opens a file picker.
+
+The remote host needs `lrzsz` installed (`rz` and `sz`). Transfers can be
+cancelled from the progress strip, which tells the far end to stop rather than
+just hiding the bar. Not available on web, which has no local filesystem.
+
 ## Getting started
 
 Requires **Flutter 3.47.1** or later (Dart 3.13.1+).

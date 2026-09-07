@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/terminal/application/reconnect_policy.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
@@ -349,6 +350,34 @@ void main() {
       await pumpEventQueue();
 
       expect(backend.state, BackendConnectionState.closed);
+    });
+  });
+
+  group('file transfers', () {
+    test('a session gets a multiplexer where files can be held', () async {
+      final session = await manager().open(backend: MockBackend.text('hi'));
+
+      // Wired here rather than by a widget, because it has to exist before
+      // `start()` builds the byte pipeline: attaching one afterwards leaves the
+      // feature present on the object and absent from the stream.
+      expect(session.zmodem, isNotNull);
+    });
+
+    test('a build with no filesystem gets none', () async {
+      final web = ProviderContainer.test(
+        overrides: [
+          platformCapabilitiesProvider.overrideWithValue(
+            PlatformCapabilities.detect(isWeb: true),
+          ),
+        ],
+      );
+      addTearDown(web.dispose);
+
+      final session = await web
+          .read(sessionManagerProvider.notifier)
+          .open(backend: MockBackend.text('hi'));
+
+      expect(session.zmodem, isNull);
     });
   });
 }

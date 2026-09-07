@@ -15,6 +15,7 @@ import 'package:termino/features/terminal/presentation/bell_effect.dart';
 import 'package:termino/features/terminal/presentation/key_accessory_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_cursor.dart';
 import 'package:termino/features/terminal/presentation/terminal_search_bar.dart';
+import 'package:termino/features/terminal/presentation/transfer_overlay.dart';
 import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -210,6 +211,9 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
             focusNode: _focus,
           ),
         ),
+        // Over the grid rather than beside it: a transfer prompt that pushed
+        // the terminal up would reflow the screen a program is drawing on.
+        Positioned.fill(child: TransferOverlay(sessionId: widget.session.id)),
       ],
     );
 

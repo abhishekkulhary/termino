@@ -55,6 +55,7 @@ class PlatformCapabilities {
     required this.canReadUserSshConfig,
     this.hasHaptics = false,
     this.needsRelay = false,
+    this.canHoldFiles = true,
     this.localShellUnavailableReason,
   });
 
@@ -81,6 +82,9 @@ class PlatformCapabilities {
         canUseBiometrics: false,
         hasWindowManagement: false,
         canReadUserSshConfig: false,
+        // No filesystem to write a received file to, and nothing to read one
+        // from without the user picking it every time.
+        canHoldFiles: false,
       );
     }
 
@@ -128,6 +132,12 @@ class PlatformCapabilities {
   /// Whether SSH must go through a WebSocket relay rather than a TCP socket.
   final bool needsRelay;
 
+  /// Whether files can be written to and read from local storage.
+  ///
+  /// Gates ZModem (`rz` and `sz`), which is the terminal receiving and sending
+  /// actual files rather than text.
+  final bool canHoldFiles;
+
   /// Whether a biometric or device-credential gate can guard stored secrets.
   final bool canUseBiometrics;
 
@@ -148,7 +158,8 @@ class PlatformCapabilities {
           other.canUseBiometrics == canUseBiometrics &&
           other.hasWindowManagement == hasWindowManagement &&
           other.hasHaptics == hasHaptics &&
-          other.canReadUserSshConfig == canReadUserSshConfig;
+          other.canReadUserSshConfig == canReadUserSshConfig &&
+          other.canHoldFiles == canHoldFiles;
 
   @override
   int get hashCode => Object.hash(
@@ -160,6 +171,7 @@ class PlatformCapabilities {
     hasWindowManagement,
     hasHaptics,
     canReadUserSshConfig,
+    canHoldFiles,
   );
 }
 
