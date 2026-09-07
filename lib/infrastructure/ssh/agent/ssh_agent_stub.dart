@@ -15,9 +15,6 @@ class SshAgent {
   /// Always null on the web.
   static SshAgent? fromEnvironment([Map<String, String>? environment]) => null;
 
-  /// Always false on the web.
-  static bool get isSupported => false;
-
   /// Meaningless here, kept so the two sides share a shape.
   final String socketPath;
 

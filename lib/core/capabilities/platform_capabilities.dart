@@ -143,6 +143,10 @@ class PlatformCapabilities {
   ///
   /// False on Windows, whose agent speaks over a named pipe that Dart cannot
   /// open, and on mobile and web, which have no agent.
+  ///
+  /// The only place this rule is written down. `SshAgent` deliberately does not
+  /// answer it too: two copies of a platform rule are two things to keep in
+  /// step, and the widgets have to consult this one anyway.
   final bool canUseSshAgent;
 
   /// Whether files can be written to and read from local storage.

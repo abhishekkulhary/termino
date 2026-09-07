@@ -33,14 +33,6 @@ class SshAgent {
     return SshAgent(path);
   }
 
-  /// Whether this platform can reach an agent at all.
-  ///
-  /// Windows is false: its OpenSSH agent listens on a named pipe, and Dart has
-  /// no way to open one. Saying so is better than offering a control that
-  /// fails. Mobile has no agent to speak of, and the browser has no sockets.
-  static bool get isSupported =>
-      !Platform.isWindows && (Platform.isMacOS || Platform.isLinux);
-
   /// The socket the agent is listening on.
   final String socketPath;
 
