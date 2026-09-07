@@ -82,6 +82,13 @@ class Settings extends _$Settings {
   Future<void> completeOnboarding() =>
       _update((s) => s.copyWith(onboardingComplete: true));
 
+  /// Replaces every preference at once.
+  ///
+  /// Used by a restore, which has a whole settings object rather than a
+  /// sequence of individual changes.
+  Future<void> replaceAll(TerminalSettings settings) =>
+      _update((_) => settings);
+
   /// Returns every preference to its default.
   ///
   /// Except the record that the introduction has been seen. That is not a

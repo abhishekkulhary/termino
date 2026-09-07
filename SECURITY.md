@@ -17,6 +17,21 @@ The claims below are not aspirations. Each is held in place by a test:
 | Deleting an identity or host removes its key material | same file |
 | A failure message never leaks an exception string | `test/infrastructure/ssh/ssh_backend_test.dart` |
 
+
+## Backups
+
+Export writes hosts, snippets, port forwards and preferences to a JSON file.
+It deliberately carries **no private keys, no passwords and no passphrases** —
+those stay in the platform keystore — and **no trusted host keys**, because
+those are decisions someone made by checking a fingerprint, and carrying them
+to a new device would mean the first connection there silently skips the check
+that mattered. The `~/.ssh/known_hosts` import exists for moving trust across
+deliberately.
+
+The file names its own exclusions in an `excludes` field, so anyone who opens
+it can see what is not there. A restore merges rather than replaces, and never
+restores the first-run flag.
+
 ## Reporting a vulnerability
 
 Please report privately rather than opening a public issue: open a

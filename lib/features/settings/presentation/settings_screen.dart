@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
+import 'package:termino/features/backup/application/backup_service.dart';
 import 'package:termino/features/known_hosts/presentation/known_hosts_screen.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/shared/design/terminal_palette.dart';
@@ -211,6 +216,28 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
               _Group(
+                label: 'Backup',
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.ios_share_rounded),
+                    title: const Text('Export'),
+                    subtitle: const Text(
+                      'Hosts, snippets and tunnels — never keys or passwords',
+                    ),
+                    onTap: () => unawaited(_export(context, ref)),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.download_rounded),
+                    title: const Text('Restore'),
+                    subtitle: const Text(
+                      'Adds to what is here; nothing is '
+                      'removed',
+                    ),
+                    onTap: () => unawaited(_restore(context, ref)),
+                  ),
+                ],
+              ),
+              _Group(
                 label: 'Everything else',
                 children: [
                   ListTile(
@@ -228,6 +255,53 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Writes a backup and hands it to the platform's share sheet.
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final contents = await ref.read(backupServiceProvider.notifier).export();
+      final directory = await getTemporaryDirectory();
+      final stamp = DateTime.now()
+          .toIso8601String()
+          .split('.')
+          .first
+          .replaceAll(RegExp('[:-]'), '');
+      final file = File('${directory.path}/termino-backup-$stamp.json');
+      await file.writeAsString(contents, flush: true);
+
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
+    } on Object {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('The backup could not be written.')),
+      );
+    }
+  }
+
+  /// Reads a backup the user picks and merges it in.
+  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final picked = await FilePicker.pickFiles();
+      final path = picked.singleOrNull?.path;
+      if (path == null) return;
+
+      final summary = await ref
+          .read(backupServiceProvider.notifier)
+          .restore(await File(path).readAsString());
+
+      messenger.showSnackBar(SnackBar(content: Text(summary.description)));
+    } on FormatException catch (error) {
+      // The one place a raw exception message is shown, because it is written
+      // for this: "that file is not a Termino backup" says what to do next in
+      // a way a generic sentence cannot.
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    } on Object {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('That file could not be read.')),
+      );
+    }
   }
 
   /// Asks before undoing every preference at once.
