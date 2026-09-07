@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
-import 'package:termino/domain/terminal/link_detector.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
 import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
+import 'package:termino/features/terminal/application/hyperlinks.dart';
 import 'package:termino/features/terminal/application/sticky_modifiers.dart';
 import 'package:termino/features/terminal/application/terminal_search_controller.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/bell_effect.dart';
 import 'package:termino/features/terminal/presentation/key_accessory_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_cursor.dart';
+import 'package:termino/features/terminal/presentation/terminal_links.dart';
 import 'package:termino/features/terminal/presentation/terminal_search_bar.dart';
 import 'package:termino/features/terminal/presentation/transfer_overlay.dart';
 import 'package:termino/shared/design/breakpoints.dart';
@@ -198,6 +199,18 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
     final grid = Stack(
       children: [
         Positioned.fill(child: terminalView),
+        // Under the cursor, so a cursor sitting on a link is still legible.
+        Positioned.fill(
+          child: TerminalLinkOverlay(
+            terminal: widget.session.terminal,
+            hyperlinks: widget.session.hyperlinks,
+            scrollController: _scroll,
+            style: textStyle,
+            textScaler: TextScaler.noScaling,
+            padding: gridPadding,
+            color: palette.theme.blue,
+          ),
+        ),
         Positioned.fill(
           child: TerminalCursorOverlay(
             terminal: widget.session.terminal,
@@ -255,28 +268,67 @@ class TerminalPaneState extends ConsumerState<TerminalPane> {
 
   /// Opens a URL the user tapped, if they tapped one.
   ///
-  /// This is the pragmatic half of the OSC 8 decision in DECISIONS.md: xterm
-  /// has no per-cell URL attribution, so a URL is recognised in the visible
-  /// text instead. It covers what actually appears in a terminal — a link
-  /// printed by curl, npm or git.
+  /// The decision — which URL, and whether to ask first — lives in
+  /// [TerminalHyperlinks.actionAt], where it can be tested. This is only the
+  /// part that needs a `BuildContext`.
   Future<void> _openLinkAt(CellOffset offset) async {
-    final buffer = widget.session.terminal.buffer;
-    if (offset.y < 0 || offset.y >= buffer.height) return;
+    final session = widget.session;
+    final action = session.hyperlinks.actionAt(
+      session.terminal,
+      offset.y,
+      offset.x,
+    );
 
-    final link = LinkDetector.at(buffer.lines[offset.y].getText(), offset.x);
-    if (link == null) return;
-
-    final uri = Uri.tryParse(link.url);
-    // Re-checked here rather than trusted from the detector: this is the point
-    // where output from a remote machine becomes an action on the local one.
-    if (uri == null || !LinkDetector.schemes.contains(uri.scheme)) return;
+    final uri = switch (action) {
+      NoLink() => null,
+      OpenLink(:final uri) => uri,
+      ConfirmLink(:final uri) => await _confirmLink(uri) ? uri : null,
+    };
+    if (uri == null || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     if (!await launchUrl(uri)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Could not open ${link.url}')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Could not open $uri')));
     }
+  }
+
+  /// Shows where a declared link actually goes, and asks.
+  Future<bool> _confirmLink(Uri uri) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Open this link?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'The program chose the words on screen and this destination '
+              'separately. They need not match.',
+            ),
+            const SizedBox(height: Spacing.md),
+            SelectableText(
+              uri.toString(),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontFamily: Fonts.mono,
+                fontFamilyFallback: Fonts.monoFallback,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Open'),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
   }
 
   Future<void> _showContextMenu(Offset position) async {

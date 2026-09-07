@@ -50,6 +50,16 @@ asks the network directly when the system resolver has no answer, so
 `pi@my-server.local` works the same everywhere — provided the phone and the
 server are on the same network. If it is not found, use the IP address.
 
+### Links in terminal output
+
+Text that reads as a URL is recognised and opens on a tap. A program can also
+declare a link explicitly with OSC 8 — `ls --hyperlink`, `gcc`'s diagnostics,
+`gh` — and those are underlined and open on a tap too.
+
+A declared link asks first, showing where it actually goes. That is not
+ceremony: OSC 8 lets a program choose the words and the destination separately,
+so the word `docs` can point anywhere at all.
+
 ### Using a key Termino never sees
 
 On macOS and Linux, a host can authenticate through the **system SSH agent**

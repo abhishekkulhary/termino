@@ -258,6 +258,11 @@ if we must.
 
 ## 2026-09-05 — OSC 8 hyperlinks deferred; regex linkification in v1
 
+> **Superseded on 2026-09-07.** OSC 8 is supported, and no fork was needed. The
+> reasoning below was sound about xterm's cell model and wrong about the only
+> way in: `Terminal.onPrivateOSC` fires while the sequence is parsed, which is
+> enough to attribute the cells from outside. See the 2026-09-07 entry.
+
 **Decision.** v1 makes bare URLs in the buffer tappable by scanning visible
 text. True OSC 8 is a tracked post-v1 item.
 
@@ -300,6 +305,49 @@ than claim a quality bar we cannot observe, they stay green in CI and get their
 polish pass when someone can actually run them. iOS is included from Phase 3
 because it costs little: SSH is pure Dart and the UI is shared, so the only
 iOS-specific work is gating the local shell honestly.
+
+---
+
+## 2026-09-07 — OSC 8 hyperlinks, without vendoring xterm
+
+**Decision.** Track OSC 8 links outside the emulator, in `TerminalHyperlinks`,
+and confirm every declared link before opening it. This **supersedes** the
+Phase 0 decision that true OSC 8 needs an xterm fork.
+
+**Why the fork turned out to be unnecessary.** The original finding stands —
+xterm.dart has no per-cell URL attribution and its escape handler exposes only
+`setTitle` and `unknownOSC`. What was missed is that `Terminal.onPrivateOSC`
+fires **synchronously while the sequence is being parsed**. At that instant the
+buffer's cursor is exactly where the link begins, and at the closing sequence
+exactly where it ends. That is enough to attribute the cells in between without
+touching the emulator, and it was verified before any of this was written: a
+link opening at column 4 and closing at column 13 reports precisely that, and a
+link that wraps reports line 0 column 2 through line 2 column 2.
+
+Spans hang off the `BufferLine` objects in an `Expando`. A line object travels
+with its content as the screen scrolls, so a link stays on its text with no
+bookkeeping at all, and a line trimmed off the top of the scrollback takes its
+spans with it into the garbage collector.
+
+**Why a declared link asks first.** OSC 8 lets a program choose the words and
+the destination separately: `docs` can point anywhere. A URL recognised in the
+visible text does not have that gap — the text *is* the destination — so it
+opens directly. A declared one shows where it actually goes and waits. The
+scheme allow-list is applied twice, once when the span is recorded and again
+when it is acted on.
+
+**What it does not cover.** A line erased and rewritten in place — which a
+full-screen program on the alternate buffer does constantly — keeps its
+`BufferLine` object, so a span can outlive the text it described. The
+consequence is a stray underline, never a wrong destination.
+
+**What could not be tested.** The tap gesture itself. xterm's
+`TerminalGestureHandler` uses a `RawGestureDetector` that defers to its child,
+and under the widget-test binding a tap never reaches `onTapUp` — checked
+against a bare `TerminalView` with nothing of ours in the tree. The decision was
+therefore extracted into `TerminalHyperlinks.actionAt`, which is tested
+thoroughly; the gesture that calls it is xterm's and is exercised only by
+running the app.
 
 ---
 

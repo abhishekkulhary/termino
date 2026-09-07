@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/terminal/session_recorder.dart';
+import 'package:termino/features/terminal/application/hyperlinks.dart';
 import 'package:termino/features/terminal/application/throughput_meter.dart';
 import 'package:termino/features/terminal/application/zmodem_transfers.dart';
 import 'package:termino/infrastructure/terminal/output_batcher.dart';
@@ -63,6 +64,14 @@ class TerminalSession {
 
   /// The backend's lifecycle, mirrored for the UI.
   final ValueNotifier<BackendConnectionState> connectionState;
+
+  /// Which cells the program declared as hyperlinks with OSC 8.
+  ///
+  /// Owned by the session rather than the widget because it is filled in by
+  /// the byte stream: the sequences arrive whether or not anything is on
+  /// screen, and a link that only existed while a pane was mounted would be
+  /// gone after switching tabs.
+  final TerminalHyperlinks hyperlinks = TerminalHyperlinks();
 
   /// Increments every time the program rings the bell. A counter rather than an
   /// event so a widget can react with `ValueListenableBuilder`.
@@ -134,7 +143,11 @@ class TerminalSession {
       ..onTitleChange = (value) {
         if (value.trim().isNotEmpty) title.value = value;
       }
-      ..onBell = () => bellCount.value++;
+      ..onBell = () {
+        bellCount.value++;
+      }
+      ..onPrivateOSC = (code, args) =>
+          hyperlinks.handleOsc(code, args, terminal);
   }
 
   void _handleTerminalOutput(String data) {
@@ -233,7 +246,8 @@ class TerminalSession {
       ..onOutput = null
       ..onResize = null
       ..onTitleChange = null
-      ..onBell = null;
+      ..onBell = null
+      ..onPrivateOSC = null;
 
     title.dispose();
     connectionState.dispose();
