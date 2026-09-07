@@ -94,12 +94,29 @@ void main() {
   testWidgets('opens with the keyboard', (tester) async {
     await pump(tester);
 
+    // Ctrl+Shift, not bare Ctrl: a bare Ctrl+K is readline's kill-line and
+    // belongs to the terminal, not to this app.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Connect, switch, browse…'), findsOneWidget);
+  });
+
+  testWidgets('a bare Ctrl+K is left to the terminal', (tester) async {
+    // readline binds it to kill-to-end-of-line, and an app that swallows it
+    // has broken the thing it exists to be.
+    await pump(tester);
+
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect, switch, browse…'), findsOneWidget);
+    expect(find.text('Connect, switch, browse…'), findsNothing);
   });
 
   testWidgets('narrows to what was typed, out of order', (tester) async {

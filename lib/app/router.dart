@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/command_palette/presentation/command_palette.dart';
+import 'package:termino/features/desktop/presentation/app_shortcuts.dart';
 import 'package:termino/features/forwarding/presentation/forwarding_screen.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/features/hosts/presentation/hosts_screen.dart';
@@ -135,10 +135,15 @@ class _Shell extends ConsumerWidget {
     // sees every other keystroke; this is the one combination the app keeps.
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
-            unawaited(showCommandPalette(context)),
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
-            unawaited(showCommandPalette(context)),
+        AppShortcuts.palette: () => unawaited(showCommandPalette(context)),
+        AppShortcuts.newSession: () => context.go(AppDestinations.hosts.route),
+        AppShortcuts.closeSession: () {
+          final sessions = ref.read(sessionManagerProvider);
+          final active = sessions.activeId;
+          if (active != null) {
+            unawaited(ref.read(sessionManagerProvider.notifier).close(active));
+          }
+        },
       },
       child: Focus(
         autofocus: true,

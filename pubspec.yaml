@@ -50,6 +50,7 @@ dependencies:
   pinenacl: ^0.6.0
   pointycastle: ^4.0.0
   riverpod_annotation: ^4.0.7
+  screen_retriever: ^0.2.2
   share_plus: ^13.3.0
   url_launcher: ^6.3.2
   web_socket_channel: ^3.0.3

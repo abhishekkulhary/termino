@@ -10,6 +10,7 @@ import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/snippet.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/command_palette/application/fuzzy_match.dart';
+import 'package:termino/features/desktop/presentation/app_shortcuts.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
@@ -86,8 +87,10 @@ Future<void> showCommandPalette(BuildContext context) => showGeneralDialog(
 );
 
 /// The shortcut that opens it, written the way the platform writes it.
-String commandPaletteHint(BuildContext context) =>
-    Theme.of(context).platform == TargetPlatform.macOS ? '⌘K' : 'Ctrl K';
+///
+/// Takes its answer from [AppShortcuts] rather than repeating the rule, so a
+/// hint can never drift from the binding it describes.
+String commandPaletteHint(BuildContext context) => AppShortcuts.label('K');
 
 class _CommandPalette extends ConsumerStatefulWidget {
   const new();

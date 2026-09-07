@@ -62,7 +62,7 @@ final class SettingsProvider
   }
 }
 
-String _$settingsHash() => r'2e3d0d9a93058ff0990a9feb08e4689ccc623b83';
+String _$settingsHash() => r'36dd685b7773cc98cffcb367e4985c1c94f610a2';
 
 /// The user's settings.
 ///
