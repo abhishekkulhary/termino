@@ -245,6 +245,57 @@ void main() {
       expect(text(tester), '/srv/zzz');
     });
 
+    testWidgets('a tap anywhere else puts the path back', (tester) async {
+      // Focus alone is not enough: tapping empty space or a listing row takes
+      // no focus, so the field would sit open over the listing.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpApp(
+        tester,
+        Scaffold(
+          body: Column(
+            children: [
+              PathField(session: session, completions: (_) async => names),
+              const Expanded(child: ColoredBox(color: Color(0xFF000000))),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(PathField));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+
+      await tester.tapAt(const Offset(200, 600));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('a tap on a suggestion is not a tap outside', (tester) async {
+      // The menu is in an overlay: without a shared tap group the field would
+      // close on press, before the suggestion fired on release.
+      await pumpStubbed(tester);
+
+      await tester.enterText(find.byType(TextField), '/srv/pub');
+      await tester.pumpAndSettle();
+
+      expect(session.isLoading, isFalse);
+
+      await tester.tap(find.text('/srv/public'));
+      await tester.pumpAndSettle();
+
+      // Whether it *arrives* cannot be checked here — the listing is a socket,
+      // and one never completes inside this binding. That the navigation was
+      // started can: `open` marks the session busy before its first await, so
+      // a session that is loading was asked to go somewhere, and one that is
+      // not was merely dismissed.
+      expect(
+        session.isLoading,
+        isTrue,
+        reason: 'the suggestion was chosen, not dismissed',
+      );
+    });
+
     testWidgets('what is typed is offered as a list to pick from', (
       tester,
     ) async {

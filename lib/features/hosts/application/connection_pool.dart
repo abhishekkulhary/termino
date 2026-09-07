@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:termino/app/providers.dart';
 import 'package:termino/core/logging/app_logger.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/hosts/application/ssh_connector.dart';
@@ -71,13 +73,25 @@ class _PooledConnection {
 ///
 /// Reference counting keeps the part of the isolation that mattered: closing
 /// the browser closes nothing while a shell is still open.
-class SshConnectionPool {
+///
+/// Notifies its listeners whenever a host connects or disconnects, so that
+/// anything showing which hosts are up can be right about it.
+class SshConnectionPool extends ChangeNotifier {
   /// Creates a pool that opens connections with [open].
-  new({required this.open});
+  new({required this.open, this.onUsed});
 
   /// How to authenticate a new connection. Injected so the pool can be tested
   /// without a server, and so it never needs to know about keys or prompts.
   final Future<SshConnection> Function(SshHost host) open;
+
+  /// Called whenever a host is reached, whether that opened a connection or
+  /// attached to one already up.
+  ///
+  /// This is where "last connected" comes from, and it is here rather than in
+  /// the terminal because every route to a host passes through the pool. It
+  /// used to be recorded only when a shell was opened, so an afternoon spent
+  /// in the file browser left the host looking untouched.
+  final void Function(SshHost host)? onUsed;
 
   final _entries = <String, _PooledConnection>{};
   final _pending = <String, Future<_PooledConnection>>{};
@@ -91,6 +105,7 @@ class SshConnectionPool {
   Future<SshConnectionLease> acquire(SshHost host) async {
     final entry = await _entryFor(host);
     entry.leases++;
+    onUsed?.call(host);
     return SshConnectionLease._(entry, this);
   }
 
@@ -108,6 +123,7 @@ class SshConnectionPool {
   Future<void> disconnect(String hostId) async {
     final entry = _entries.remove(hostId);
     if (entry == null) return;
+    notifyListeners();
     await _close(entry);
   }
 
@@ -115,6 +131,7 @@ class SshConnectionPool {
   Future<void> disconnectAll() async {
     final entries = _entries.values.toList();
     _entries.clear();
+    if (entries.isNotEmpty) notifyListeners();
     for (final entry in entries) {
       await _close(entry);
     }
@@ -149,6 +166,7 @@ class SshConnectionPool {
     final connection = await open(host);
     final entry = _PooledConnection(host.id, connection);
     _entries[host.id] = entry;
+    notifyListeners();
 
     // When the transport dies, forget it. Otherwise the next acquire returns a
     // corpse and the user sees a session that fails instead of one that
@@ -163,9 +181,12 @@ class SshConnectionPool {
   }
 
   void _forget(_PooledConnection entry) {
-    if (identical(_entries[entry.hostId], entry)) {
-      _entries.remove(entry.hostId);
-    }
+    if (!identical(_entries[entry.hostId], entry)) return;
+    _entries.remove(entry.hostId);
+    // Anything showing a host as connected has just been made wrong. Without
+    // this the dot on the host list stayed lit after the last tab closed,
+    // because nothing it watches had changed.
+    notifyListeners();
   }
 
   Future<void> _release(_PooledConnection entry) async {
@@ -194,7 +215,12 @@ class SshConnectionPool {
 @Riverpod(keepAlive: true)
 SshConnectionPool sshConnectionPool(Ref ref) {
   final connector = ref.watch(sshConnectorProvider);
-  final pool = SshConnectionPool(open: connector.open);
+  final hosts = ref.watch(sshHostRepositoryProvider);
+
+  final pool = SshConnectionPool(
+    open: connector.open,
+    onUsed: (host) => unawaited(hosts.markConnected(host.id, DateTime.now())),
+  );
   ref.onDispose(pool.disconnectAll);
   return pool;
 }

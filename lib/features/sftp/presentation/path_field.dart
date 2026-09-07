@@ -41,6 +41,15 @@ class PathFieldState extends State<PathField> {
   late final _focus = FocusNode(onKeyEvent: _onKey);
   final _menu = MenuController();
 
+  /// Ties the field and its suggestion menu together for hit-testing.
+  ///
+  /// The menu is in an overlay, so without a shared group a tap on a
+  /// suggestion counts as a tap *outside* the field. Confirmed by watching the
+  /// callback: ungrouped, choosing a suggestion fires `onTapOutside` first;
+  /// grouped, it does not. `MenuAnchor` does not do this for you — its own
+  /// dismissal group is its own.
+  final _tapGroup = Object();
+
   var _editing = false;
   List<String> _suggestions = const [];
 
@@ -106,6 +115,10 @@ class PathFieldState extends State<PathField> {
     // Losing focus means the user went somewhere else, which is a cancellation
     // rather than a submission: navigating on the way out would take them
     // somewhere they had stopped asking for.
+    //
+    // Not sufficient on its own — tapping empty space or a plain listing row
+    // takes no focus, so the field would sit open — which is what the tap
+    // region below is for.
     if (!_focus.hasFocus) _cancel();
   }
 
@@ -232,32 +245,42 @@ class PathFieldState extends State<PathField> {
       controller: _menu,
       menuChildren: [
         for (final (index, suggestion) in _suggestions.indexed)
-          MenuItemButton(
-            requestFocusOnHover: false,
-            style: index == _highlighted
-                ? MenuItemButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.12,
-                    ),
-                  )
-                : null,
-            onPressed: () => unawaited(_submit(suggestion)),
-            child: Text(suggestion, style: style),
+          TapRegion(
+            groupId: _tapGroup,
+            child: MenuItemButton(
+              requestFocusOnHover: false,
+              style: index == _highlighted
+                  ? MenuItemButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.12,
+                      ),
+                    )
+                  : null,
+              onPressed: () => unawaited(_submit(suggestion)),
+              child: Text(suggestion, style: style),
+            ),
           ),
       ],
-      child: TextField(
-        controller: _controller,
-        focusNode: _focus,
-        style: style,
-        autocorrect: false,
-        enableSuggestions: false,
-        decoration: const InputDecoration(
-          isDense: true,
-          border: InputBorder.none,
-          hintText: '/path/to/somewhere',
+      child: TapRegion(
+        groupId: _tapGroup,
+        // A tap anywhere else puts the path back. Clicking away from a field
+        // means leaving it, and leaving it open over the listing is the thing
+        // that reads as broken.
+        onTapOutside: (_) => _cancel(),
+        child: TextField(
+          controller: _controller,
+          focusNode: _focus,
+          style: style,
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: const InputDecoration(
+            isDense: true,
+            border: InputBorder.none,
+            hintText: '/path/to/somewhere',
+          ),
+          onChanged: (_) => unawaited(_refreshSuggestions()),
+          onSubmitted: (value) => unawaited(_submit(value)),
         ),
-        onChanged: (_) => unawaited(_refreshSuggestions()),
-        onSubmitted: (value) => unawaited(_submit(value)),
       ),
     );
   }

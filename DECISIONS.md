@@ -626,3 +626,37 @@ already failed. Without a seam, nothing would tie the Tab key to the completion
 except reading the code. The rules themselves are pure and tested exhaustively
 in `path_completion_test.dart`, and what the server actually answers is tested
 against a real one in the same file as the widget.
+
+---
+
+## 2026-09-07 — "Last connected" is recorded by the connection pool
+
+**Decision.** `markConnected` is called from `SshConnectionPool.acquire`, on
+every successful acquire, rather than from the terminal's session launcher.
+
+**Why.** It was recorded only when a shell was opened. Browsing a host's files
+or forwarding one of its ports — both of which authenticate, or attach to a
+connection that did — left the row saying whatever the last shell had said, or
+"Never connected". The pool is the one thing every route to a host passes
+through, so it is where the fact belongs.
+
+Recorded on every acquire, not only on a new connection: a second tab on a host
+is still that host being used, and the host list sorts by this.
+
+**A theory that was wrong, recorded so nobody re-derives it.** The host editor
+rebuilds the host from its form, which has no field for `lastConnectedAt`, so
+editing a host looked like it would wipe the timestamp. It does not: drift's
+`insertOnConflictUpdate` treats a null as "leave this column alone". Checked by
+saving a host with a timestamp, saving it again without one, and reading it
+back. The editor now carries the value through anyway, so the behaviour depends
+on what that screen says rather than on a detail of the storage layer.
+
+**The dot needed the pool to be observable.** `ref.watch` on the pool provider
+hands back the same long-lived object every time, so nothing rebuilt when a
+connection closed and a host stayed lit after the last thing on it let go. The
+pool is now a `ChangeNotifier` and the host card listens to it.
+
+**The relative time needed a ticker.** Nothing else on the host list changes
+once it is built, so "Connected just now" stayed on screen long after it had
+stopped being true. The card rebuilds once a minute, which is frequent enough
+that no label is ever more than a minute stale.

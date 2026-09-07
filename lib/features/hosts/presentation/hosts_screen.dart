@@ -306,14 +306,18 @@ class _HostCard extends ConsumerWidget {
   /// authentication now serves the shell, the file browser and any forwards, a
   /// host can be perfectly well connected with no tab open on it — and a dot
   /// that said otherwise would be wrong about the thing it exists to report.
-  ConnectionHealth _health(WidgetRef ref) {
+  ConnectionHealth _health(WidgetRef ref, SshConnectionPool pool) {
     final sessions = ref
         .watch(sessionManagerProvider)
         .sessions
         .where((session) => session.hostId == host.id);
 
     if (sessions.isEmpty) {
-      return ref.watch(sshConnectionPoolProvider).isConnected(host.id)
+      // The pool is watched through a `ListenableBuilder` in `build`, not here:
+      // `ref.watch` hands back the same long-lived object every time, so
+      // reading it alone would leave the dot lit after the last thing on the
+      // host let go.
+      return pool.isConnected(host.id)
           ? ConnectionHealth.online
           : ConnectionHealth.idle;
     }
@@ -330,7 +334,20 @@ class _HostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final health = _health(ref);
+    final pool = ref.watch(sshConnectionPoolProvider);
+
+    // Rebuilt when a host connects or disconnects, and on a slow tick so the
+    // "connected 7 minutes ago" line does not sit frozen at whatever it said
+    // when the screen was built.
+    return ListenableBuilder(
+      listenable: pool,
+      builder: (context, _) =>
+          _Ticking(builder: (context) => _card(context, ref, pool)),
+    );
+  }
+
+  Widget _card(BuildContext context, WidgetRef ref, SshConnectionPool pool) {
+    final health = _health(ref, pool);
 
     // On a phone there is not room for three buttons and a readable host name,
     // and the name is what the user came for. Browse and Tunnels move into the
@@ -445,4 +462,40 @@ class _Message extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Rebuilds its child every so often, so relative times stay true.
+///
+/// "Connected just now" is right for a minute and wrong for the rest of the
+/// afternoon, and nothing else on this screen changes to trigger a repaint. A
+/// minute is frequent enough that no label is ever more than a minute stale,
+/// and rare enough to cost nothing.
+class _Ticking extends StatefulWidget {
+  const new({required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  State<_Ticking> createState() => _TickingState();
+}
+
+class _TickingState extends State<_Ticking> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context);
 }

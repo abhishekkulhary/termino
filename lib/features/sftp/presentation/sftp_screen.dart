@@ -361,7 +361,7 @@ class _PathBar extends StatelessWidget {
             child: PathField(key: pathFieldKey, session: session),
           ),
           IconButton(
-            icon: const Icon(Icons.edit_location_alt_outlined),
+            icon: const Icon(Icons.edit_outlined),
             tooltip: 'Go to a path',
             onPressed: () => pathFieldKey.currentState?.beginEditing(),
           ),

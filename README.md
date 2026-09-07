@@ -88,7 +88,7 @@ and before you type anything it shows the directories visited this session —
 held in memory only, because where you went on a server is not something to
 write down.
 
-Escape puts the path back and goes nowhere.
+Escape puts the path back and goes nowhere, and so does a tap anywhere else.
 
 ### Transferring folders
 

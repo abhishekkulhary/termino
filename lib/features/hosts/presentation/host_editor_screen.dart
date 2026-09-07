@@ -79,6 +79,11 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
           : _startupCommand.text.trim(),
       colorValue: widget.host?.colorValue,
       folder: widget.host?.folder,
+      // Carried explicitly, along with everything else this screen does not
+      // edit. It survives an edit without this — drift's upsert treats a null
+      // as "leave it alone" — but relying on that means the history depends on
+      // a detail of the storage layer rather than on what this screen says.
+      lastConnectedAt: widget.host?.lastConnectedAt,
       hasSavedPassword: widget.host?.hasSavedPassword ?? false,
       forwardAgent: _forwardAgent,
       // An empty list means "the usual order"; naming the methods is only
