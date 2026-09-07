@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
@@ -163,7 +164,7 @@ class _Pane extends StatelessWidget {
   }
 }
 
-class _TabStrip extends StatelessWidget {
+class _TabStrip extends StatefulWidget {
   const new({
     required this.sessions,
     required this.activeId,
@@ -185,8 +186,95 @@ class _TabStrip extends StatelessWidget {
   final VoidCallback onUnsplit;
 
   @override
+  State<_TabStrip> createState() => _TabStripState();
+}
+
+class _TabStripState extends State<_TabStrip> {
+  final _scroll = ScrollController();
+
+  /// Each tab's key, so the active one can be scrolled to by the framework
+  /// rather than by arithmetic on widths this widget does not know.
+  final _tabKeys = <String, GlobalKey>{};
+
+  @override
+  void initState() {
+    super.initState();
+    // On the first build too: sessions can already exist when this is mounted
+    // — coming back from the file browser, for one — and the active tab is
+    // just as likely to be off the edge then.
+    _revealActive();
+  }
+
+  @override
+  void didUpdateWidget(_TabStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeId != widget.activeId) _revealActive();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Brings the active tab into view, and only if it is not already there.
+  ///
+  /// The strip scrolls but never scrolled itself, so with enough sessions open
+  /// the highlighted tab could sit off-screen — and switching by keyboard or
+  /// from the command palette gave no visible sign of having worked at all.
+  ///
+  /// The bounds are computed rather than handed to `ensureVisible`, because
+  /// that always scrolls to its alignment: clicking a tab that was perfectly
+  /// visible would shunt the whole strip sideways. Here a visible tab is left
+  /// exactly where it is, and one that is off an edge moves just far enough to
+  /// clear it.
+  ///
+  /// Deferred a frame, because the tab for a session opened in this same build
+  /// does not exist yet when the switch is announced.
+  void _revealActive() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+
+      final tab = _tabKeys[widget.activeId]?.currentContext;
+      final box = tab?.findRenderObject();
+      if (box == null) return;
+
+      final viewport = RenderAbstractViewport.maybeOf(box);
+      if (viewport == null) return;
+
+      final leading = viewport.getOffsetToReveal(box, 0).offset;
+      final trailing = viewport.getOffsetToReveal(box, 1).offset;
+      final offset = _scroll.offset;
+
+      // Between the two is the tab sitting fully inside the viewport.
+      final target = offset > leading
+          ? leading
+          : offset < trailing
+          ? trailing
+          : null;
+      if (target == null) return;
+
+      _scroll.animateTo(
+        target.clamp(
+          _scroll.position.minScrollExtent,
+          _scroll.position.maxScrollExtent,
+        ),
+        duration: Motion.normal,
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sessions = widget.sessions;
+
+    // Keys for sessions that have gone are dropped, so a long-lived window
+    // does not accumulate one per tab it ever opened.
+    _tabKeys.removeWhere(
+      (id, _) => !sessions.any((session) => session.id == id),
+    );
 
     return Container(
       height: 40,
@@ -199,35 +287,43 @@ class _TabStrip extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: ListView.builder(
+            // A row in a scroll view rather than a list: both flavours of
+            // `ListView` create elements only for the tabs currently laid out,
+            // and the tab that needs scrolling to is precisely the one that is
+            // not. A strip holds tens of these, not thousands, so building
+            // them all costs nothing worth measuring.
+            child: SingleChildScrollView(
+              controller: _scroll,
               scrollDirection: Axis.horizontal,
-              itemCount: sessions.length,
-              itemBuilder: (context, index) {
-                final session = sessions[index];
-                return _Tab(
-                  session: session,
-                  selected: session.id == activeId,
-                  inSplit: session.id == secondaryId,
-                  canSplit:
-                      Breakpoints.ofContext(context).supportsSplitPanes &&
-                      session.id != activeId,
-                  onTap: () => onSelect(session.id),
-                  onClose: () => onClose(session.id),
-                  onSplit: () => onSplitWith(session.id),
-                  onUnsplit: onUnsplit,
-                );
-              },
+              child: Row(
+                children: [
+                  for (final session in sessions)
+                    _Tab(
+                      key: _tabKeys.putIfAbsent(session.id, GlobalKey.new),
+                      session: session,
+                      selected: session.id == widget.activeId,
+                      inSplit: session.id == widget.secondaryId,
+                      canSplit:
+                          Breakpoints.ofContext(context).supportsSplitPanes &&
+                          session.id != widget.activeId,
+                      onTap: () => widget.onSelect(session.id),
+                      onClose: () => widget.onClose(session.id),
+                      onSplit: () => widget.onSplitWith(session.id),
+                      onUnsplit: widget.onUnsplit,
+                    ),
+                ],
+              ),
             ),
           ),
-          if (activeSession case final recording?) ...[
+          if (widget.activeSession case final recording?) ...[
             RecordingButton(
               key: ValueKey('record-${recording.id}'),
               session: recording,
             ),
           ],
           const SizedBox(width: Spacing.xs),
-          _BrowseFilesButton(session: activeSession),
-          _SnippetsButton(session: activeSession),
+          _BrowseFilesButton(session: widget.activeSession),
+          _SnippetsButton(session: widget.activeSession),
           const _NewSessionButton(),
           const SizedBox(width: Spacing.xs),
         ],
@@ -310,6 +406,7 @@ class _Tab extends StatelessWidget {
     required this.onClose,
     required this.onSplit,
     required this.onUnsplit,
+    super.key,
   });
 
   final TerminalSession session;

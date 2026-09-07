@@ -15,6 +15,7 @@ import 'package:termino/features/settings/presentation/settings_screen.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/presentation/sftp_screen.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
+import 'package:termino/features/terminal/presentation/session_status_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/shared/design/breakpoints.dart';
 import 'package:termino/shared/design/neon_accents.dart';
@@ -154,7 +155,7 @@ class _Shell extends ConsumerWidget {
             index,
             initialLocation: index == shell.currentIndex,
           ),
-          title: Text(AppDestinations.all[shell.currentIndex].label),
+          title: ShellTitle(index: shell.currentIndex),
           badgeFor: (destination) => _badgeFor(ref, destination),
           actions: [
             _PaletteButton(onPressed: () => showCommandPalette(context)),
@@ -219,6 +220,54 @@ class _PaletteButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// What the top bar says.
+///
+/// Every screen but the terminal is named by the destination. The terminal
+/// names the session in front instead, because "Terminal" is not information
+/// when four of them are open — which machine the next keystroke goes to is.
+///
+/// It shows the session's descriptor (`deploy@build-01.example.com`, or the
+/// shell's name locally) rather than its title. A program can set the title to
+/// anything with OSC 2, so a header built on it answers "what is running" when
+/// the question is "where am I typing".
+@visibleForTesting
+class ShellTitle extends ConsumerWidget {
+  /// Creates the title for the destination at [index].
+  const new({required this.index, super.key});
+
+  /// Which destination is showing.
+  final int index;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final destination = AppDestinations.all[index];
+    if (destination != AppDestinations.terminal) {
+      return Text(destination.label);
+    }
+
+    final active = ref.watch(sessionManagerProvider).active;
+    if (active == null) return Text(destination.label);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ValueListenableBuilder<BackendConnectionState>(
+          valueListenable: active.connectionState,
+          builder: (context, state, _) => StatusDot(status: healthOf(state)),
+        ),
+        const SizedBox(width: Spacing.sm),
+        Flexible(
+          child: Text(
+            active.descriptor,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        ),
+      ],
     );
   }
 }

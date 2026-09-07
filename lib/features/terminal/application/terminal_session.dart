@@ -33,11 +33,13 @@ class TerminalSession {
     required this.id,
     required this.backend,
     this.hostId,
+    String? descriptor,
     String initialTitle = 'Terminal',
     int maxLines = 10000,
     this.batcher = const TerminalOutputBatcher(),
     Terminal? terminal,
-  }) : title = ValueNotifier<String>(initialTitle),
+  }) : descriptor = descriptor ?? initialTitle,
+       title = ValueNotifier<String>(initialTitle),
        connectionState = ValueNotifier<BackendConnectionState>(backend.state),
        bellCount = ValueNotifier<int>(0),
        terminal = terminal ?? Terminal(maxLines: maxLines) {
@@ -58,6 +60,14 @@ class TerminalSession {
 
   /// The emulator holding the screen and scrollback.
   final Terminal terminal;
+
+  /// What this session *is*, fixed for its lifetime.
+  ///
+  /// `deploy@build-01.example.com` for SSH, the shell's name for a local one.
+  /// Deliberately not [title]: a program can set that to anything with OSC 2,
+  /// so a header showing it answers "what is running" when the question being
+  /// asked is "which machine am I typing into".
+  final String descriptor;
 
   /// The window title, as set by the program via OSC 0 or OSC 2.
   final ValueNotifier<String> title;

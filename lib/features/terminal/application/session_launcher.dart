@@ -57,6 +57,7 @@ class SessionLauncher extends _$SessionLauncher {
         .open(
           backend: createLocalPtyBackend(profile: chosen),
           title: chosen.name,
+          descriptor: chosen.name,
         );
   }
 
@@ -95,6 +96,9 @@ class SessionLauncher extends _$SessionLauncher {
         .open(
           backend: backend,
           title: host.label,
+          // What the header shows: the machine, not what the shell renamed the
+          // window to.
+          descriptor: host.target,
           hostId: host.id,
           // Only SSH reconnects. A local shell that exits has nothing to
           // reconnect to, and re-spawning it would discard the exit status the
