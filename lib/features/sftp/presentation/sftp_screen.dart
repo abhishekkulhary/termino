@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:termino/app/destinations.dart';
 import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/core/logging/app_logger.dart';
@@ -16,6 +18,7 @@ import 'package:termino/features/sftp/application/folder_transfer.dart';
 import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
 import 'package:termino/features/sftp/presentation/transfer_queue_sheet.dart';
+import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/neon.dart';
@@ -380,6 +383,13 @@ class _PathBar extends StatelessWidget {
             onPressed: () => unawaited(session.refresh()),
           ),
           IconButton(
+            icon: const Icon(Icons.terminal_rounded),
+            // Free, now that both sit on one connection: the shell opens on
+            // the connection this browser already authenticated.
+            tooltip: 'Open a shell on this host',
+            onPressed: () => unawaited(_openShell(context, ref)),
+          ),
+          IconButton(
             icon: const Icon(Icons.close_rounded),
             tooltip: 'Disconnect',
             onPressed: () =>
@@ -388,6 +398,12 @@ class _PathBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Opens a terminal on the host being browsed.
+  Future<void> _openShell(BuildContext context, WidgetRef ref) async {
+    await ref.read(sessionLauncherProvider.notifier).openSsh(session.host);
+    if (context.mounted) context.go(AppDestinations.terminal.route);
   }
 
   Future<void> _newFolder(BuildContext context) async {

@@ -14,14 +14,21 @@ import 'package:termino/infrastructure/ssh/ssh_socket_factory.dart';
 
 /// An interactive SSH shell.
 ///
-/// Owns one `SSHClient`, plus one more for every hop in a `ProxyJump` chain,
-/// and closes all of them together.
+/// By default it opens its own connection — one `SSHClient`, plus one more for
+/// every hop in a `ProxyJump` chain — and closes all of them together.
+///
+/// Give it [acquire] instead and it takes a hold on a shared connection: the
+/// same one the file browser and any port forwards use, so a host is
+/// authenticated once however many things are attached to it. On close it
+/// releases its hold rather than closing the connection, which is what lets a
+/// shell survive the file browser being closed and vice versa.
 class SshBackend extends TerminalBackendBase {
   /// Creates a backend for [host].
   new({
     required this.host,
     required this.verifier,
     required this.onHostKeyPrompt,
+    this.acquire,
     this.prompts = const SshAuthPrompts(),
     this.socketFactory = connectTcpSocket,
     this.jumpChain = const [],
@@ -39,6 +46,13 @@ class SshBackend extends TerminalBackendBase {
 
   /// Asks the user about an unrecognised key.
   final HostKeyPrompt onHostKeyPrompt;
+
+  /// Takes a hold on a shared connection, when the shell is to use one.
+  ///
+  /// Null means this backend opens and owns a private connection, which is
+  /// what the tests and the SSH-level suites use — they are about the protocol,
+  /// not about who else is attached to the host.
+  final Future<SshConnectionHold> Function()? acquire;
 
   /// Credentials and interactive callbacks for [host].
   final SshAuthPrompts prompts;
@@ -66,6 +80,7 @@ class SshBackend extends TerminalBackendBase {
   final Duration connectTimeout;
 
   SshConnection? _connection;
+  SshConnectionHold? _hold;
   SSHSession? _session;
 
   /// Set when host key verification refuses a connection, so the failure can
@@ -113,21 +128,29 @@ class SshBackend extends TerminalBackendBase {
   @override
   Future<void> connect() async {
     try {
-      final factory = SshConnectionFactory(
-        verifier: verifier,
-        onHostKeyPrompt: onHostKeyPrompt,
-        socketFactory: socketFactory,
-        connectTimeout: connectTimeout,
-      );
+      final SshConnection connection;
+      if (acquire case final take?) {
+        final hold = await take();
+        _hold = hold;
+        connection = hold.connection;
+        _connection = connection;
+      } else {
+        final factory = SshConnectionFactory(
+          verifier: verifier,
+          onHostKeyPrompt: onHostKeyPrompt,
+          socketFactory: socketFactory,
+          connectTimeout: connectTimeout,
+        );
 
-      final connection = await factory.connect(
-        host: host,
-        prompts: prompts,
-        jumpChain: jumpChain,
-        jumpPrompts: jumpPrompts,
-        refused: (check) => _refusedCheck = check,
-      );
-      _connection = connection;
+        connection = await factory.connect(
+          host: host,
+          prompts: prompts,
+          jumpChain: jumpChain,
+          jumpPrompts: jumpPrompts,
+          refused: (check) => _refusedCheck = check,
+        );
+        _connection = connection;
+      }
 
       final session = await connection.client.shell(
         pty: SSHPtyConfig(
@@ -229,7 +252,19 @@ class SshBackend extends TerminalBackendBase {
   Future<void> disconnect() async {
     _session?.close();
     _session = null;
-    await _connection?.close();
+
+    final hold = _hold;
+    final connection = _connection;
+    _hold = null;
     _connection = null;
+
+    // A shared connection is released and *not* closed: the file browser or a
+    // port forward may still be on it, and closing it here would take them
+    // down with the shell. A private one is this backend's to close.
+    if (hold != null) {
+      await hold.release();
+      return;
+    }
+    await connection?.close();
   }
 }

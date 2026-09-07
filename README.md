@@ -50,6 +50,19 @@ asks the network directly when the system resolver has no answer, so
 `pi@my-server.local` works the same everywhere — provided the phone and the
 server are on the same network. If it is not found, use the IP address.
 
+### One login per host
+
+A host is authenticated once. Open a shell on it and the file browser attaches
+to the same connection — no second password, no second key touch — and so do
+any port forwards. Start from whichever you want: the terminal has a **Browse
+files on this host** button and the file browser has **Open a shell on this
+host**, and neither asks for credentials again.
+
+The connection closes when the last thing using it goes away, so closing the
+file browser never disconnects a shell you have work in progress in. The trade
+is the one OpenSSH's `ControlMaster` makes: because they share a connection, a
+dropped link now takes both together.
+
 ### Where downloads go
 
 On desktop the first download asks where to save, and remembers the answer.

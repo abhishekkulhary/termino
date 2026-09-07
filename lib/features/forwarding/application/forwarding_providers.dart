@@ -5,8 +5,7 @@ import 'package:termino/app/providers.dart';
 import 'package:termino/core/logging/app_logger.dart';
 import 'package:termino/domain/entities/port_forward.dart';
 import 'package:termino/features/forwarding/application/forward_manager.dart';
-import 'package:termino/features/hosts/application/ssh_connector.dart';
-import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
+import 'package:termino/features/hosts/application/connection_pool.dart';
 
 part 'forwarding_providers.g.dart';
 
@@ -54,7 +53,7 @@ ActiveForward? forwardStatus(Ref ref, String id) =>
 @Riverpod(keepAlive: true)
 class ForwardRunner extends _$ForwardRunner {
   final Map<String, ForwardManager> _managers = {};
-  final Map<String, SshConnection> _connections = {};
+  final Map<String, SshConnectionLease> _leases = {};
 
   @override
   Map<String, ActiveForward> build() {
@@ -62,8 +61,10 @@ class ForwardRunner extends _$ForwardRunner {
       for (final manager in _managers.values) {
         manager.dispose();
       }
-      for (final connection in _connections.values) {
-        unawaited(connection.close());
+      // Released rather than closed: a shell or the file browser may still be
+      // on the same connection.
+      for (final lease in _leases.values) {
+        unawaited(lease.release());
       }
     });
     return const {};
@@ -101,10 +102,12 @@ class ForwardRunner extends _$ForwardRunner {
     final host = await ref.read(sshHostRepositoryProvider).byId(hostId);
     if (host == null) throw StateError('Host $hostId no longer exists');
 
-    final connection = await ref.read(sshConnectorProvider).open(host);
-    _connections[hostId] = connection;
+    // A lease on the host's shared connection: a forward on a host you already
+    // have a shell on costs no second authentication.
+    final lease = await ref.read(sshConnectionPoolProvider).acquire(host);
+    _leases[hostId] = lease;
 
-    final manager = ForwardManager(connection.client)..addListener(_publish);
+    final manager = ForwardManager(lease.client)..addListener(_publish);
     _managers[hostId] = manager;
     return manager;
   }

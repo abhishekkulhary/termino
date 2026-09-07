@@ -17,6 +17,7 @@ import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
 import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 
+import '../../support/direct_hold.dart';
 import '../../support/in_memory_known_hosts.dart';
 import '../../support/test_sshd.dart';
 
@@ -57,7 +58,7 @@ void main() {
 
     session = SftpSession(
       host: host,
-      connection: connection,
+      lease: DirectHold(connection),
       service: SftpService(client),
       client: client,
     );

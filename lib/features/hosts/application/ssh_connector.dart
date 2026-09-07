@@ -85,19 +85,32 @@ class SshConnector {
   }
 
   /// Builds a backend ready to [TerminalBackend.start].
+  ///
+  /// Pass [acquire] — the connection pool's — and the shell shares the host's
+  /// one authenticated connection with the file browser and any forwards.
+  /// Without it the backend opens a connection of its own, which is what the
+  /// protocol-level tests want.
   Future<SshBackend> connect(
     SshHost host, {
     int columns = 80,
     int rows = 24,
+    Future<SshConnectionHold> Function()? acquire,
   }) async {
-    final chain = await _resolveJumpChain(host);
+    // Resolved even when the connection is pooled, because the prompts are
+    // what the pool's own opener will use if it has to authenticate.
+    final chain = acquire == null
+        ? await _resolveJumpChain(host)
+        : const <SshHost>[];
 
     return SshBackend(
       host: host,
       verifier: verifier,
       socketFactory: socketFactory,
       onHostKeyPrompt: prompts.confirmHostKey,
-      prompts: await _promptsFor(host),
+      acquire: acquire,
+      prompts: acquire == null
+          ? await _promptsFor(host)
+          : const SshAuthPrompts(),
       jumpChain: chain,
       jumpPrompts: {for (final hop in chain) hop.id: await _promptsFor(hop)},
       columns: columns,

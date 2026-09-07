@@ -5,10 +5,12 @@ import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/shell_profile.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
+import 'package:termino/features/hosts/application/connection_pool.dart';
 import 'package:termino/features/hosts/application/ssh_connector.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/infrastructure/backends/local_pty/local_pty_backend.dart';
+import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 
 part 'session_launcher.g.dart';
 
@@ -70,7 +72,14 @@ class SessionLauncher extends _$SessionLauncher {
     }
 
     final connector = ref.read(sshConnectorProvider);
-    final backend = await connector.connect(host);
+    final pool = ref.read(sshConnectionPoolProvider);
+
+    // The shell leases the host's shared connection. A second session on the
+    // same host, or the file browser, or a port forward, all attach to the one
+    // that is already authenticated.
+    Future<SshConnectionHold> acquire() => pool.acquire(host);
+
+    final backend = await connector.connect(host, acquire: acquire);
 
     // Recorded before the session opens rather than after: what the host list
     // wants to show is when the user last reached for this host, and that is
@@ -90,7 +99,10 @@ class SessionLauncher extends _$SessionLauncher {
           // Only SSH reconnects. A local shell that exits has nothing to
           // reconnect to, and re-spawning it would discard the exit status the
           // user was probably looking at.
-          reconnect: () => connector.connect(host),
+          // A reconnect goes back through the pool, so a shell that drops and
+          // comes back does not authenticate again if the file browser is
+          // still holding the connection up.
+          reconnect: () => connector.connect(host, acquire: acquire),
         );
   }
 }

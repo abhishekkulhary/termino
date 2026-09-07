@@ -554,3 +554,44 @@ reserve-release-wait-rebind pattern across six concurrent workers produced
 than immediately reusing a freed one. So this was a real defect that would have
 been very hard to hit — worth fixing because when it did hit, it would have
 presented as an unrelated test failing for no visible reason.
+
+---
+
+## 2026-09-07 — One authenticated connection per host, leased
+
+**Decision.** A host is authenticated once. The shell, the file browser and any
+port forwards take reference-counted leases on that one connection through
+`SshConnectionPool`; the connection closes when the last lease is released.
+This **supersedes** the earlier decision that each feature opens its own.
+
+**Why the old decision was wrong.** It bought isolation — a transfer that
+killed its connection could not disturb a shell — and charged a second and
+third authentication for it. For a host with a password, or a hardware key that
+wants a touch, that is three prompts to work on one machine. The isolation was
+worth less than it cost.
+
+**Why this is safe protocol-wise.** SSH multiplexes: a shell channel and an
+SFTP subsystem live on one transport simultaneously. That is what OpenSSH's
+`ControlMaster` does. Verified against a real server rather than assumed —
+`shared_connection_test.dart` runs a shell and lists a directory over SFTP on
+one connection at the same time, and counts one authentication.
+
+**What is kept from the old isolation.** Reference counting. Closing the file
+browser releases a hold and closes nothing while a shell is still open; closing
+the last thing on a host disconnects it. Both directions are tested through the
+real providers in `one_login_test.dart`, because a pool that everything is
+supposed to go through is exactly the sort of thing that gets bypassed later.
+
+**What is genuinely given up.** One dropped TCP connection now takes the shell,
+the browser and the forwards together, where before it would have taken one.
+That is the same trade `ControlMaster` makes.
+
+**Layering.** `SshBackend` is infrastructure and must not reach up into a
+feature, so the contract it depends on — `SshConnectionHold`, which is only
+"here is the connection" and "I am finished with it" — is declared beside
+`SshConnection`. The pool implements it from the application layer.
+
+**Reconnection.** A shell that drops reconnects through the pool. If the file
+browser is still holding the connection up, the new shell attaches to it and
+authenticates nothing; if the transport itself died, the pool has already
+forgotten it and a fresh connection is made.

@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:termino/app/destinations.dart';
+import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/features/command_palette/presentation/command_palette.dart';
+import 'package:termino/features/sftp/application/sftp_providers.dart';
 import 'package:termino/features/snippets/presentation/snippet_sheet.dart';
 import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
@@ -224,6 +226,7 @@ class _TabStrip extends StatelessWidget {
             ),
           ],
           const SizedBox(width: Spacing.xs),
+          _BrowseFilesButton(session: activeSession),
           _SnippetsButton(session: activeSession),
           const _NewSessionButton(),
           const SizedBox(width: Spacing.xs),
@@ -237,6 +240,41 @@ class _TabStrip extends StatelessWidget {
 ///
 /// In the tab strip rather than only in the terminal's context menu, because a
 /// touch device has no right-click and snippets are most useful there.
+/// Opens the file browser on the host this session is connected to.
+///
+/// Costs no second authentication: the browser attaches to the same connection
+/// this shell is already using. Absent for a local shell, which has no host to
+/// browse.
+class _BrowseFilesButton extends ConsumerWidget {
+  const new({required this.session});
+
+  final TerminalSession? session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hostId = session?.hostId;
+    if (hostId == null) return const SizedBox.shrink();
+
+    return IconButton(
+      icon: const Icon(Icons.folder_open_rounded, size: 18),
+      tooltip: 'Browse files on this host',
+      onPressed: () => unawaited(_browse(context, ref, hostId)),
+    );
+  }
+
+  Future<void> _browse(
+    BuildContext context,
+    WidgetRef ref,
+    String hostId,
+  ) async {
+    final host = await ref.read(sshHostRepositoryProvider).byId(hostId);
+    if (host == null || !context.mounted) return;
+
+    ref.read(selectedSftpHostProvider.notifier).select(host);
+    context.go(AppDestinations.files.route);
+  }
+}
+
 class _SnippetsButton extends StatelessWidget {
   const new({required this.session});
 

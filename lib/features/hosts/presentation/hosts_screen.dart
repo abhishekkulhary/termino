@@ -9,6 +9,7 @@ import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/backends/terminal_backend.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/ssh/host_key_verdict.dart';
+import 'package:termino/features/hosts/application/connection_pool.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
 import 'package:termino/features/hosts/presentation/host_editor_screen.dart';
 import 'package:termino/features/hosts/presentation/host_key_dialogs.dart';
@@ -297,15 +298,25 @@ class _HostCard extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  /// How this host is doing right now, read from the open sessions rather than
-  /// probed. A network probe would be a guess about reachability; an open
-  /// session is a fact about this host.
+  /// How this host is doing right now, read from what is actually attached to
+  /// it rather than probed. A network probe would be a guess about
+  /// reachability; an open session is a fact about this host.
+  ///
+  /// A live connection with no terminal on it counts as online: since one
+  /// authentication now serves the shell, the file browser and any forwards, a
+  /// host can be perfectly well connected with no tab open on it — and a dot
+  /// that said otherwise would be wrong about the thing it exists to report.
   ConnectionHealth _health(WidgetRef ref) {
     final sessions = ref
         .watch(sessionManagerProvider)
         .sessions
         .where((session) => session.hostId == host.id);
-    if (sessions.isEmpty) return ConnectionHealth.idle;
+
+    if (sessions.isEmpty) {
+      return ref.watch(sshConnectionPoolProvider).isConnected(host.id)
+          ? ConnectionHealth.online
+          : ConnectionHealth.idle;
+    }
 
     final states = sessions.map((session) => session.connectionState.value);
     if (states.contains(BackendConnectionState.connected)) {

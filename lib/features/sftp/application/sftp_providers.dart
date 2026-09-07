@@ -1,6 +1,7 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
-import 'package:termino/features/hosts/application/ssh_connector.dart';
+import 'package:termino/features/hosts/application/connection_pool.dart';
 import 'package:termino/features/sftp/application/sftp_session.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 
@@ -30,12 +31,21 @@ Future<SftpSession?> sftpSession(Ref ref) async {
   final host = ref.watch(selectedSftpHostProvider);
   if (host == null) return null;
 
-  final connector = ref.watch(sshConnectorProvider);
-  final connection = await connector.open(host);
-  final client = await connection.client.sftp();
+  // A lease on the host's shared connection rather than a connection of its
+  // own: this is what stops the file browser asking for a password that a
+  // terminal on the same host has already been given.
+  final lease = await ref.watch(sshConnectionPoolProvider).acquire(host);
+  final SftpClient client;
+  try {
+    client = await lease.client.sftp();
+  } on Object {
+    await lease.release();
+    rethrow;
+  }
+
   final session = SftpSession(
     host: host,
-    connection: connection,
+    lease: lease,
     service: SftpService(client),
     client: client,
   );

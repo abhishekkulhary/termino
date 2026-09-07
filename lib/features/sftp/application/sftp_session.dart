@@ -10,18 +10,19 @@ import 'package:termino/features/sftp/application/transfer_queue.dart';
 import 'package:termino/infrastructure/sftp/sftp_service.dart';
 import 'package:termino/infrastructure/ssh/ssh_connection_factory.dart';
 
-/// A live SFTP browsing session: one connection, the current directory, and
-/// the transfer queue.
+/// A live SFTP browsing session: a leased connection, the current directory,
+/// and the transfer queue.
 ///
-/// The connection is its own, separate from any terminal session on the same
-/// host. That costs a second authentication, and buys isolation: a transfer
-/// that fails, or a browser the user closes, cannot disturb a shell they have
-/// work in progress in.
+/// The connection is shared with any terminal session on the same host, which
+/// is why opening the file browser for a host you are already on does not ask
+/// for a password again. The session holds a lease rather than the connection
+/// itself: closing the browser gives up the hold, and the connection closes
+/// only when nothing else is using it.
 class SftpSession extends ChangeNotifier {
-  /// Creates a session over [connection] for [host].
+  /// Creates a session over [lease] for [host].
   new({
     required this.host,
-    required this.connection,
+    required this.lease,
     required this.service,
     required SftpClient client,
   }) : queue = TransferQueue(
@@ -40,8 +41,12 @@ class SftpSession extends ChangeNotifier {
   /// The files being moved.
   final TransferQueue queue;
 
-  /// The SSH connection this session owns.
-  final SshConnection connection;
+  /// This session's hold on the host's shared connection.
+  ///
+  /// The interface rather than the pool's lease, because all this needs is
+  /// "let go when finished" — and a test then has something it can supply
+  /// without a pool.
+  final SshConnectionHold lease;
 
   /// The SFTP operations.
   final SftpService service;
@@ -290,7 +295,8 @@ class SftpSession extends ChangeNotifier {
       ..removeListener(notifyListeners)
       ..dispose();
     await service.close();
-    await connection.close();
+    // Released, not closed: a terminal on the same host may still be using it.
+    await lease.release();
     super.dispose();
   }
 }

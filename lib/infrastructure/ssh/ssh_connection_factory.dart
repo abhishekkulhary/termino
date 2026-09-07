@@ -36,6 +36,20 @@ class SshConnection {
   }
 }
 
+/// A hold on a connection that something else owns.
+///
+/// Declared here rather than where the pooling lives, because `SshBackend` is
+/// infrastructure and must not reach up into a feature. All this layer needs to
+/// know is that somebody else decides when the connection closes, and that
+/// giving up the hold is how you say you are finished with it.
+abstract interface class SshConnectionHold {
+  /// The connection being held open.
+  SshConnection get connection;
+
+  /// Gives up the hold. Closing, if it happens at all, is the owner's call.
+  Future<void> release();
+}
+
 /// Opens authenticated SSH connections.
 ///
 /// Extracted from `SshBackend` so that shells, SFTP and port forwarding all

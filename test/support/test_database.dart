@@ -4,6 +4,7 @@ import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
 import 'package:termino/features/hosts/application/agent_status.dart';
+import 'package:termino/features/hosts/application/connection_pool.dart';
 import 'package:termino/infrastructure/storage/database.dart';
 
 /// An in-memory secret store, so tests never touch the real keystore.
@@ -36,6 +37,7 @@ ProviderContainer testContainer({
   SecretStore? secrets,
   PlatformCapabilities? capabilities,
   AgentStatus? agentStatus,
+  SshConnectionPool? connectionPool,
 }) {
   final db = database ?? TerminoDatabase.withExecutor(NativeDatabase.memory());
   final store = secrets ?? InMemorySecretStore();
@@ -50,6 +52,10 @@ ProviderContainer testContainer({
       // on the machine running it would pass or fail by accident.
       if (agentStatus != null)
         agentStatusProvider.overrideWith((ref) async => agentStatus),
+      // Lets a test count authentications, which is the only way to check that
+      // the shell and the file browser share one.
+      if (connectionPool != null)
+        sshConnectionPoolProvider.overrideWithValue(connectionPool),
     ],
   );
 }
