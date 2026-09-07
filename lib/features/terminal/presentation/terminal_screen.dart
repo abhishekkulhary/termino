@@ -12,6 +12,7 @@ import 'package:termino/features/terminal/application/session_launcher.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/local_shell_notice.dart';
+import 'package:termino/features/terminal/presentation/recording_button.dart';
 import 'package:termino/features/terminal/presentation/session_status_bar.dart';
 import 'package:termino/features/terminal/presentation/terminal_pane.dart';
 import 'package:termino/shared/design/breakpoints.dart';
@@ -216,6 +217,13 @@ class _TabStrip extends StatelessWidget {
               },
             ),
           ),
+          if (activeSession case final recording?) ...[
+            RecordingButton(
+              key: ValueKey('record-${recording.id}'),
+              session: recording,
+            ),
+          ],
+          const SizedBox(width: Spacing.xs),
           _SnippetsButton(session: activeSession),
           const _NewSessionButton(),
           const SizedBox(width: Spacing.xs),
