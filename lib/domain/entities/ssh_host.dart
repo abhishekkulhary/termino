@@ -12,13 +12,21 @@ enum SshAuthMethod {
   password,
 
   /// The server drives the exchange with prompts (2FA, PAM).
-  keyboardInteractive;
+  keyboardInteractive,
+
+  /// A key held by the system SSH agent, which signs on this app's behalf.
+  ///
+  /// The private key never enters this process — which is the point. It also
+  /// covers keys that *cannot* be exported at all, such as one in a Secure
+  /// Enclave or on a YubiKey.
+  agent;
 
   /// A label for the UI.
   String get label => switch (this) {
     SshAuthMethod.publicKey => 'Public key',
     SshAuthMethod.password => 'Password',
     SshAuthMethod.keyboardInteractive => 'Keyboard interactive',
+    SshAuthMethod.agent => 'System SSH agent',
   };
 }
 

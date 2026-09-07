@@ -365,3 +365,45 @@ is reduced to its last path segment with leading dots stripped
 (`../../.bashrc` becomes `bashrc`), it never overwrites an existing file, and a
 cancelled transfer deletes the partial file rather than leaving a truncated one
 under the name of a real one.
+
+---
+
+## 2026-09-07 — SSH agent authentication, on macOS and Linux only
+
+**Decision.** Add `SshAuthMethod.agent`, which offers the keys held by the
+system SSH agent as `dartssh2` identities. Gate it to macOS and Linux.
+
+**Why.** It is the only way to use a key this app *cannot hold*: a key in a
+Secure Enclave (Secretive), in 1Password, or on a YubiKey never leaves the
+device it lives on, and can only ever be used by asking its holder to sign.
+It is also the better answer for keys the app *could* hold — the private key
+never enters this process, so nothing here can leak it, log it, or fail to
+delete it.
+
+`dartssh2` 4.1.0 makes this clean: `SSHIdentity.custom` takes a public key and
+a signing callback, and its own documentation names OS agents as the case it
+exists for. `SshAuthPrompts.identities` widened from `List<SSHKeyPair>` to
+`List<SSHIdentity>` accordingly, so agent keys and imported keys are offered
+side by side.
+
+**The platform limitation, stated plainly.** Windows is **not** supported.
+Its OpenSSH agent listens on a named pipe (`\\.\pipe\openssh-ssh-agent`), and
+Dart has no way to open one — there is no `dart:io` API for named pipes, and no
+package that adds one without an FFI shim to `CreateFileW`. Rather than ship a
+control that fails there, `PlatformCapabilities.canUseSshAgent` is false on
+Windows and the option is not offered. **Options if this matters:** write a
+small FFI binding for the four Win32 calls involved, or shell out to
+`ssh-add -L` and `ssh-keygen -Y sign` and parse the output. Neither is worth
+doing before someone actually runs the Windows build.
+
+**RSA signs with SHA-2.** A key whose blob says `ssh-rsa` is asked to sign with
+`rsa-sha2-512` and the `SSH_AGENT_RSA_SHA2_512` flag. `ssh-rsa` names an SHA-1
+signature, which OpenSSH 8.8 and later refuse by default, so asking for the
+key's own type would fail against any current server. Verified against a real
+`ssh-agent`: the signature blob comes back labelled `rsa-sha2-512`.
+
+**How it is verified.** `test/infrastructure/ssh/agent/ssh_agent_test.dart`
+starts a real `ssh-agent`, loads the fixture keys into it, starts a real `sshd`
+that trusts one of them, and authenticates. The claim being tested — that the
+private key never enters this process — cannot be checked against a fake, since
+a fake would be holding the key in the same process.

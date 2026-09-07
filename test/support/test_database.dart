@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/app/providers.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/repositories/secret_store.dart';
+import 'package:termino/features/hosts/application/agent_status.dart';
 import 'package:termino/infrastructure/storage/database.dart';
 
 /// An in-memory secret store, so tests never touch the real keystore.
@@ -34,6 +35,7 @@ ProviderContainer testContainer({
   TerminoDatabase? database,
   SecretStore? secrets,
   PlatformCapabilities? capabilities,
+  AgentStatus? agentStatus,
 }) {
   final db = database ?? TerminoDatabase.withExecutor(NativeDatabase.memory());
   final store = secrets ?? InMemorySecretStore();
@@ -44,6 +46,10 @@ ProviderContainer testContainer({
       secretStoreProvider.overrideWithValue(store),
       if (capabilities != null)
         platformCapabilitiesProvider.overrideWithValue(capabilities),
+      // Never reaches the developer's own agent: a test that listed the keys
+      // on the machine running it would pass or fail by accident.
+      if (agentStatus != null)
+        agentStatusProvider.overrideWith((ref) async => agentStatus),
     ],
   );
 }

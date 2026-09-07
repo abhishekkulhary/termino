@@ -50,6 +50,21 @@ asks the network directly when the system resolver has no answer, so
 `pi@my-server.local` works the same everywhere — provided the phone and the
 server are on the same network. If it is not found, use the IP address.
 
+### Using a key Termino never sees
+
+On macOS and Linux, a host can authenticate through the **system SSH agent**
+instead of a key imported here — `ssh-agent`, 1Password, Secretive, or a
+hardware token. The private key never enters Termino; the agent signs on its
+behalf. That also covers keys that *cannot* be exported at all, such as one held
+in the Secure Enclave.
+
+Turn it on per host in the host editor, which shows what the agent is holding
+before you save. If it says `SSH_AUTH_SOCK` is not set, launch Termino from a
+terminal — an app started from Finder or a launcher does not inherit it.
+
+Not offered on Windows: its agent speaks over a named pipe, which Dart cannot
+open. See [DECISIONS.md](DECISIONS.md) for what fixing that would take.
+
 ### Sending and receiving files inside a session
 
 `rz` and `sz` — ZModem — move a file through the terminal connection itself,

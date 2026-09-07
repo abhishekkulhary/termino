@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/domain/entities/ssh_identity.dart';
+import 'package:termino/features/hosts/application/agent_status.dart';
+import 'package:termino/shared/design/neon_accents.dart';
 import 'package:termino/shared/design/tokens.dart';
 import 'package:termino/shared/widgets/grid_backdrop.dart';
 
@@ -41,6 +44,8 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
   late String? _jumpHostId = widget.host?.jumpHostId;
   late int _keepAliveSeconds = widget.host?.keepAliveInterval.inSeconds ?? 30;
   late bool _forwardAgent = widget.host?.forwardAgent ?? false;
+  late bool _useAgent =
+      widget.host?.authMethods.contains(SshAuthMethod.agent) ?? false;
 
   @override
   void dispose() {
@@ -76,6 +81,16 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
       folder: widget.host?.folder,
       hasSavedPassword: widget.host?.hasSavedPassword ?? false,
       forwardAgent: _forwardAgent,
+      // An empty list means "the usual order"; naming the methods is only
+      // necessary to add the agent to it.
+      authMethods: _useAgent
+          ? const [
+              SshAuthMethod.publicKey,
+              SshAuthMethod.agent,
+              SshAuthMethod.keyboardInteractive,
+              SshAuthMethod.password,
+            ]
+          : const [],
     );
 
     await ref.read(sshHostRepositoryProvider).save(host);
@@ -190,6 +205,11 @@ class _HostEditorScreenState extends ConsumerState<HostEditorScreen> {
                     ],
                     onChanged: (value) => setState(() => _identityId = value),
                   ),
+                  if (ref.watch(platformCapabilitiesProvider).canUseSshAgent)
+                    _AgentOption(
+                      value: _useAgent,
+                      onChanged: (value) => setState(() => _useAgent = value),
+                    ),
                   const SizedBox(height: Spacing.lg),
                   SwitchListTile(
                     value: _forwardAgent,
@@ -283,6 +303,73 @@ class _SectionLabel extends StatelessWidget {
         letterSpacing: 0.8,
         fontWeight: FontWeight.w600,
       ),
+    );
+  }
+}
+
+/// The system-agent switch, with what the agent is actually holding under it.
+///
+/// The status is the point. Agent authentication fails in two ways that look
+/// identical to a wrong password — the agent holds no keys, or `SSH_AUTH_SOCK`
+/// is unset because the app was launched from a launcher rather than a shell —
+/// and both are worth knowing before a connection is attempted rather than
+/// after it fails.
+class _AgentOption extends ConsumerWidget {
+  const new({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final status = ref.watch(agentStatusProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          value: value,
+          onChanged: onChanged,
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Use the system SSH agent'),
+          subtitle: const Text(
+            'Keys stay in the agent — ssh-agent, 1Password, Secretive, a '
+            'hardware token — and sign without ever entering Termino.',
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: Spacing.xs),
+          child: switch (status) {
+            AsyncData(:final value) => Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  value.isUsable
+                      ? Icons.check_circle_outline
+                      : Icons.info_outline,
+                  size: 14,
+                  color: value.isUsable
+                      ? NeonAccents.of(context).online
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: Spacing.sm),
+                Expanded(
+                  child: Text(value.summary, style: theme.textTheme.bodySmall),
+                ),
+              ],
+            ),
+            AsyncError(:final error) => Text(
+              '$error',
+              style: theme.textTheme.bodySmall,
+            ),
+            _ => Text(
+              'Looking for an agent…',
+              style: theme.textTheme.bodySmall,
+            ),
+          },
+        ),
+      ],
     );
   }
 }

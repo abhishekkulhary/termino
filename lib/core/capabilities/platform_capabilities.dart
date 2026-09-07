@@ -56,6 +56,7 @@ class PlatformCapabilities {
     this.hasHaptics = false,
     this.needsRelay = false,
     this.canHoldFiles = true,
+    this.canUseSshAgent = false,
     this.localShellUnavailableReason,
   });
 
@@ -110,6 +111,12 @@ class PlatformCapabilities {
       hasWindowManagement: isDesktop,
       // Only a desktop has a ~/.ssh to import from.
       canReadUserSshConfig: isDesktop,
+      // The system SSH agent listens on a Unix socket on macOS and Linux. The
+      // Windows OpenSSH agent uses a named pipe, which Dart cannot open, and
+      // the mobile platforms have no agent at all — so the option is not
+      // offered there rather than offered and broken.
+      canUseSshAgent:
+          target == TargetPlatform.macOS || target == TargetPlatform.linux,
       // A vibration motor is a phone thing. `HapticFeedback` is silently a
       // no-op everywhere else, which is exactly how the bell ended up with a
       // setting that did nothing.
@@ -131,6 +138,12 @@ class PlatformCapabilities {
 
   /// Whether SSH must go through a WebSocket relay rather than a TCP socket.
   final bool needsRelay;
+
+  /// Whether the system SSH agent can be reached.
+  ///
+  /// False on Windows, whose agent speaks over a named pipe that Dart cannot
+  /// open, and on mobile and web, which have no agent.
+  final bool canUseSshAgent;
 
   /// Whether files can be written to and read from local storage.
   ///
@@ -159,7 +172,8 @@ class PlatformCapabilities {
           other.hasWindowManagement == hasWindowManagement &&
           other.hasHaptics == hasHaptics &&
           other.canReadUserSshConfig == canReadUserSshConfig &&
-          other.canHoldFiles == canHoldFiles;
+          other.canHoldFiles == canHoldFiles &&
+          other.canUseSshAgent == canUseSshAgent;
 
   @override
   int get hashCode => Object.hash(
@@ -172,6 +186,7 @@ class PlatformCapabilities {
     hasHaptics,
     canReadUserSshConfig,
     canHoldFiles,
+    canUseSshAgent,
   );
 }
 

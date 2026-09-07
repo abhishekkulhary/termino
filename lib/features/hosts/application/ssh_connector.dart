@@ -11,6 +11,8 @@ import 'package:termino/domain/repositories/ssh_host_repository.dart';
 import 'package:termino/domain/repositories/ssh_identity_repository.dart';
 import 'package:termino/domain/ssh/host_key_verifier.dart';
 import 'package:termino/features/hosts/application/ssh_prompt_service.dart';
+import 'package:termino/infrastructure/ssh/agent/agent_protocol.dart';
+import 'package:termino/infrastructure/ssh/agent/ssh_agent.dart';
 import 'package:termino/infrastructure/ssh/sockets/socket_factory_provider.dart';
 import 'package:termino/infrastructure/ssh/ssh_auth.dart';
 import 'package:termino/infrastructure/ssh/ssh_backend.dart';
@@ -137,9 +139,16 @@ class SshConnector {
     final identities = methods.contains(SshAuthMethod.publicKey)
         ? await _loadIdentity(host)
         : null;
+    final fromAgent = methods.contains(SshAuthMethod.agent)
+        ? await _agentIdentities(host)
+        : null;
 
     return SshAuthPrompts(
-      identities: identities,
+      // This app's own keys first, then the agent's. A key the user imported
+      // here was chosen for this host; the agent's are whatever happens to be
+      // loaded, and one of them may be on a hardware token that asks for a
+      // touch.
+      identities: [...?identities, ...?fromAgent],
       // Only this host's own identity is forwarded, not every key the user
       // owns. OpenSSH forwards the whole agent; narrowing it means a
       // compromised host can misuse one key rather than all of them, and the
@@ -156,6 +165,37 @@ class SshConnector {
       // Banners are server-controlled text and are deliberately not logged.
       onBanner: (_) {},
     );
+  }
+
+  /// The system agent's keys, as identities that sign without exposing a key.
+  ///
+  /// A failure here is logged and skipped rather than thrown: the host may
+  /// have other methods enabled, and an agent that is not running should
+  /// degrade to "that method contributed nothing", not "the connection is
+  /// impossible". The host editor shows the agent's state before it is ever
+  /// saved, so this is a fallback, not the only warning a user gets.
+  Future<List<SSHIdentity>?> _agentIdentities(SshHost host) async {
+    final agent = SshAgent.fromEnvironment();
+    if (agent == null) {
+      Loggers.ssh.warning(
+        'SSH_AUTH_SOCK is not set, so ${host.label} cannot use the system '
+        'agent. Launching the app from a shell usually sets it.',
+      );
+      return null;
+    }
+
+    try {
+      final identities = await agent.asIdentities();
+      if (identities.isEmpty) {
+        Loggers.ssh.warning('The system agent is holding no keys.');
+      }
+      return identities;
+    } on AgentProtocolException catch (error) {
+      // The message is the agent's own account of itself and carries no key
+      // material.
+      Loggers.ssh.warning('The system agent could not be used: $error');
+      return null;
+    }
   }
 
   Future<List<SSHKeyPair>?> _loadIdentity(SshHost host) async {

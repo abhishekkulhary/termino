@@ -14,13 +14,17 @@ class SshAuthPrompts {
     this.agent,
   });
 
-  /// Private keys to offer, already decrypted. Empty or null skips public key
-  /// authentication.
+  /// Keys to offer for public-key authentication. Empty or null skips it.
   ///
-  /// These are held only for the duration of the attempt: the caller reads
-  /// them from the keystore immediately before connecting and drops them
-  /// afterwards.
-  final List<SSHKeyPair>? identities;
+  /// `SSHIdentity` rather than `SSHKeyPair` so that a key held by the system
+  /// agent can be offered alongside — or instead of — one this app has
+  /// decrypted. An agent identity carries no key material at all: it is a
+  /// public blob and a callback that asks the agent to sign.
+  ///
+  /// A key this app did decrypt is held only for the duration of the attempt:
+  /// the caller reads it from the keystore immediately before connecting and
+  /// drops it afterwards.
+  final List<SSHIdentity>? identities;
 
   /// Asks the user for a password.
   final Future<String?> Function()? onPasswordRequest;

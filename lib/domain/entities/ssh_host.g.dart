@@ -56,4 +56,5 @@ const _$SshAuthMethodEnumMap = {
   SshAuthMethod.publicKey: 'publicKey',
   SshAuthMethod.password: 'password',
   SshAuthMethod.keyboardInteractive: 'keyboardInteractive',
+  SshAuthMethod.agent: 'agent',
 };

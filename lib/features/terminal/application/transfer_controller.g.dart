@@ -72,7 +72,7 @@ final class TransferControllerProvider
 }
 
 String _$transferControllerHash() =>
-    r'94f7a2a65a2815130493a303762d043efd01e433';
+    r'adb715679cd3d02d671c670f8688121df8b45b2c';
 
 /// Owns the ZModem prompts and progress for every session.
 ///
