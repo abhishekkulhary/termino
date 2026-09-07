@@ -49,14 +49,7 @@ Future<void> _openSession(
 ) async {
   await container
       .read(sessionManagerProvider.notifier)
-      .open(
-        backend: MockBackend.text('ready'),
-        title: 'Fixture',
-        // Named apart from the title so a test can tell the tab from the
-        // header: the header shows what the session *is*, the tab what the
-        // program calls it.
-        descriptor: 'me@fixture.example.com',
-      );
+      .open(backend: MockBackend.text('ready'), title: 'Fixture');
   await tester.pumpAndSettle();
 }
 
@@ -84,11 +77,6 @@ void main() {
 
     expect(find.text('No sessions open'), findsNothing);
     expect(find.text('Fixture'), findsOneWidget, reason: 'the tab is labelled');
-    expect(
-      find.text('me@fixture.example.com'),
-      findsOneWidget,
-      reason: 'the header names the session in front, not the screen',
-    );
   });
 
   testWidgets('navigating to another destination keeps the session alive', (

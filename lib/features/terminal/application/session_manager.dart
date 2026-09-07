@@ -114,7 +114,6 @@ class SessionManager extends _$SessionManager {
   Future<TerminalSession> open({
     required TerminalBackend backend,
     String title = 'Terminal',
-    String? descriptor,
     String? hostId,
     Future<TerminalBackend> Function()? reconnect,
     ReconnectPolicy policy = const ReconnectPolicy(),
@@ -129,7 +128,6 @@ class SessionManager extends _$SessionManager {
       id: id,
       backend: backend,
       hostId: hostId,
-      descriptor: descriptor,
       initialTitle: title,
       // The setting only applies to sessions opened after it changes: the
       // emulator's scrollback is allocated when it is built, and silently
@@ -233,9 +231,6 @@ class SessionManager extends _$SessionManager {
       id: id,
       backend: backend,
       hostId: old.hostId,
-      // Carried across a reconnection: the machine is the same one, whatever
-      // the last program to run happened to call the window.
-      descriptor: old.descriptor,
       initialTitle: old.title.value,
     );
     _attachTransfers(replacement);

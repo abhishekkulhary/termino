@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:termino/app/router.dart';
 import 'package:termino/features/terminal/application/session_manager.dart';
 import 'package:termino/features/terminal/application/terminal_session.dart';
 import 'package:termino/features/terminal/presentation/terminal_screen.dart';
 import 'package:termino/infrastructure/backends/mock_backend.dart';
-import 'package:termino/infrastructure/terminal/output_batcher.dart';
 
 import '../../support/pump.dart';
 import '../../support/test_database.dart';
 
-/// With four terminals open, the question a header has to answer is which
-/// machine the next keystroke goes to.
+/// A tab strip has two jobs beyond listing tabs: showing which one is in
+/// front, and being somewhere the one in front can actually be seen.
 void main() {
   /// Opens [count] sessions, labelled so they can be told apart.
   Future<List<TerminalSession>> openSessions(
@@ -22,43 +20,9 @@ void main() {
     final manager = container.read(sessionManagerProvider.notifier);
     return [
       for (var index = 0; index < count; index++)
-        await manager.open(
-          backend: MockBackend(),
-          title: 'Session $index',
-          descriptor: 'deploy@host-$index.example.com',
-        ),
+        await manager.open(backend: MockBackend(), title: 'Session $index'),
     ];
   }
-
-  testWidgets('a session carries what it is, separately from its title', (
-    tester,
-  ) async {
-    final session = TerminalSession(
-      id: 'a',
-      backend: MockBackend(),
-      descriptor: 'deploy@build-01.example.com',
-      initialTitle: 'Build server',
-      batcher: const TerminalOutputBatcher(window: Duration.zero),
-    );
-    addTearDown(session.dispose);
-
-    // A program renames the window; the machine has not changed.
-    session.terminal.write('\x1b]2;vim README.md\x07');
-    await tester.pump();
-
-    expect(session.title.value, 'vim README.md');
-    expect(session.descriptor, 'deploy@build-01.example.com');
-  });
-
-  testWidgets('the descriptor survives a reconnection', (tester) async {
-    // The machine is the same one, whatever the last program called the window.
-    final container = testContainer();
-    addTearDown(container.dispose);
-
-    final sessions = await openSessions(container, 1);
-
-    expect(sessions.single.descriptor, 'deploy@host-0.example.com');
-  });
 
   testWidgets('the tab strip keeps the active tab in view', (tester) async {
     // Enough tabs that the last is well past the right edge of a phone.
@@ -142,55 +106,6 @@ void main() {
     );
   });
 
-  testWidgets('the top bar names the session in front, not the screen', (
-    tester,
-  ) async {
-    // "Terminal" is not information when four of them are open. Which machine
-    // the next keystroke goes to is.
-    final container = testContainer();
-    addTearDown(container.dispose);
-    final sessions = await openSessions(container, 3);
-
-    await pumpApp(tester, const _Header(), container: container);
-
-    expect(find.text('deploy@host-2.example.com'), findsOneWidget);
-    expect(find.text('Terminal'), findsNothing);
-
-    container.read(sessionManagerProvider.notifier).activate(sessions[0].id);
-    await tester.pumpAndSettle();
-
-    expect(find.text('deploy@host-0.example.com'), findsOneWidget);
-  });
-
-  testWidgets('with nothing open it falls back to the screen name', (
-    tester,
-  ) async {
-    final container = testContainer();
-    addTearDown(container.dispose);
-
-    await pumpApp(tester, const _Header(), container: container);
-
-    expect(find.text('Terminal'), findsOneWidget);
-  });
-
-  testWidgets('a program renaming the window does not rename the header', (
-    tester,
-  ) async {
-    // OSC 2 is the program talking about itself. The header answers a
-    // different question, and a title of "vim README.md" does not answer it.
-    final container = testContainer();
-    addTearDown(container.dispose);
-    final sessions = await openSessions(container, 1);
-
-    await pumpApp(tester, const _Header(), container: container);
-
-    sessions.single.terminal.write('\x1b]2;vim README.md\x07');
-    await tester.pumpAndSettle();
-
-    expect(find.text('deploy@host-0.example.com'), findsOneWidget);
-    expect(find.text('vim README.md'), findsNothing);
-  });
-
   testWidgets('a tab fills the strip, so its underline sits on the edge', (
     tester,
   ) async {
@@ -226,18 +141,4 @@ void main() {
       reason: "nothing below the tab but the strip's own 1px border",
     );
   });
-}
-
-/// Just the app bar, which is where the title lives.
-///
-/// The whole shell would drag in the router and every other screen; what is
-/// under test is one widget's choice of words.
-class _Header extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const ShellTitle(index: 0)),
-    body: const SizedBox.shrink(),
-  );
 }
