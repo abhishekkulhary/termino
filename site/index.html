@@ -17,6 +17,13 @@
 <link rel="apple-touch-icon" href="img/icon-192.png">
 <link rel="stylesheet" href="css/site.css">
 
+<!--
+  Canonical because js/download.js accepts a ?repo=owner/name override for
+  testing, and every value of it is a distinct URL serving identical content.
+  Without this, a crawler that ever finds one indexes the duplicates.
+-->
+<link rel="canonical" href="__BASE_URL__/">
+
 <meta property="og:type" content="website">
 <meta property="og:title" content="Termino — a terminal and SSH client">
 <meta property="og:description" content="A real shell on your computer, and SSH to the machines you look after. Keys stay on your device. No account, no telemetry.">

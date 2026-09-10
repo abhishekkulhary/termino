@@ -46,6 +46,11 @@ for page in sorted(site.rglob('*.html')):
     for reference in REFERENCE.findall(page.read_text(encoding='utf-8')):
         if reference.startswith(EXTERNAL):
             continue
+        # A placeholder becomes an absolute URL when the Pages workflow
+        # substitutes it, so there is no local file to look for. That the
+        # substitution actually happened is checked by the workflow itself.
+        if '__BASE_URL__' in reference or '__REPO__' in reference:
+            continue
         if reference.startswith('/'):
             problems.append(
                 f'{page}: "{reference}" starts with "/". Pages serves this site '
