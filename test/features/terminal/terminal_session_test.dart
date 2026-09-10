@@ -120,13 +120,13 @@ void main() {
     });
 
     test('an OSC 2 title sequence updates the session title', () async {
-      final backend = MockBackend.text('\x1b]2;abhishek@host: ~\x07');
+      final backend = MockBackend.text('\x1b]2;deploy@host: ~\x07');
       final session = sessionFor(backend);
 
       await session.start();
       await pumpEventQueue();
 
-      expect(session.title.value, 'abhishek@host: ~');
+      expect(session.title.value, 'deploy@host: ~');
       await session.dispose();
     });
 

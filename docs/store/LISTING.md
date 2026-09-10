@@ -42,7 +42,7 @@ Tabs everywhere, split panes where there is room.
 retry. Local, remote and dynamic SOCKS port forwarding with live status.
 
 **Everywhere.** Android, iPhone, iPad, Mac, Windows, Linux and the web, from
-one codebase, with the same settings and the same eight colour schemes.
+one codebase, with the same settings and the same nine colour schemes.
 
 ### A note on what this app cannot do
 
@@ -95,5 +95,8 @@ Framed at each store's required sizes. What actually demonstrates the app:
 
 ## Support
 
-- Issues: https://github.com/termino/termino/issues
+- Issues: the GitHub repository's issue tracker
 - Security: see SECURITY.md
+
+Both need the real repository URL filling in before either store listing is
+submitted.

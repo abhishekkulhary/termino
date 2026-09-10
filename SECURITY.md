@@ -34,9 +34,12 @@ restores the first-run flag.
 
 ## Reporting a vulnerability
 
-Please report privately rather than opening a public issue: open a
-[GitHub security advisory](https://github.com/termino/termino/security/advisories/new)
-on this repository. We aim to acknowledge within 72 hours.
+Please report privately rather than opening a public issue. On this
+repository's GitHub page, go to **Security → Report a vulnerability** to open a
+private advisory. We aim to acknowledge within 72 hours.
+
+(Written without a hard-coded URL on purpose: the address depends on where the
+repository lives, and a link to somewhere it does not is worse than none.)
 
 Please include what you did, what happened, and what you expected. If a proof of
 concept touches a real host, redact hostnames and keys.

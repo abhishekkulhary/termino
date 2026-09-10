@@ -123,5 +123,10 @@ Flutter codebase for Android, iOS, macOS, Windows, Linux and the web.
   never keystrokes.
 - No telemetry of any kind.
 
-[Unreleased]: https://github.com/termino/termino/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/termino/termino/releases/tag/v1.0.0
+<!--
+  Comparison links go here once the repository has a home. They are left out
+  rather than pointed at github.com/termino/termino, which does not exist:
+
+  [Unreleased]: https://github.com/OWNER/REPO/compare/v1.0.0...HEAD
+  [1.0.0]: https://github.com/OWNER/REPO/releases/tag/v1.0.0
+-->
