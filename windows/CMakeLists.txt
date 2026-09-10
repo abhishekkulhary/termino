@@ -32,6 +32,21 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# local_auth_windows still includes <experimental/coroutine>, and MSVC 14.51
+# (Visual Studio 18, which is what the CI runners now ship) turns that into a
+# hard error rather than a warning:
+#
+#   error C2338: static assertion failed: 'error STL1011: The /await compiler
+#   option, <experimental/coroutine>, ... are deprecated by Microsoft and will
+#   be REMOVED SOON.'
+#
+# The escape hatch is the one the error itself names. It applies to every
+# target in this build, plugins included, because the offending include is in
+# a plugin rather than in anything here. It should come out when
+# local_auth_windows moves to the C++20 <coroutine> header — which is the real
+# fix, and is not ours to make.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
