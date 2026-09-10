@@ -193,11 +193,23 @@ jobs:
 
       # iOS cannot be codesigned on CI without secrets, and is never expected
       # to provide a local shell — see ARCHITECTURE.md.
+      #
+      # The failure is echoed back as an annotation so that a red build says
+      # what went wrong on the checks page itself. Without it the only signal
+      # is "Process completed with exit code 1", and reading the reason means
+      # having repository admin to download the log.
       - name: Build
-        run: |
-          if [ "${{ matrix.target }}" = "ios" ]; then
-            flutter build ios --debug --no-codesign
-          else
-            flutter build ${{ matrix.target }} --debug
-          fi
         shell: bash
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.target }}" = "ios" ]; then
+            command="flutter build ios --debug --no-codesign"
+          else
+            command="flutter build ${{ matrix.target }} --debug"
+          fi
+
+          if ! $command 2>&1 | tee build.log; then
+            tail=$(tail -n 40 build.log | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=${{ matrix.target }} build failed::$tail"
+            exit 1
+          fi
