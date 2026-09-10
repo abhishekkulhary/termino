@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Termino — a terminal and SSH client for every device you own</title>
+<meta name="description" content="A terminal emulator and SSH client. A real shell on your computer, SSH to the machines you look after, with SFTP, port forwarding and keys that never leave your device.">
+
+<!--
+  Every path on this page is relative. GitHub Pages serves a project site from
+  /<repo>/, so a leading slash is the one mistake that breaks the whole deploy.
+  __REPO__ and __BASE_URL__ are substituted by .github/workflows/pages.yaml;
+  tool/check_site.sh fails the build if either has been hard-coded away.
+-->
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<link rel="stylesheet" href="css/site.css">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Termino — a terminal and SSH client">
+<meta property="og:description" content="A real shell on your computer, and SSH to the machines you look after. Keys stay on your device. No account, no telemetry.">
+<meta property="og:image" content="__BASE_URL__/img/hero-hosts.png">
+<meta property="og:url" content="__BASE_URL__/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#05070C">
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <img src="icon.svg" alt="" width="26" height="26">
+      Termino
+    </a>
+    <nav class="top-nav" aria-label="Primary">
+      <a class="wide-only" href="#features">Features</a>
+      <a class="wide-only" href="#platforms">Platforms</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com/__REPO__">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ------------------------------------------------------------ hero -->
+  <section class="hero">
+    <div class="wrap">
+      <h1>A real terminal on <em>every device</em> you own.</h1>
+      <p class="lede">
+        Termino runs a real shell on your computer and connects over SSH to the
+        machines you look after — with an SFTP browser, port forwarding, and
+        private keys that never leave your device.
+      </p>
+
+      <div class="cta">
+        <a class="btn btn-primary" href="#download">Download</a>
+        <a class="btn" href="https://github.com/__REPO__">View source</a>
+      </div>
+
+      <p class="hero-meta">
+        <span>Apache-2.0</span>
+        <span>no account</span>
+        <span>no telemetry</span>
+        <span data-version hidden></span>
+      </p>
+
+      <figure class="shot hero-shot">
+        <img src="img/hero-hosts.png" alt="Termino's host list, showing four saved servers with status indicators and quick actions for connecting, browsing files and opening tunnels." width="1280" height="800">
+      </figure>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- --------------------------------------------------------- three-up -->
+  <section>
+    <div class="wrap">
+      <div class="trio">
+        <div>
+          <h3>A real shell</h3>
+          <p>
+            PTY-backed local shells on macOS, Linux, Windows and Android. Full
+            xterm emulation, so vim, htop and tmux behave the way they do
+            anywhere else — truecolour, mouse reporting, the alternate screen,
+            and a bundled font with the box-drawing and Powerline glyphs those
+            programs assume.
+          </p>
+        </div>
+        <div>
+          <h3>Host keys taken seriously</h3>
+          <p>
+            The first time you connect, Termino shows the server's fingerprint
+            and asks. If that key ever changes the connection is refused — not
+            warned about, refused — because a changed key is indistinguishable
+            from someone intercepting you.
+          </p>
+        </div>
+        <div>
+          <h3>One login per host</h3>
+          <p>
+            Authenticate once. The shell, the file browser and every port
+            forward share the same connection, so opening files on a machine
+            you already have a shell on costs no second password and no second
+            key touch.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- features -->
+  <section id="features">
+    <div class="wrap">
+      <p class="label">What's in it</p>
+      <h2>Everything the job actually needs</h2>
+
+      <div class="features">
+        <article class="card">
+          <h3>SFTP, whole folders</h3>
+          <p>
+            Browse, upload and download entire directory trees. You are told
+            the file count and total size before anything moves, and symbolic
+            links are skipped and counted rather than followed.
+          </p>
+        </article>
+        <article class="card">
+          <h3>Port forwarding</h3>
+          <p>
+            Local, remote and dynamic SOCKS forwards, with live status for
+            each one and a single connection carrying all of them.
+          </p>
+        </article>
+        <article class="card">
+          <h3>ZModem, in the session</h3>
+          <p>
+            <code>rz</code> and <code>sz</code> move files through the terminal
+            connection itself — what still works when SFTP is disabled, when
+            you are three hops deep, or when you are on a serial console.
+          </p>
+        </article>
+        <article class="card">
+          <h3>A path bar that completes</h3>
+          <p>
+            Type a remote path and press Tab. It completes directory names
+            against the server the way a shell does, and remembers where you
+            have been this session.
+          </p>
+        </article>
+        <article class="card">
+          <h3><code>.local</code> names that resolve</h3>
+          <p>
+            Termino asks the network over multicast DNS when the system
+            resolver has no answer, so <code>pi@my-server.local</code> works on
+            Android too, not just on a Mac.
+          </p>
+        </article>
+        <article class="card">
+          <h3>Links that tell the truth</h3>
+          <p>
+            URLs in output are tappable, and programs can declare real
+            hyperlinks with OSC 8. A declared link asks first and shows where
+            it actually goes, because the words and the destination need not
+            match.
+          </p>
+        </article>
+        <article class="card">
+          <h3>Built for a phone too</h3>
+          <p>
+            A key bar carrying the Esc, Tab, Ctrl and arrow keys a touch
+            keyboard does not have, with modifiers you tap once to arm and
+            twice to lock. Snippets for the commands nobody remembers.
+          </p>
+        </article>
+        <article class="card">
+          <h3>Search and record</h3>
+          <p>
+            Regular-expression search through the scrollback, including matches
+            that span a wrapped line, and session recording exported as plain
+            text or asciicast.
+          </p>
+        </article>
+        <article class="card">
+          <h3>Keys you cannot export</h3>
+          <p>
+            On macOS and Linux, authenticate through the system SSH agent —
+            1Password, Secretive, a hardware token, a key in the Secure
+            Enclave. Termino never sees the key at all.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- gallery -->
+  <section>
+    <div class="wrap">
+      <p class="label">A look at it</p>
+      <h2>The same app on a desk and in a pocket</h2>
+
+      <div class="gallery">
+        <figure>
+          <div class="shot">
+            <img src="img/palette.png" alt="The command palette open over a dimmed workspace, with grouped results for connecting, browsing and terminal actions." width="1280" height="800" loading="lazy">
+          </div>
+          <figcaption>Connect, switch, browse — one keystroke.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/terminal.png" alt="A terminal rendering ANSI and truecolour swatches, box drawing, block elements and bold, italic and underlined text." width="720" height="420" loading="lazy">
+          </div>
+          <figcaption>Truecolour, box drawing, Powerline.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/settings.png" alt="The settings screen showing the terminal palette grid and a font specimen." width="560" height="900" loading="lazy">
+          </div>
+          <figcaption>Nine palettes and a bundled Nerd Font.</figcaption>
+        </figure>
+        <figure class="phone">
+          <div class="shot">
+            <img src="img/mobile-hosts.png" alt="The host list on a phone, with bottom navigation." width="390" height="780" loading="lazy">
+          </div>
+          <figcaption>The same app on a phone.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- download -->
+  <section id="download">
+    <div class="wrap">
+      <p class="label">Download</p>
+      <h2>Get Termino</h2>
+      <p class="section-lede">
+        Free and open source under Apache-2.0. No account, no installer that
+        asks for an email address.
+      </p>
+
+      <p class="status" data-release-status hidden></p>
+
+      <div class="downloads">
+        <article class="dl">
+          <h3>macOS</h3>
+          <p class="dl-sub">Apple silicon &amp; Intel</p>
+          <a class="btn btn-primary" data-asset="Termino-macos.dmg" data-match="\.dmg$"
+             href="https://github.com/__REPO__/releases/latest">Download .dmg</a>
+          <p class="dl-meta" data-meta>Latest release</p>
+          <details>
+            <summary>Opening an unsigned build</summary>
+            <p>
+              This build is not signed or notarised, so macOS refuses it on
+              first open. Go to <strong>System Settings → Privacy &amp;
+              Security</strong>, find Termino under the warning, and click
+              <strong>Open Anyway</strong>. Or, from a terminal:
+            </p>
+            <code>xattr -d com.apple.quarantine /Applications/termino.app</code>
+          </details>
+        </article>
+
+        <article class="dl">
+          <h3>Windows</h3>
+          <p class="dl-sub">x64, portable</p>
+          <a class="btn btn-primary" data-asset="Termino-windows-x64.zip" data-match="windows.*\.zip$"
+             href="https://github.com/__REPO__/releases/latest">Download .zip</a>
+          <p class="dl-meta" data-meta>Latest release</p>
+          <details>
+            <summary>Getting past SmartScreen</summary>
+            <p>
+              Not code-signed, so SmartScreen shows “Windows protected your
+              PC”. Click <strong>More info → Run anyway</strong>. The zip is a
+              portable folder: unpack it anywhere and run
+              <code>termino.exe</code>. An <code>.msix</code> installer is on
+              the releases page, but it needs a certificate your machine
+              trusts.
+            </p>
+          </details>
+        </article>
+
+        <article class="dl">
+          <h3>Linux</h3>
+          <p class="dl-sub">x86_64 AppImage</p>
+          <a class="btn btn-primary" data-asset="Termino-linux-x86_64.AppImage" data-match="\.appimage$"
+             href="https://github.com/__REPO__/releases/latest">Download AppImage</a>
+          <p class="dl-meta" data-meta>Latest release</p>
+          <details>
+            <summary>Running it</summary>
+            <p>Mark it executable and run it — no install step:</p>
+            <code>chmod +x Termino-linux-x86_64.AppImage
+./Termino-linux-x86_64.AppImage</code>
+          </details>
+        </article>
+
+        <article class="dl">
+          <h3>Android</h3>
+          <p class="dl-sub">Universal APK</p>
+          <a class="btn btn-primary" data-asset="Termino-android-universal.apk" data-match="\.apk$"
+             href="https://github.com/__REPO__/releases/latest">Download .apk</a>
+          <p class="dl-meta" data-meta>Latest release</p>
+          <details>
+            <summary>Installing from outside a store</summary>
+            <p>
+              Android asks you to allow installs from wherever you downloaded
+              it. This build is signed with a development key rather than a
+              store key, so if Termino later ships on Google Play you will need
+              to uninstall this one first.
+            </p>
+          </details>
+        </article>
+      </div>
+
+      <p class="note">
+        The Android App Bundle, the Windows <code>.msix</code>, an unsigned iOS
+        build and a self-hostable web bundle are all on the
+        <a href="https://github.com/__REPO__/releases">releases page</a>. The
+        web build has no local shell and reaches SSH servers through a relay you
+        run yourself — see
+        <a href="https://github.com/__REPO__/tree/main/tools/relay">tools/relay</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------- platforms -->
+  <section id="platforms">
+    <div class="wrap">
+      <p class="label">Honestly</p>
+      <h2>What works where</h2>
+      <p class="section-lede">
+        Some of this is decided by the platforms rather than by Termino. Where
+        a feature cannot work, the app says so in place instead of offering a
+        button that fails.
+      </p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Platform</th>
+              <th scope="col">Local shell</th>
+              <th scope="col">SSH</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">macOS</th>
+              <td class="yes">Yes</td>
+              <td class="yes">Yes</td>
+              <td>Sandbox off, so it can run your programs</td>
+            </tr>
+            <tr>
+              <th scope="row">Android</th>
+              <td class="yes">Yes, sandboxed</td>
+              <td class="yes">Yes</td>
+              <td>Builds and runs</td>
+            </tr>
+            <tr>
+              <th scope="row">iOS / iPadOS</th>
+              <td class="no">No — the platform forbids it</td>
+              <td class="yes">Yes</td>
+              <td>Local shell gated off with an explanation</td>
+            </tr>
+            <tr>
+              <th scope="row">Linux</th>
+              <td class="yes">Yes</td>
+              <td class="yes">Yes</td>
+              <td>CI only — see below</td>
+            </tr>
+            <tr>
+              <th scope="row">Windows</th>
+              <td class="yes">Yes</td>
+              <td class="yes">Yes</td>
+              <td>CI only — see below</td>
+            </tr>
+            <tr>
+              <th scope="row">Web</th>
+              <td class="no">No</td>
+              <td class="yes">Yes, through a relay</td>
+              <td>Self-hosted; not a hosted service</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="caveats">
+        <p>
+          <strong>“CI only”</strong> means the Linux and Windows builds compile
+          and pass their tests on every change, but nobody has yet run them on
+          a real machine and judged them by eye. That is the only thing it
+          means, and it is worth knowing before you download one.
+        </p>
+        <p>
+          <strong>iOS cannot spawn other programs</strong> and a browser cannot
+          open a raw TCP socket. Termino does not pretend otherwise: those
+          features are switched off at runtime with an explanation rather than
+          failing mysteriously.
+        </p>
+        <p>
+          <strong>The system SSH agent works on macOS and Linux.</strong> Not on
+          Windows, whose agent speaks over a named pipe that Dart cannot open —
+          so the option is absent there rather than present and broken.
+        </p>
+        <p>
+          <strong>The macOS and Windows builds are unsigned.</strong> Signing
+          certificates cost money and cannot live in a public repository. Each
+          download above explains how to get past the warning.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- security -->
+  <section>
+    <div class="wrap">
+      <p class="label">Security</p>
+      <h2>What Termino does with your keys</h2>
+
+      <ul class="claims">
+        <li>
+          <strong>Keys stay in the keystore</strong>
+          Private keys and passwords live only in the platform keystore — never
+          in the app's database, never in a log, never in a crash report.
+        </li>
+        <li>
+          <strong>A changed host key is a hard stop</strong>
+          Not a warning with a “connect anyway” button. Replacing a trusted key
+          is a separate, deliberate action.
+        </li>
+        <li>
+          <strong>Nothing phones home</strong>
+          No analytics, no crash reporting, no account, no sync. Data goes to
+          the servers you choose to connect to, and nowhere else.
+        </li>
+        <li>
+          <strong>The relay carries ciphertext</strong>
+          On the web the SSH protocol still runs in your browser, so a relay
+          never sees a key, a password, or a byte of your session.
+        </li>
+      </ul>
+
+      <p class="note">
+        Each of these is held in place by a named test — the table is in
+        <a href="https://github.com/__REPO__/blob/main/SECURITY.md">SECURITY.md</a>,
+        along with the threat model and what Termino explicitly does
+        <em>not</em> protect against.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="bottom">
+  <div class="wrap">
+    <nav aria-label="Footer">
+      <a href="https://github.com/__REPO__">GitHub</a>
+      <a href="https://github.com/__REPO__/releases">Releases</a>
+      <a href="https://github.com/__REPO__/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/__REPO__/blob/main/ARCHITECTURE.md">Architecture</a>
+      <a href="https://github.com/__REPO__/blob/main/SECURITY.md">Security</a>
+    </nav>
+    <p class="credits">
+      Apache-2.0. Built with Flutter; uses xterm.dart, dartssh2 and flutter_pty,
+      all MIT licensed.
+    </p>
+  </div>
+</footer>
+
+<script src="js/download.js" defer></script>
+</body>
+</html>

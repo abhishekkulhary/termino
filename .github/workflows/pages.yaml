@@ -1,0 +1,89 @@
+name: Pages
+
+# Deploys the marketing site in site/ to GitHub Pages.
+#
+# One-time manual step this cannot do for you: in the repository's
+# Settings → Pages, set "Build and deployment → Source" to "GitHub Actions".
+# Until that is set, deploy-pages fails with "Pages site not found", which
+# reads like a bug in this workflow and is not one.
+#
+# The Flutter web build is deliberately not deployed here. It has no local
+# shell and cannot reach a server without a relay the visitor would have to run
+# themselves, so as a public demo it would present as a broken app. It is still
+# built in CI and shipped in the release as a tarball for anyone self-hosting.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'tool/sync_site_images.sh'
+      - 'tool/check_site.sh'
+      - 'test/**/goldens/**'
+      - '.github/workflows/pages.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One live site, so two deploys racing is exactly what this prevents. No ref
+# suffix for the same reason.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Copy the screenshots out of the golden tests
+        run: ./tool/sync_site_images.sh
+
+      - name: Check the site
+        run: ./tool/check_site.sh
+
+      # Lossless only. Quantising to 8 bits would band the panel gradients and
+      # the glow, which are the whole reason these screenshots are worth
+      # showing.
+      - name: Compress the screenshots
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y optipng
+          optipng -quiet -o2 site/img/*.png
+
+      # The page ships placeholders so it works in any fork and can be
+      # previewed locally. "|" as the sed delimiter because a repository name
+      # contains "/"; "xargs -r" because an empty grep would otherwise leave
+      # sed waiting on stdin.
+      - name: Point the site at this repository
+        run: |
+          grep -rl '__REPO__\|__BASE_URL__' site \
+            | xargs -r sed -i \
+                -e "s|__REPO__|${{ github.repository }}|g" \
+                -e "s|__BASE_URL__|${{ steps.pages.outputs.base_url }}|g"
+
+      - name: Confirm no placeholder survived
+        run: |
+          if grep -rq '__REPO__\|__BASE_URL__' site; then
+            echo "A placeholder was not substituted:" >&2
+            grep -rn '__REPO__\|__BASE_URL__' site >&2
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

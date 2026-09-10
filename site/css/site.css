@@ -1,0 +1,731 @@
+/*
+ * Termino — the landing page.
+ *
+ * The palette and scales below are a hand port of the app's own, so the page
+ * and the screenshots on it are the same object. The sources of truth are
+ * lib/shared/design/app_theme.dart and lib/shared/design/tokens.dart; if a
+ * value changes there it should change here, and nowhere else on this page
+ * names a colour.
+ *
+ * Dark only. Neon is a dark-room idea — the app says as much in its own theme
+ * file — and a light variant of a one-page site is work for no gain.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* app_theme.dart — dark palette */
+  --void: #05070c;
+  --surface: #0a0e16;
+  --surface-low: #0e141f;
+  --surface-high: #141c2a;
+  --surface-highest: #1b2436;
+  --cyan: #2be3ff;
+  --violet: #9d6bff;
+  --magenta: #ff4d9d;
+  --green: #2be58b;
+  --amber: #ffc24d;
+  --red: #ff5470;
+  --text: #dce6f2;
+  --text-dim: #8698b2;
+  --outline: #223047;
+  --outline-dim: #16202f;
+
+  /* tokens.dart — the 4-point grid. Anything off it is a bug, not a nuance. */
+  --sp-xxs: 2px;
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-xxl: 32px;
+
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+
+  --motion-fast: 90ms;
+  --motion-normal: 160ms;
+  --motion-slow: 240ms;
+
+  /*
+   * The app bundles JetBrains Mono because terminal output needs box drawing
+   * and Powerline glyphs. A landing page needs neither, and each face is
+   * ~2.5 MB — so this uses whatever the reader already has. Anyone with
+   * JetBrains Mono installed gets it; nobody pays for it.
+   *
+   * The app's own typography rule is kept: mono for labels, values and
+   * anything the reader could imagine typing; a proportional face for prose,
+   * because a paragraph set in a monospace is harder to read.
+   */
+  --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas,
+    "DejaVu Sans Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+
+  --page: 1080px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background-color: var(--void);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+
+  /*
+   * The app draws a hairline grid behind everything. Reproducing it at the
+   * same pitch and colour is what makes the screenshots bleed into the page
+   * instead of sitting on top of it.
+   */
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      var(--outline-dim) 0 1px,
+      transparent 1px 32px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      var(--outline-dim) 0 1px,
+      transparent 1px 32px
+    );
+  background-attachment: fixed;
+}
+
+/* The grid is a texture, not a subject: fade it out below the fold. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--void) 620px
+  );
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+  border-radius: var(--r-xs);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--page);
+  margin-inline: auto;
+  padding-inline: var(--sp-xl);
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: var(--sp-lg);
+  top: var(--sp-lg);
+  z-index: 10;
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--surface-high);
+  border-radius: var(--r-sm);
+}
+
+/* Small mono label, used for eyebrows and captions. Mirrors labelSmall. */
+.label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 var(--sp-sm);
+}
+
+/* ---------------------------------------------------------------- header */
+
+header.top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--outline-dim);
+}
+
+.top .wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-lg);
+  height: 60px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand img {
+  width: 26px;
+  height: 26px;
+}
+
+nav.top-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xl);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+nav.top-nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color var(--motion-fast) ease-out;
+}
+
+nav.top-nav a:hover {
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.hero {
+  padding: clamp(48px, 9vw, 104px) 0 var(--sp-xxl);
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: clamp(34px, 6vw, 58px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  max-width: 15ch;
+  margin-inline: auto;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--cyan);
+}
+
+.hero .lede {
+  margin: var(--sp-xl) auto 0;
+  max-width: 62ch;
+  font-size: clamp(16px, 2.1vw, 19px);
+  color: var(--text-dim);
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-md);
+  margin-top: var(--sp-xl);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-sm);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px var(--sp-xl);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--outline);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    transform var(--motion-fast) ease-out,
+    border-color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--cyan) 50%, var(--outline));
+}
+
+.btn-primary {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: #04121a;
+}
+
+/* Glow lands on exactly two things: the one call to action, and the hero
+   frame. NeonAccents carries a glowStrength dial precisely because glow on
+   everything stops meaning anything — four lit buttons in the download row
+   would be four things shouting equally. */
+.cta .btn-primary {
+  box-shadow: 0 0 24px -6px rgb(43 227 255 / 45%);
+}
+
+.btn-primary:hover {
+  background: #57ebff;
+  border-color: #57ebff;
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-md);
+  margin-top: var(--sp-xl);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.hero-meta span + span::before {
+  content: "·";
+  margin-right: var(--sp-md);
+  color: var(--outline);
+}
+
+/* --------------------------------------------------------------- figures */
+
+/*
+ * The screenshots are golden test images at devicePixelRatio 1, so showing
+ * them at half their pixel width reads as 2x. Their dead space is cropped
+ * here rather than in an image pipeline, so a regenerated golden of a
+ * different height still frames correctly.
+ */
+.shot {
+  border: 1px solid var(--outline);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface);
+  line-height: 0;
+}
+
+.shot img {
+  width: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.hero-shot {
+  max-width: 900px;
+  margin: clamp(40px, 6vw, 72px) auto 0;
+  box-shadow: 0 0 60px -20px rgb(43 227 255 / 30%);
+}
+
+.hero-shot img {
+  aspect-ratio: 1280 / 470;
+}
+
+figure {
+  margin: 0;
+}
+
+figcaption {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: var(--sp-md);
+}
+
+/* -------------------------------------------------------------- sections */
+
+section {
+  padding-block: clamp(56px, 8vw, 96px);
+}
+
+section > .wrap > h2 {
+  font-size: clamp(24px, 3.4vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.section-lede {
+  margin-top: var(--sp-md);
+  max-width: 64ch;
+  color: var(--text-dim);
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--outline-dim);
+  margin: 0;
+}
+
+/* three-up */
+
+.trio {
+  display: grid;
+  gap: var(--sp-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
+.trio h3 {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--cyan);
+}
+
+.trio p {
+  margin-top: var(--sp-md);
+  color: var(--text-dim);
+}
+
+/* feature grid */
+
+.features {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  margin-top: var(--sp-xxl);
+}
+
+.card {
+  border: 1px solid var(--outline-dim);
+  border-radius: var(--r-md);
+  padding: var(--sp-xl);
+  background: linear-gradient(
+    to bottom,
+    var(--surface-high),
+    var(--surface-low)
+  );
+  transition: border-color var(--motion-normal) ease-out;
+}
+
+.card:hover {
+  border-color: var(--outline);
+}
+
+.card h3 {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.card p {
+  margin-top: var(--sp-sm);
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+/* gallery */
+
+/*
+ * Two columns, and every frame the same shape. The four goldens have wildly
+ * different aspect ratios — 1280x800, 720x420, 560x900, 390x780 — and left to
+ * themselves they stagger into a ragged grid. One aspect ratio for every cell
+ * makes it read as a set.
+ */
+.gallery {
+  display: grid;
+  gap: var(--sp-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  margin-top: var(--sp-xxl);
+}
+
+.gallery .shot img {
+  aspect-ratio: 16 / 10;
+}
+
+/* The phone is the exception: cropping a portrait screenshot to landscape
+   would just look like a badly cropped desktop one, so it is shown whole and
+   letterboxed against the page's own background. */
+.gallery .phone .shot img {
+  object-fit: contain;
+  object-position: center;
+  background: var(--void);
+}
+
+/* -------------------------------------------------------------- download */
+
+#download {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-block: 1px solid var(--outline-dim);
+}
+
+.downloads {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  margin-top: var(--sp-xxl);
+}
+
+.dl {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--outline);
+  border-radius: var(--r-md);
+  padding: var(--sp-xl);
+  background: var(--surface-low);
+}
+
+.dl h3 {
+  font-size: 18px;
+}
+
+.dl-sub {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: var(--sp-xs);
+}
+
+.dl .btn {
+  margin-top: var(--sp-lg);
+  width: 100%;
+}
+
+.dl-meta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: var(--sp-sm);
+  text-align: center;
+  min-height: 1.4em;
+}
+
+.dl details {
+  margin-top: auto;
+  padding-top: var(--sp-lg);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.dl summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.dl summary:hover {
+  color: var(--text);
+}
+
+.dl details p {
+  margin-top: var(--sp-md);
+}
+
+.dl details code {
+  display: block;
+  margin-top: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--void);
+  border: 1px solid var(--outline-dim);
+  border-radius: var(--r-xs);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.note {
+  margin-top: var(--sp-xl);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.status {
+  margin-top: var(--sp-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  border: 1px solid var(--outline);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--r-sm);
+  background: var(--surface-low);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------- platforms */
+
+.table-scroll {
+  overflow-x: auto;
+  margin-top: var(--sp-xxl);
+  border: 1px solid var(--outline-dim);
+  border-radius: var(--r-md);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-size: 15px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--sp-md) var(--sp-lg);
+  border-bottom: 1px solid var(--outline-dim);
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+  background: var(--surface-low);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+td.yes {
+  color: var(--green);
+}
+
+td.no {
+  color: var(--text-dim);
+}
+
+.caveats {
+  display: grid;
+  gap: var(--sp-lg);
+  margin-top: var(--sp-xl);
+  color: var(--text-dim);
+  font-size: 15px;
+  max-width: 76ch;
+}
+
+/* -------------------------------------------------------------- security */
+
+/* Two columns, so four claims sit 2x2 rather than 3 + a lone one. */
+.claims {
+  display: grid;
+  gap: var(--sp-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+  margin-top: var(--sp-xxl);
+  list-style: none;
+  padding: 0;
+}
+
+.claims li {
+  border-left: 2px solid var(--cyan);
+  padding-left: var(--sp-lg);
+  color: var(--text-dim);
+}
+
+.claims strong {
+  display: block;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--sp-xs);
+}
+
+/* ---------------------------------------------------------------- footer */
+
+footer.bottom {
+  border-top: 1px solid var(--outline-dim);
+  padding-block: var(--sp-xxl);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+footer.bottom .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-lg) var(--sp-xl);
+  align-items: center;
+}
+
+footer.bottom nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-lg);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+footer.bottom .credits {
+  margin-left: auto;
+  max-width: 46ch;
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    padding-inline: var(--sp-lg);
+  }
+
+  nav.top-nav {
+    gap: var(--sp-lg);
+  }
+
+  /* The nav collapses to the one link that matters on a small screen. */
+  nav.top-nav .wide-only {
+    display: none;
+  }
+
+  footer.bottom .credits {
+    margin-left: 0;
+  }
+}

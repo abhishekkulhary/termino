@@ -61,6 +61,20 @@ jobs:
           name: coverage
           path: coverage/lcov.info
 
+  # The marketing site is plain HTML with no toolchain, so this needs no
+  # Flutter and no dependencies — it runs in seconds alongside the analysis.
+  # It exists for one failure in particular: an absolute asset path works on a
+  # local server and 404s on Pages, which serves a project site from a subpath.
+  site:
+    name: Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy the screenshots out of the golden tests
+        run: ./tool/sync_site_images.sh
+      - name: Check the site
+        run: ./tool/check_site.sh
+
   # The local PTY cannot be exercised by `flutter test`: it needs the native
   # plugin loaded into a real app. These run against a real shell on a real
   # desktop, and are what covers local_pty_backend_ffi.dart.

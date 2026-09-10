@@ -296,6 +296,46 @@ Signing material and store credentials cannot live in the repository; what you
 need to supply is listed in [docs/RELEASING.md](docs/RELEASING.md). The release
 workflow builds unsigned artifacts without any of it, so a fork still works.
 
+A tag **publishes** the release rather than drafting it, because the website's
+download buttons resolve through `releases/latest`, which skips drafts. A tag
+containing a hyphen — `v1.1.0-rc1` — publishes as a prerelease instead, so a
+candidate never becomes what the site offers.
+
+The asset names are a contract the site depends on, and `tool/check_site.sh`
+fails the build if the two ever disagree:
+
+```
+Termino-macos.dmg              Termino-windows-x64.zip
+Termino-windows-x64.msix       Termino-linux-x86_64.AppImage
+Termino-android-universal.apk  Termino-android.aab
+Termino-ios-unsigned.zip       Termino-web.tar.gz
+```
+
+## The website
+
+`site/` is the landing page published to GitHub Pages by
+`.github/workflows/pages.yaml`. It is plain HTML and CSS with no build step, so
+previewing it needs nothing installed:
+
+```bash
+./tool/sync_site_images.sh && python3 -m http.server 8000 --directory site
+```
+
+Its screenshots are copied out of the golden tests rather than kept as a second
+set, so they cannot drift from the app; `site/img/` is generated and ignored.
+The repository name is substituted into `__REPO__` at deploy time, which is why
+the page works unchanged in a fork.
+
+The Flutter web build is **not** what Pages serves. It has no local shell and
+cannot reach a server without a relay the visitor would have to run themselves,
+so as a public demo it would present as a broken app. It is still built in CI
+and shipped in each release as a tarball for anyone self-hosting.
+
+One thing no workflow can do for you: in the repository's
+**Settings → Pages**, set *Build and deployment → Source* to **GitHub Actions**.
+Until that is set the first deploy fails with "Pages site not found", which
+reads like a bug and is not one.
+
 ## Licence
 
 [Apache-2.0](LICENSE).

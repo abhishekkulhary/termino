@@ -62,3 +62,7 @@ app.*.map.json
 # including the "master" copies, which makes a failed comparison look like a
 # reviewable change.
 failures/
+
+# The site pulls its screenshots out of the golden tests at build time.
+# tool/sync_site_images.sh is the source of truth; see site/ and pages.yaml.
+site/img/

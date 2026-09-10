@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Termino">
+  <title>Termino</title>
+  <!--
+    A prompt chevron and a cursor, and nothing else. The app's own icon
+    (assets/icon/icon.png) is deliberately not reused here: it is #3B7DD8 on
+    #11141B, drawn before the current theme existed, and next to cyan
+    screenshots it reads as a different product's mark.
+  -->
+  <rect width="32" height="32" rx="7" fill="#0A0E16"/>
+  <rect x=".5" y=".5" width="31" height="31" rx="6.5" fill="none" stroke="#223047"/>
+  <path d="M8 10.5 13.5 16 8 21.5" fill="none" stroke="#2BE3FF" stroke-width="2.6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="16.4" y="19.2" width="8.2" height="2.6" rx="1.3" fill="#2BE3FF"/>
+</svg>
