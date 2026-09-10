@@ -49,8 +49,13 @@ jobs:
           dart analyze --fatal-infos --fatal-warnings
           dart test
 
+      # Goldens are excluded here and run on macOS instead — see the `goldens`
+      # job. A golden is a rendered image, and Flutter does not promise the
+      # same pixels across platforms: these were generated on macOS, and every
+      # one of the 34 failed the first time this job ran on Linux, while the
+      # other 782 tests passed.
       - name: Test
-        run: flutter test --coverage
+        run: flutter test -x golden --coverage
 
       - name: Coverage gate (domain + infrastructure)
         run: ./tool/check_coverage.sh
@@ -60,6 +65,33 @@ jobs:
         with:
           name: coverage
           path: coverage/lcov.info
+
+  # Goldens compare rendered images, and text rasterisation differs between
+  # platforms — so they only mean anything on the platform that generated
+  # them. They are checked here rather than dropped: this runs the whole tagged
+  # set, which is the 34 image comparisons plus the behavioural tests that live
+  # in the same files, so nothing goes unrun.
+  #
+  # If the goldens are ever regenerated on Linux instead, this job moves and
+  # the exclusion in `analyze` goes with it.
+  goldens:
+    name: Goldens (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test -t golden
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-failures
+          path: test/**/failures/**
 
   # The marketing site is plain HTML with no toolchain, so this needs no
   # Flutter and no dependencies — it runs in seconds alongside the analysis.

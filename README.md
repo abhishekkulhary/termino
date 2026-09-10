@@ -201,6 +201,13 @@ Golden tests render real fonts and are tagged, so they can be skipped:
 flutter test -x golden
 ```
 
+They are **generated on macOS and only meaningful there**. Flutter does not
+promise identical pixels across platforms, and the first time CI ran these on
+Linux all 34 image comparisons failed while the other 782 tests passed. CI
+therefore runs `-x golden` on Linux and the tagged set on macOS, so all 816
+tests still run — just not all in the same place. If they are ever regenerated
+on Linux, that split moves with them.
+
 **Run one Flutter command at a time.** Two concurrent `flutter test` invocations
 in this checkout will break each other: both rebuild the native assets under
 `build/native_assets/`, and whichever finishes second replaces `libsqlite3.dylib`
