@@ -15,6 +15,13 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # The relay is its own package with its own analysis_options and its own
+    # CI step. Analysing it from here applies the app's ruleset to code that
+    # never asked for it, and — because the root analyze runs before the relay
+    # has been resolved — it reported 92 undefined-symbol errors for
+    # package:test on a clean checkout. Invisible locally, where the relay
+    # happens to have been resolved already.
+    - tools/**
   errors:
     # Generated code and platform interop occasionally trip these; we want them
     # visible but not build-breaking during development. CI still fails on
