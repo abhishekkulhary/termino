@@ -80,6 +80,29 @@ engineering one.
 - [ ] `flutter analyze --fatal-infos --fatal-warnings` and `flutter test` pass
 - [ ] `cd tools/relay && dart test` passes
 - [ ] Integration tests pass on a desktop: `for f in integration_test/*_test.dart; do flutter test "$f" -d macos; done`
+- [ ] `./tool/sync_site_images.sh && ./tool/check_site.sh` pass
+- [ ] The Pages deploy is green and the site loads
 - [ ] `CHANGELOG.md` has an entry for this version
 - [ ] Version and build number bumped
 - [ ] Tag pushed
+
+A tag now **publishes** the release rather than drafting it, so pushing one is a
+public act with no review step in between. The website's download buttons
+resolve through `releases/latest`, and the asset names below are the contract
+they depend on — `tool/check_site.sh` fails if the site and the workflow ever
+name different files:
+
+```
+Termino-macos.dmg              Termino-windows-x64.zip
+Termino-windows-x64.msix       Termino-linux-x86_64.AppImage
+Termino-android-universal.apk  Termino-android.aab
+Termino-ios-unsigned.zip       Termino-web.tar.gz
+```
+
+There is no version in a filename on purpose: the tag carries the version, so
+`releases/latest/download/Termino-macos.dmg` stays a permanent link.
+
+After the first published release, open the site and confirm each of the four
+download cards shows a version and a size. A card still reading "See all
+downloads" means the name it asks for and the name the workflow produced have
+diverged — check the release's asset list before the script.
