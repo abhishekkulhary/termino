@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:termino/app/app.dart';
 import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/terminal_settings.dart';
 import 'package:termino/features/settings/application/settings_controller.dart';
@@ -61,6 +62,75 @@ void main() {
     canReadUserSshConfig: false,
     hasHaptics: true,
   );
+
+  group('app theme', () {
+    // Round-tripping through storage was tested; that the stored value ever
+    // reached MaterialApp was not. The app sets themeMode on two separate
+    // MaterialApps — the onboarding one and the router one — so a change to
+    // either could leave the other permanently on the system theme.
+
+    /// The theme mode the app is actually running under.
+    ThemeMode shownMode(WidgetTester tester) {
+      final app = tester.widgetList<MaterialApp>(find.byType(MaterialApp));
+      return app.first.themeMode!;
+    }
+
+    Future<void> pumpAppWith(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      // The real tree, so the assertion is about the app rather than a
+      // stand-in. Entrance animations off: Reveal schedules its delay with a
+      // timer that no frame is waiting on, so the test would end holding one.
+      withoutAnimations(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const TerminoApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final (mode, expected) in [
+      (AppThemeMode.system, ThemeMode.system),
+      (AppThemeMode.light, ThemeMode.light),
+      (AppThemeMode.dark, ThemeMode.dark),
+    ]) {
+      testWidgets('$mode reaches the app', (tester) async {
+        final container = testContainer(capabilities: desktop);
+        addTearDown(container.dispose);
+
+        final settings = container.read(settingsProvider.notifier);
+        await settings.completeOnboarding();
+        await settings.setThemeMode(mode);
+
+        await pumpAppWith(tester, container);
+
+        expect(shownMode(tester), expected);
+      });
+    }
+
+    testWidgets('and reaches it on the first run too', (tester) async {
+      // A first-run user gets the onboarding MaterialApp instead of the
+      // router's, and it carries its own themeMode.
+      final container = testContainer(capabilities: desktop);
+      addTearDown(container.dispose);
+
+      await container
+          .read(settingsProvider.notifier)
+          .setThemeMode(AppThemeMode.light);
+
+      await pumpAppWith(tester, container);
+
+      expect(
+        container.read(currentSettingsProvider).onboardingComplete,
+        isFalse,
+        reason: 'this is the onboarding branch, not the router one',
+      );
+      expect(shownMode(tester), ThemeMode.light);
+    });
+  });
 
   group('scrollback', () {
     test('a new session is given the configured number of lines', () async {
