@@ -26,8 +26,9 @@ an interactive shell, SFTP file transfer and port forwarding.
 
 On macOS the App Sandbox is disabled, because a sandboxed process cannot run the
 user's own programs or read their files — which is the whole point of a
-terminal. A sandboxed, SSH-only Mac App Store build is a separate configuration
-planned for Phase 8. See [DECISIONS.md](DECISIONS.md).
+terminal. A sandboxed, SSH-only Mac App Store build would be a separate
+configuration, and **has not been built** — the direct download is the only Mac
+build there is. See [DECISIONS.md](DECISIONS.md).
 
 iOS cannot spawn arbitrary binaries, and browsers cannot open raw TCP sockets.
 Termino does not pretend otherwise: those features are feature-gated off at
@@ -35,9 +36,8 @@ runtime with an in-app explanation rather than failing mysteriously. See
 [ARCHITECTURE.md](ARCHITECTURE.md#3-platform-capabilities).
 
 Linux and Windows are marked "CI only" because they build and are tested in
-continuous integration, but the current development machine cannot run them —
-so nobody has yet judged them by eye. They are promoted to first-class in
-Phase 8.
+continuous integration, but the development machine cannot run them — so nobody
+has yet judged them by eye. They stay marked that way until somebody has.
 
 ---
 
@@ -282,7 +282,7 @@ Termino explicitly does *not* protect against — is in
 | 3 | SSH: auth, host key verification, profiles, jump hosts | **done** |
 | 4 | Input: key accessory bar, gestures, selection, search, tabs, splits | **done** |
 | 5 | SFTP browser and port forwarding | **done** |
-| 6 | Themes, settings, onboarding, error taxonomy, session recording | |
+| 6 | Themes, settings, onboarding, error taxonomy, session recording | **done** |
 | 7 | Web: reference relay and WebSocket transport | **done** |
 | 8 | Release: signing, icons, store pipelines | **done** |
 

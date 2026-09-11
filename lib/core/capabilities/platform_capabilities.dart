@@ -70,7 +70,7 @@ class PlatformCapabilities {
     final target = platform ?? defaultTargetPlatform;
 
     // Browsers have no processes to attach to, and cannot open raw TCP
-    // sockets. SSH is still possible through a WebSocket relay (Phase 7).
+    // sockets. SSH is still possible through a WebSocket relay.
     if (isWeb) {
       return const PlatformCapabilities(
         canRunLocalShell: false,

@@ -26,8 +26,9 @@ import 'package:termino/shared/widgets/reveal.dart';
 
 /// The terminal workspace: a tab strip and the active session's pane.
 ///
-/// Split panes arrive in Phase 4; this shows one session at a time on every
-/// window size.
+/// One pane at a time on a phone, two side by side where there is room for
+/// them — see `_Panes`, which keeps every session mounted either way so
+/// switching tabs never interrupts a running command.
 class TerminalScreen extends ConsumerWidget {
   /// Creates the terminal workspace.
   const new({super.key});

@@ -3,9 +3,8 @@ import 'package:termino/shared/widgets/adaptive_scaffold.dart';
 
 /// The app's primary navigation, in order.
 ///
-/// Everything but the terminal is a placeholder until its phase lands. They are
-/// listed now rather than added later so the shell's layout is exercised — and
-/// judged — at full width from the start.
+/// One list, consulted by the bottom bar, the rail and the sidebar alike, so a
+/// destination cannot exist at one window size and not another.
 abstract final class AppDestinations {
   /// The terminal workspace.
   static const terminal = AppDestination(
@@ -15,7 +14,7 @@ abstract final class AppDestinations {
     route: '/',
   );
 
-  /// Saved SSH connections. Phase 3.
+  /// Saved SSH connections.
   static const hosts = AppDestination(
     label: 'Hosts',
     icon: Icons.dns_outlined,
@@ -23,7 +22,7 @@ abstract final class AppDestinations {
     route: '/hosts',
   );
 
-  /// SSH keys and identities. Phase 3.
+  /// SSH keys and identities.
   static const keys = AppDestination(
     label: 'Keys',
     icon: Icons.vpn_key_outlined,
@@ -31,7 +30,7 @@ abstract final class AppDestinations {
     route: '/keys',
   );
 
-  /// The SFTP browser. Phase 5.
+  /// The SFTP browser.
   static const files = AppDestination(
     label: 'Files',
     icon: Icons.folder_outlined,
@@ -47,7 +46,7 @@ abstract final class AppDestinations {
     route: '/tunnels',
   );
 
-  /// Settings. Phase 6.
+  /// Settings.
   static const settings = AppDestination(
     label: 'Settings',
     icon: Icons.settings_outlined,

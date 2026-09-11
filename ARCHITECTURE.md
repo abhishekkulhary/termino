@@ -27,14 +27,12 @@ relay.
 This is the one architectural rule enforced mechanically, by
 [`tool/check_domain_purity.sh`](tool/check_domain_purity.sh) in CI.
 
-Directories marked *planned* arrive in the phase noted.
-
 ```
 lib/
   app/                  app root, router, navigation destinations
   core/
-    capabilities/       the conditional PTY seam; PlatformCapabilities (Phase 2)
-    logging/            redacting logger (planned, Phase 3)
+    capabilities/       the conditional PTY seam; PlatformCapabilities
+    logging/            redacting logger
   domain/
     backends/           TerminalBackend, its state machine and failure taxonomy
     terminal/           scrollback search, URL detection
@@ -62,7 +60,7 @@ lib/
     identities/       key list, generation and import
     sftp/             remote browser, transfer queue
     forwarding/       tunnel manager and list
-    settings/         (planned)
+    settings/         palettes, fonts, persisted preferences
   shared/
     design/             tokens, breakpoints, app theme, terminal palettes
     widgets/            AdaptiveScaffold

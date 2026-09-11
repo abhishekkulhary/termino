@@ -6,8 +6,7 @@ import 'package:xterm/xterm.dart';
 ///
 /// Wraps xterm's [TerminalTheme] so that feature code never constructs one
 /// directly and so that a palette can carry a name and a brightness for the
-/// settings UI. The full catalogue (Dracula, Solarized, Nord, Gruvbox, One
-/// Dark) arrives in Phase 6; these two are the defaults.
+/// settings UI. The catalogue is [TerminalPalettes.all].
 class TerminalPalette {
   /// Creates a named palette.
   const new({
@@ -85,7 +84,10 @@ class TerminalPalette {
   );
 }
 
-/// The palettes shipped in Phase 1.
+/// Every palette the app ships.
+///
+/// Two of its own, then the schemes people already know — so somebody arriving
+/// from another terminal can keep the colours they read code in.
 abstract final class TerminalPalettes {
   /// The default dark palette: the grid lit the same way as the chrome around
   /// it, so a maximised terminal reads as one surface rather than a panel

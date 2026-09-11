@@ -112,13 +112,16 @@ Flutter codebase for Android, iOS, macOS, Windows, Linux and the web.
 
 ### Appearance
 
-- Eight terminal palettes: Termino Dark and Light, Dracula, Solarized Dark and
-  Light, Nord, Gruvbox Dark and One Dark.
+- Nine terminal palettes: Termino Neon, Termino Dark and Light, Dracula,
+  Solarized Dark and Light, Nord, Gruvbox Dark and One Dark.
 - Font size, line height, cursor shape and blink, bell behaviour and scrollback
   size, all persisted.
 
 ### Other
 
+- A first-run introduction that says up front what this platform cannot do —
+  no local shell on iOS, a relay needed in a browser — rather than leaving a
+  button to fail later.
 - Session recording, exported as plain text or asciicast v2. Output only —
   never keystrokes.
 - No telemetry of any kind.
