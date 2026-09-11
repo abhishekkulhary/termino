@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:termino/app/providers.dart';
+import 'package:termino/core/capabilities/platform_capabilities.dart';
 import 'package:termino/domain/entities/ssh_host.dart';
 import 'package:termino/features/hosts/presentation/host_editor_screen.dart';
 import 'package:termino/features/hosts/presentation/hosts_screen.dart';
@@ -17,6 +18,46 @@ void main() {
 
     expect(find.text('No saved hosts'), findsOneWidget);
     expect(find.text('Add host'), findsOneWidget);
+  });
+
+  testWidgets('the empty state points at where hosts are actually added', (
+    tester,
+  ) async {
+    // It used to send people to Settings to import their ~/.ssh/config. There
+    // is no importer in Settings — it lives behind the Add host button on this
+    // screen — so anyone who followed the instruction found nothing.
+    final container = testContainer(
+      capabilities: PlatformCapabilities.detect(platform: TargetPlatform.macOS),
+    );
+    addTearDown(container.dispose);
+
+    await pumpApp(tester, const HostsScreen(), container: container);
+
+    expect(find.textContaining('Add host'), findsWidgets);
+    expect(
+      find.textContaining('Settings'),
+      findsNothing,
+      reason: 'nothing about hosts is in Settings',
+    );
+    expect(find.textContaining('~/.ssh/config'), findsOneWidget);
+  });
+
+  testWidgets('and does not offer an import where there is none', (
+    tester,
+  ) async {
+    // A phone has no ~/.ssh to read, so the Add host button carries no import
+    // option there and the empty state must not promise one.
+    final container = testContainer(
+      capabilities: PlatformCapabilities.detect(
+        platform: TargetPlatform.android,
+      ),
+    );
+    addTearDown(container.dispose);
+
+    await pumpApp(tester, const HostsScreen(), container: container);
+
+    expect(find.text('No saved hosts'), findsOneWidget);
+    expect(find.textContaining('~/.ssh/config'), findsNothing);
   });
 
   testWidgets('lists saved hosts with their target', (tester) async {

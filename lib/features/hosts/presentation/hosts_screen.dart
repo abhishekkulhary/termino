@@ -48,12 +48,18 @@ class HostsScreen extends ConsumerWidget {
           detail: 'The connection list could not be read from storage.',
         ),
         data: (list) => list.isEmpty
-            ? const _Message(
+            ? _Message(
                 icon: Icons.dns_outlined,
                 title: 'No saved hosts',
+                // Both halves of this used to be wrong: it sent people to
+                // Settings, where there is no importer, and it offered the
+                // import on platforms that have no ~/.ssh to read. Both live
+                // behind the Add host button, and only on a desktop.
                 detail:
-                    'Add a connection, or import your ~/.ssh/config from '
-                    'Settings.',
+                    ref.watch(platformCapabilitiesProvider).canReadUserSshConfig
+                    ? 'Use Add host to enter one, or to import your '
+                          '~/.ssh/config.'
+                    : 'Use Add host to enter one.',
               )
             : ListView.builder(
                 padding: const EdgeInsets.only(top: Spacing.sm, bottom: 96),
