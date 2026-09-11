@@ -285,8 +285,16 @@ class DriftSnippetRepository implements SnippetRepository {
       _ordered().watch().map((rows) => rows.map(_toDomain).toList());
 
   @override
-  Future<void> save(Snippet snippet) =>
-      _db.into(_db.snippetRows).insertOnConflictUpdate(_toRow(snippet));
+  Future<void> save(Snippet snippet) {
+    final row = _toRow(snippet);
+    // Not insertOnConflictUpdate: it turns the row into a companion with
+    // nulls dropped, so a column going back to null is left at its old
+    // value. That made "Only for this host" a one-way switch — you could
+    // scope a snippet to a host and never un-scope it again.
+    return _db
+        .into(_db.snippetRows)
+        .insert(row, onConflict: DoUpdate((_) => row.toCompanion(false)));
+  }
 
   @override
   Future<void> delete(String id) =>

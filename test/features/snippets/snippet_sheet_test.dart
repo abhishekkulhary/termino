@@ -158,10 +158,8 @@ void main() {
   ) async {
     // The box only appears when the sheet was opened for a host, and it starts
     // clear: a new snippet is saved for everywhere unless the user says
-    // otherwise. (`_SnippetEditorState` says this twice and disagrees with
-    // itself — the field initialiser scopes a new snippet, `initState` then
-    // clears it. `initState` wins, and always has; this test pins the
-    // behaviour people have actually had.)
+    // otherwise, because one quietly scoped to a host goes missing on the next
+    // machine with nothing to explain why.
     final container = testContainer();
     addTearDown(container.dispose);
 
@@ -212,5 +210,77 @@ void main() {
       findsOneWidget,
       reason: 'the last snippet going takes the list back to empty',
     );
+  });
+
+  testWidgets('editing a host-scoped snippet leaves it scoped', (tester) async {
+    // The box is off for a new snippet but has to reflect what an existing one
+    // already is, or every edit silently widens a snippet to every host.
+    final container = testContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(snippetRepositoryProvider)
+        .save(
+          Snippet(
+            id: 's1',
+            name: 'Deploy',
+            body: 'make deploy',
+            createdAt: DateTime.utc(2026),
+            hostId: 'build',
+          ),
+        );
+
+    await openSheet(tester, container, hostId: 'build');
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Name'),
+      'Deploy release',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final saved = await container.read(snippetRepositoryProvider).all();
+    expect(saved.single.name, 'Deploy release');
+    expect(saved.single.hostId, 'build');
+  });
+  testWidgets('un-ticking the box on an existing snippet sticks', (
+    tester,
+  ) async {
+    // The other direction, which storage used to swallow: clearing the box
+    // saved a null host that the upsert dropped, so the snippet stayed tied
+    // to the host and the sheet redrew with the box ticked again.
+    final container = testContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(snippetRepositoryProvider)
+        .save(
+          Snippet(
+            id: 's1',
+            name: 'Deploy',
+            body: 'make deploy',
+            createdAt: DateTime.utc(2026),
+            hostId: 'build',
+          ),
+        );
+
+    await openSheet(tester, container, hostId: 'build');
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Only for this host'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final saved = await container.read(snippetRepositoryProvider).all();
+    expect(saved.single.hostId, isNull);
   });
 }

@@ -138,5 +138,27 @@ void main() {
       expect(stored.hostId, 'host-1');
       expect(stored.runImmediately, isTrue);
     });
+
+    test('and can be given back to every host', () async {
+      // Saving a column back to null has to actually clear it. The obvious
+      // upsert quietly keeps the old value instead, which made scoping a
+      // snippet to a host a decision you could not take back.
+      final service = container.read(snippetServiceProvider);
+      final scoped = await service.save(
+        name: 'Restart',
+        body: 'systemctl restart app',
+        hostId: 'host-1',
+      );
+
+      await service.save(
+        name: scoped.name,
+        body: scoped.body,
+        existing: scoped,
+      );
+
+      final stored =
+          (await container.read(snippetRepositoryProvider).all()).single;
+      expect(stored.hostId, isNull);
+    });
   });
 }

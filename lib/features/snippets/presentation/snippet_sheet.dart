@@ -232,14 +232,14 @@ class _SnippetEditorState extends State<_SnippetEditor> {
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late final _body = TextEditingController(text: widget.existing?.body ?? '');
   late bool _runImmediately = widget.existing?.runImmediately ?? false;
-  late bool _scopeToHost =
-      widget.existing?.hostId != null || widget.existing == null;
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.existing == null) _scopeToHost = false;
-  }
+  /// Whether this snippet is tied to the host the sheet was opened for.
+  ///
+  /// Off for a new one: a snippet saved for everywhere can be found from
+  /// anywhere, while one quietly scoped to a host is invisible on the next
+  /// machine and the user has no reason to suspect where it went. Editing an
+  /// existing snippet keeps whatever it already had.
+  late bool _scopeToHost = widget.existing?.hostId != null;
 
   @override
   void dispose() {
