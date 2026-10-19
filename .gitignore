@@ -66,3 +66,9 @@ failures/
 # The site pulls its screenshots out of the golden tests at build time.
 # tool/sync_site_images.sh is the source of truth; see site/ and pages.yaml.
 site/img/
+
+# Copies the Nextcloud sync client makes of Xcode bundles ("Runner 2.xcodeproj")
+ios/Runner [0-9]*.xcodeproj/
+ios/Runner [0-9]*.xcworkspace/
+macos/Runner [0-9]*.xcodeproj/
+macos/Runner [0-9]*.xcworkspace/
