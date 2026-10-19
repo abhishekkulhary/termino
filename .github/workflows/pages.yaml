@@ -72,12 +72,14 @@ jobs:
             | xargs -r sed -i \
                 -e "s|__REPO__|${{ github.repository }}|g" \
                 -e "s|__BASE_URL__|${{ steps.pages.outputs.base_url }}|g"
+          # The footer names the commit this site was built from.
+          sed -i -e "s|__BUILD_SHA__|${GITHUB_SHA}|g" -e "s|__BUILD__|${GITHUB_SHA::7}|g" site/index.html
 
       - name: Confirm no placeholder survived
         run: |
-          if grep -rq '__REPO__\|__BASE_URL__' site; then
+          if grep -rq '__REPO__\|__BASE_URL__\|__BUILD' site; then
             echo "A placeholder was not substituted:" >&2
-            grep -rn '__REPO__\|__BASE_URL__' site >&2
+            grep -rn '__REPO__\|__BASE_URL__\|__BUILD' site >&2
             exit 1
           fi
 
