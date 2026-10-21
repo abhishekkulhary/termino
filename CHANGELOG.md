@@ -7,6 +7,8 @@ order releases.
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-10-21
+
 ### Fixed
 
 - The bar and underline cursors, which `xterm` drew on the first line of the
