@@ -176,6 +176,18 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # The runner image no longer ships CMake 3.22.1, which flutter_pty's
+      # native build needs, and the Android Gradle plugin's on-demand install
+      # of it failed with "Error reading Zip content" under JDK 21's stricter
+      # ZIP64 checks. Install it up front instead.
+      - name: Install CMake for the native build
+        if: matrix.target == 'apk'
+        env:
+          JAVA_TOOL_OPTIONS: -Djdk.util.zip.disableZip64ExtraFieldValidation=true
+        run: |
+          SDKMANAGER=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          yes | "$SDKMANAGER" --install "cmake;3.22.1" > /dev/null
+
       - name: Install Linux desktop build dependencies
         if: matrix.target == 'linux'
         run: |
